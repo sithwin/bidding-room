@@ -2,7 +2,7 @@
   "vhosts": [{ "name": "/" }],
   "exchanges": [
     {
-      "name": "carat.events",
+      "name": "platform.events",
       "vhost": "/",
       "type": "topic",
       "durable": true,
@@ -24,17 +24,17 @@
     { "name": "shipping.payment.received", "vhost": "/", "durable": true }
   ],
   "bindings": [
-    { "source": "carat.events", "vhost": "/", "destination": "notification.user.registered", "destination_type": "queue", "routing_key": "user.registered" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.phone.verification.requested", "destination_type": "queue", "routing_key": "user.phone.verification.requested" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.bid.placed", "destination_type": "queue", "routing_key": "auction.bid.placed" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.auction.closing.soon", "destination_type": "queue", "routing_key": "auction.closing.soon" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.auction.closed", "destination_type": "queue", "routing_key": "auction.closed" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.invoice.created", "destination_type": "queue", "routing_key": "payment.invoice.created" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.payment.received", "destination_type": "queue", "routing_key": "payment.received" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.invoice.expired", "destination_type": "queue", "routing_key": "payment.invoice.expired" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.item.dispatched", "destination_type": "queue", "routing_key": "shipping.item.dispatched" },
-    { "source": "carat.events", "vhost": "/", "destination": "notification.item.collected", "destination_type": "queue", "routing_key": "shipping.item.collected" },
-    { "source": "carat.events", "vhost": "/", "destination": "payment.auction.closed", "destination_type": "queue", "routing_key": "auction.closed" },
-    { "source": "carat.events", "vhost": "/", "destination": "shipping.payment.received", "destination_type": "queue", "routing_key": "payment.received" }
+    { "source": "platform.events", "vhost": "/", "destination": "notification.user.registered", "destination_type": "queue", "routing_key": "user.registered" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.phone.verification.requested", "destination_type": "queue", "routing_key": "user.phone.verification.requested" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.bid.placed", "destination_type": "queue", "routing_key": "auction.bid.placed" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.auction.closing.soon", "destination_type": "queue", "routing_key": "auction.closing.soon" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.auction.closed", "destination_type": "queue", "routing_key": "auction.closed" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.invoice.created", "destination_type": "queue", "routing_key": "payment.invoice.created" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.payment.received", "destination_type": "queue", "routing_key": "payment.received" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.invoice.expired", "destination_type": "queue", "routing_key": "payment.invoice.expired" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.item.dispatched", "destination_type": "queue", "routing_key": "shipping.item.dispatched" },
+    { "source": "platform.events", "vhost": "/", "destination": "notification.item.collected", "destination_type": "queue", "routing_key": "shipping.item.collected" },
+    { "source": "platform.events", "vhost": "/", "destination": "payment.auction.closed", "destination_type": "queue", "routing_key": "auction.closed" },
+    { "source": "platform.events", "vhost": "/", "destination": "shipping.payment.received", "destination_type": "queue", "routing_key": "payment.received" }
   ]
 }
