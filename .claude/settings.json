@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(pnpm:*)",
+      "Bash(git:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(docker:*)",
+      "Bash(docker compose:*)",
+      "Bash(stripe:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Write(*)",
+      "Edit(*)",
+      "WebSearch(*)",
+      "Read(*)"
+    ],
+    "deny": []
+  }
+}
