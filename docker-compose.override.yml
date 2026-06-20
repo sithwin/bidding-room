@@ -1,0 +1,45 @@
+services:
+  user-portal:
+    build: { context: ., dockerfile: apps/user-portal/Dockerfile }
+    volumes: [./apps/user-portal:/app/apps/user-portal]
+    command: pnpm dev
+
+  admin-portal:
+    build: { context: ., dockerfile: apps/admin-portal/Dockerfile }
+    volumes: [./apps/admin-portal:/app/apps/admin-portal]
+    command: pnpm dev
+
+  user-service:
+    build: { context: ., dockerfile: apps/user-service/Dockerfile }
+    volumes: [./apps/user-service:/app/apps/user-service]
+    command: pnpm dev
+
+  catalogue-service:
+    build: { context: ., dockerfile: apps/catalogue-service/Dockerfile }
+    volumes: [./apps/catalogue-service:/app/apps/catalogue-service]
+    command: pnpm dev
+
+  auction-engine:
+    build: { context: ., dockerfile: apps/auction-engine/Dockerfile }
+    volumes: [./apps/auction-engine:/app/apps/auction-engine]
+    command: pnpm dev
+
+  payment-service:
+    build: { context: ., dockerfile: apps/payment-service/Dockerfile }
+    volumes: [./apps/payment-service:/app/apps/payment-service]
+    command: pnpm dev
+
+  notification-service:
+    build: { context: ., dockerfile: apps/notification-service/Dockerfile }
+    volumes: [./apps/notification-service:/app/apps/notification-service]
+    command: pnpm dev
+
+  shipping-service:
+    build: { context: ., dockerfile: apps/shipping-service/Dockerfile }
+    volumes: [./apps/shipping-service:/app/apps/shipping-service]
+    command: pnpm dev
+
+  admin-service:
+    build: { context: ., dockerfile: apps/admin-service/Dockerfile }
+    volumes: [./apps/admin-service:/app/apps/admin-service]
+    command: pnpm dev

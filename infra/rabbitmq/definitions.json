@@ -1,0 +1,40 @@
+{
+  "vhosts": [{ "name": "/" }],
+  "exchanges": [
+    {
+      "name": "carat.events",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false
+    }
+  ],
+  "queues": [
+    { "name": "notification.user.registered", "vhost": "/", "durable": true },
+    { "name": "notification.phone.verification.requested", "vhost": "/", "durable": true },
+    { "name": "notification.bid.placed", "vhost": "/", "durable": true },
+    { "name": "notification.auction.closing.soon", "vhost": "/", "durable": true },
+    { "name": "notification.auction.closed", "vhost": "/", "durable": true },
+    { "name": "notification.invoice.created", "vhost": "/", "durable": true },
+    { "name": "notification.payment.received", "vhost": "/", "durable": true },
+    { "name": "notification.invoice.expired", "vhost": "/", "durable": true },
+    { "name": "notification.item.dispatched", "vhost": "/", "durable": true },
+    { "name": "notification.item.collected", "vhost": "/", "durable": true },
+    { "name": "payment.auction.closed", "vhost": "/", "durable": true },
+    { "name": "shipping.payment.received", "vhost": "/", "durable": true }
+  ],
+  "bindings": [
+    { "source": "carat.events", "vhost": "/", "destination": "notification.user.registered", "destination_type": "queue", "routing_key": "user.registered" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.phone.verification.requested", "destination_type": "queue", "routing_key": "user.phone.verification.requested" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.bid.placed", "destination_type": "queue", "routing_key": "auction.bid.placed" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.auction.closing.soon", "destination_type": "queue", "routing_key": "auction.closing.soon" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.auction.closed", "destination_type": "queue", "routing_key": "auction.closed" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.invoice.created", "destination_type": "queue", "routing_key": "payment.invoice.created" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.payment.received", "destination_type": "queue", "routing_key": "payment.received" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.invoice.expired", "destination_type": "queue", "routing_key": "payment.invoice.expired" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.item.dispatched", "destination_type": "queue", "routing_key": "shipping.item.dispatched" },
+    { "source": "carat.events", "vhost": "/", "destination": "notification.item.collected", "destination_type": "queue", "routing_key": "shipping.item.collected" },
+    { "source": "carat.events", "vhost": "/", "destination": "payment.auction.closed", "destination_type": "queue", "routing_key": "auction.closed" },
+    { "source": "carat.events", "vhost": "/", "destination": "shipping.payment.received", "destination_type": "queue", "routing_key": "payment.received" }
+  ]
+}
