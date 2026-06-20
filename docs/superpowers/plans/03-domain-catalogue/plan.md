@@ -19,7 +19,7 @@
 - `const`/`let` only — no `var`
 - Port: 3001
 - Service name in monorepo: `apps/catalogue`
-- Database name: `carat_catalogue`
+- Database name: `catalogue`
 - Images stored in Cloudflare R2; service only stores URLs, never binary data
 - `search_vector` maintained via Postgres trigger on `title` + `description`
 - All list endpoints must be paginated (`limit`/`offset`)
@@ -490,10 +490,10 @@ git commit -m "feat(catalogue): add Lot, Category domain entities and repository
   - `PostgresCategoryRepository` implements `CategoryRepository`
   - `PostgresSearchRepository` implements `SearchRepository`
 
-> **Integration test prerequisite:** Create `carat_catalogue_test` DB and run the migration:
+> **Integration test prerequisite:** Create `catalogue_test` DB and run the migration:
 > ```bash
-> createdb carat_catalogue_test
-> psql carat_catalogue_test < apps/catalogue/migrations/001_create_catalogue.sql
+> createdb catalogue_test
+> psql catalogue_test < apps/catalogue/migrations/001_create_catalogue.sql
 > ```
 
 - [ ] **Step 1: Write failing tests in `apps/catalogue/src/infrastructure/postgres-lot-repository.test.ts`**
@@ -504,7 +504,7 @@ import { createDb } from './db';
 import { PostgresLotRepository } from './postgres-lot-repository';
 import { Lot, LotCondition, LotImage } from '../domain/lot';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/carat_catalogue_test';
+const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/catalogue_test';
 
 describe('PostgresLotRepository', () => {
   const db = createDb(TEST_DB_URL);
@@ -797,7 +797,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createDb } from './db';
 import { PostgresCategoryRepository } from './postgres-category-repository';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/carat_catalogue_test';
+const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/catalogue_test';
 
 describe('PostgresCategoryRepository', () => {
   const db = createDb(TEST_DB_URL);
@@ -907,7 +907,7 @@ import { PostgresSearchRepository } from './postgres-search-repository';
 import { PostgresLotRepository } from './postgres-lot-repository';
 import { Lot, LotCondition } from '../domain/lot';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/carat_catalogue_test';
+const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/catalogue_test';
 
 describe('PostgresSearchRepository', () => {
   const db = createDb(TEST_DB_URL);
@@ -1756,7 +1756,7 @@ import { buildCatalogueRouter } from './presentation/catalogue-router';
 
 const PORT = Number(process.env.PORT ?? 3001);
 
-const db = createDb(process.env.DATABASE_URL ?? 'postgres://localhost/carat_catalogue');
+const db = createDb(process.env.DATABASE_URL ?? 'postgres://localhost/catalogue');
 
 const lotRepository = new PostgresLotRepository(db);
 const categoryRepository = new PostgresCategoryRepository(db);

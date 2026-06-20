@@ -180,9 +180,9 @@ CREATE INDEX idx_notification_log_user_id ON notification_log(user_id);
 CREATE INDEX idx_notification_log_created_at ON notification_log(created_at);
 ```
 
-Run this migration against `carat_notifications` database:
+Run this migration against `notifications` database:
 ```bash
-docker compose exec postgres psql -U postgres -d carat_notifications \
+docker compose exec postgres psql -U postgres -d notifications \
   -f /dev/stdin < apps/notification-service/src/infrastructure/db/migrations/001-create-notification-log.sql
 ```
 
@@ -1520,7 +1520,7 @@ Expected: `dist/` created, zero TypeScript errors.
 
 ```bash
 docker compose up postgres rabbitmq -d
-DATABASE_URL=postgresql://postgres:changeme@localhost:5432/carat_notifications \
+DATABASE_URL=postgresql://postgres:changeme@localhost:5432/notifications \
 RABBITMQ_URL=amqp://carat:changeme@localhost:5672 \
 RESEND_API_KEY=re_test \
 TWILIO_ACCOUNT_SID=AC_test \

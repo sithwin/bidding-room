@@ -20,7 +20,7 @@
 - British English in user-facing strings: "dispatched" not "dispatching", "cancelled" not "canceled"
 - Port: 3004
 - Service name in monorepo: `apps/shipping`
-- Database name: `carat_shipping`
+- Database name: `shipping`
 
 ---
 
@@ -479,7 +479,7 @@ import { createDb, Db } from './db';
 import { Fulfilment, FulfilmentStatus, ShippingAddress } from '../../domain/fulfilment';
 import { v4 as uuidv4 } from 'uuid';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/carat_shipping_test';
+const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/shipping_test';
 
 describe('PostgresFulfilmentRepository', () => {
   let db: Db;
@@ -752,7 +752,7 @@ export class PostgresFulfilmentRepository implements FulfilmentRepository {
 First create the test database if it does not exist:
 
 ```bash
-psql -U postgres -c "CREATE DATABASE carat_shipping_test;"
+psql -U postgres -c "CREATE DATABASE shipping_test;"
 ```
 
 Then run the tests:

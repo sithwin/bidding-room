@@ -1,13 +1,13 @@
-CREATE DATABASE carat_users;
-CREATE DATABASE carat_catalogue;
-CREATE DATABASE carat_auction_engine;
-CREATE DATABASE carat_payments;
-CREATE DATABASE carat_notifications;
-CREATE DATABASE carat_shipping;
+CREATE DATABASE users;
+CREATE DATABASE catalogue;
+CREATE DATABASE auction_engine;
+CREATE DATABASE payments;
+CREATE DATABASE notifications;
+CREATE DATABASE shipping;
 
-GRANT ALL PRIVILEGES ON DATABASE carat_users TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_catalogue TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_auction_engine TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_payments TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_notifications TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_shipping TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE users TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE catalogue TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE auction_engine TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE payments TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE notifications TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE shipping TO postgres;

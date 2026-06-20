@@ -239,19 +239,19 @@ mkdir -p infra/postgres infra/rabbitmq infra/nginx
 Creates a separate database for each service on one PostgreSQL instance:
 
 ```sql
-CREATE DATABASE carat_users;
-CREATE DATABASE carat_catalogue;
-CREATE DATABASE carat_auction_engine;
-CREATE DATABASE carat_payments;
-CREATE DATABASE carat_notifications;
-CREATE DATABASE carat_shipping;
+CREATE DATABASE users;
+CREATE DATABASE catalogue;
+CREATE DATABASE auction_engine;
+CREATE DATABASE payments;
+CREATE DATABASE notifications;
+CREATE DATABASE shipping;
 
-GRANT ALL PRIVILEGES ON DATABASE carat_users TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_catalogue TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_auction_engine TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_payments TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_notifications TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE carat_shipping TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE users TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE catalogue TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE auction_engine TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE payments TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE notifications TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE shipping TO postgres;
 ```
 
 - [ ] **Step 3: Create `infra/rabbitmq/definitions.json`**
@@ -415,7 +415,7 @@ services:
   user-service:
     image: ghcr.io/the-carat-room/user-service:latest
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/carat_users
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/users
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
@@ -430,7 +430,7 @@ services:
   catalogue-service:
     image: ghcr.io/the-carat-room/catalogue-service:latest
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/carat_catalogue
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/catalogue
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
@@ -447,7 +447,7 @@ services:
   auction-engine:
     image: ghcr.io/the-carat-room/auction-engine:latest
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/carat_auction_engine
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/auction_engine
       REDIS_URL: redis://redis:6379
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     depends_on:
@@ -463,7 +463,7 @@ services:
   payment-service:
     image: ghcr.io/the-carat-room/payment-service:latest
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/carat_payments
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/payments
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
@@ -478,7 +478,7 @@ services:
   notification-service:
     image: ghcr.io/the-carat-room/notification-service:latest
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/carat_notifications
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/notifications
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       RESEND_API_KEY: ${RESEND_API_KEY}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
@@ -495,7 +495,7 @@ services:
   shipping-service:
     image: ghcr.io/the-carat-room/shipping-service:latest
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/carat_shipping
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/shipping
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     depends_on:
       postgres:
@@ -640,7 +640,7 @@ Verify PostgreSQL databases:
 ```bash
 docker compose exec postgres psql -U postgres -c "\l"
 ```
-Expected: list includes `carat_users`, `carat_catalogue`, `carat_auction_engine`, `carat_payments`, `carat_notifications`, `carat_shipping`.
+Expected: list includes `users`, `catalogue`, `auction_engine`, `payments`, `notifications`, `shipping`.
 
 Verify Redis:
 ```bash
@@ -1089,7 +1089,7 @@ git commit -m "chore: configure HTTPS with Let's Encrypt and Nginx IP restrictio
 
 - [ ] `pnpm install && pnpm turbo build` succeeds from repo root
 - [ ] `docker compose up postgres redis rabbitmq -d` — all three services reach `healthy` state
-- [ ] PostgreSQL contains all 6 databases: `carat_users`, `carat_catalogue`, `carat_auction_engine`, `carat_payments`, `carat_notifications`, `carat_shipping`
+- [ ] PostgreSQL contains all 6 databases: `users`, `catalogue`, `auction_engine`, `payments`, `notifications`, `shipping`
 - [ ] RabbitMQ management UI shows `carat.events` exchange (topic, durable) and all 12 queues with correct routing key bindings
 - [ ] Redis responds to `ping` with `PONG`
 - [ ] Nginx routes `/api/users/`, `/api/lots/`, `/api/auctions/`, `/api/payments/`, `/api/shipping/` to correct upstream ports

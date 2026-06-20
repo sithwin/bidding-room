@@ -21,7 +21,7 @@
 - Phone OTP: 6-digit code, 10-minute expiry, max 3 attempts then 15-minute lockout
 - Port: 3000
 - Service name in monorepo: `apps/user-auth`
-- Database name: `carat_users`
+- Database name: `users`
 
 ---
 
@@ -453,7 +453,7 @@ import { User, UserRole, UserStatus } from '../../domain/user';
 import { v4 as uuidv4 } from 'uuid';
 
 const TEST_DB_URL =
-  process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/carat_users_test';
+  process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/users_test';
 
 describe('PostgresUserRepository', () => {
   let db: Db;
@@ -606,7 +606,7 @@ import { createDb, Db } from './db';
 import { v4 as uuidv4 } from 'uuid';
 
 const TEST_DB_URL =
-  process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/carat_users_test';
+  process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/users_test';
 
 describe('PostgresTokenRepository', () => {
   let db: Db;
@@ -885,7 +885,7 @@ export class PostgresTokenRepository implements TokenRepository {
 First create the test database if it does not exist:
 
 ```bash
-psql -U postgres -c "CREATE DATABASE carat_users_test;" 2>/dev/null || true
+psql -U postgres -c "CREATE DATABASE users_test;" 2>/dev/null || true
 ```
 
 Then run the tests:
