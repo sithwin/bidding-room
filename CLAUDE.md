@@ -160,6 +160,14 @@ SSE (Server-Sent Events) for bid and timer updates on the lot detail page. Bids 
 
 ---
 
+## Task Completion
+
+When a task or plan step is completed, mark its checkbox in the relevant `plan.md` immediately:
+- Change `- [ ]` to `- [x]` for each completed step
+- When all steps in a plan are done, commit the updated `plan.md` with `chore: mark all plan NN tasks complete`
+
+---
+
 ## Plans & Specs
 
 All implementation plans and design specs live in `docs/superpowers/`:
