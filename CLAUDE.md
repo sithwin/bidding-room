@@ -78,9 +78,9 @@ docker compose -f docker-compose.test.yml down -v
 | Catalogue Service    | 3002 |
 | Auction Engine       | 3003 |
 | Payment Service      | 3004 |
-| Admin Service        | 3005 |
+| Notification Service | 3005 |
 | Shipping Service     | 3006 |
-| Notification Service | 3007 |
+| Admin Service        | 3007 |
 | PostgreSQL (dev)     | 5432 |
 | PostgreSQL (test)    | 5433 |
 | Redis                | 6379 |
