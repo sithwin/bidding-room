@@ -1,6 +1,6 @@
 # Infrastructure Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Bootstrap the monorepo, Docker Compose stack, Nginx reverse proxy, and CI/CD pipeline that every other domain depends on.
 
@@ -33,7 +33,7 @@
 **Interfaces:**
 - Produces: monorepo root with `apps/` and `packages/` workspace directories, `turbo build` and `turbo test` pipeline configured
 
-- [ ] **Step 1: Initialise the monorepo**
+- [x] **Step 1: Initialise the monorepo**
 
 ```bash
 npx create-turbo@latest . --package-manager pnpm
@@ -41,7 +41,7 @@ npx create-turbo@latest . --package-manager pnpm
 
 When prompted, select "Empty workspace".
 
-- [ ] **Step 2: Replace the generated `turbo.json`**
+- [x] **Step 2: Replace the generated `turbo.json`**
 
 ```json
 {
@@ -63,7 +63,7 @@ When prompted, select "Empty workspace".
 }
 ```
 
-- [ ] **Step 3: Replace the generated root `package.json`**
+- [x] **Step 3: Replace the generated root `package.json`**
 
 ```json
 {
@@ -83,7 +83,7 @@ When prompted, select "Empty workspace".
 }
 ```
 
-- [ ] **Step 4: Create `.gitignore`**
+- [x] **Step 4: Create `.gitignore`**
 
 ```
 node_modules/
@@ -97,14 +97,14 @@ dist/
 *.pem
 ```
 
-- [ ] **Step 5: Remove any example apps Turborepo generated**
+- [x] **Step 5: Remove any example apps Turborepo generated**
 
 ```bash
 rm -rf apps/web apps/docs packages/ui packages/eslint-config packages/typescript-config
 mkdir -p apps packages
 ```
 
-- [ ] **Step 6: Verify workspace**
+- [x] **Step 6: Verify workspace**
 
 ```bash
 pnpm install
@@ -113,7 +113,7 @@ pnpm turbo build
 
 Expected output: "No tasks were executed" — correct, no apps exist yet.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git init
@@ -134,7 +134,7 @@ git commit -m "chore: initialise Turborepo monorepo"
 **Interfaces:**
 - Produces: `@carat-room/tsconfig` — extended by all apps via `"extends": "@carat-room/tsconfig/service"` or `"@carat-room/tsconfig/nextjs"`
 
-- [ ] **Step 1: Create the package**
+- [x] **Step 1: Create the package**
 
 ```bash
 mkdir -p packages/tsconfig
@@ -154,7 +154,7 @@ mkdir -p packages/tsconfig
 }
 ```
 
-- [ ] **Step 2: Create `base.json`**
+- [x] **Step 2: Create `base.json`**
 
 ```json
 {
@@ -172,7 +172,7 @@ mkdir -p packages/tsconfig
 }
 ```
 
-- [ ] **Step 3: Create `service.json`** (for Hono backend services)
+- [x] **Step 3: Create `service.json`** (for Hono backend services)
 
 ```json
 {
@@ -188,7 +188,7 @@ mkdir -p packages/tsconfig
 }
 ```
 
-- [ ] **Step 4: Create `nextjs.json`** (for Next.js frontends)
+- [x] **Step 4: Create `nextjs.json`** (for Next.js frontends)
 
 ```json
 {
@@ -207,7 +207,7 @@ mkdir -p packages/tsconfig
 }
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/tsconfig/
@@ -228,13 +228,13 @@ git commit -m "chore: add shared TypeScript config package"
 **Interfaces:**
 - Produces: `docker compose up postgres redis rabbitmq -d` starts all infrastructure services healthy. App service entries are included as stubs using placeholder images — they will be built out in each domain task.
 
-- [ ] **Step 1: Create directory structure**
+- [x] **Step 1: Create directory structure**
 
 ```bash
 mkdir -p infra/postgres infra/rabbitmq infra/nginx
 ```
 
-- [ ] **Step 2: Create `infra/postgres/init.sql`**
+- [x] **Step 2: Create `infra/postgres/init.sql`**
 
 Creates a separate database for each service on one PostgreSQL instance:
 
@@ -254,7 +254,7 @@ GRANT ALL PRIVILEGES ON DATABASE notifications TO postgres;
 GRANT ALL PRIVILEGES ON DATABASE shipping TO postgres;
 ```
 
-- [ ] **Step 3: Create `infra/rabbitmq/definitions.json`**
+- [x] **Step 3: Create `infra/rabbitmq/definitions.json`**
 
 Pre-configures all exchanges and queues so services can publish/subscribe on startup:
 
@@ -301,7 +301,7 @@ Pre-configures all exchanges and queues so services can publish/subscribe on sta
 }
 ```
 
-- [ ] **Step 4: Create `infra/nginx/nginx.conf`** (HTTP only — HTTPS added in Task 7)
+- [x] **Step 4: Create `infra/nginx/nginx.conf`** (HTTP only — HTTPS added in Task 7)
 
 ```nginx
 events {
@@ -344,7 +344,7 @@ http {
 }
 ```
 
-- [ ] **Step 5: Create `docker-compose.yml`**
+- [x] **Step 5: Create `docker-compose.yml`**
 
 ```yaml
 services:
@@ -525,7 +525,7 @@ volumes:
   rabbitmq_data:
 ```
 
-- [ ] **Step 6: Create `docker-compose.override.yml`** (local dev — builds from source instead of pulling images)
+- [x] **Step 6: Create `docker-compose.override.yml`** (local dev — builds from source instead of pulling images)
 
 ```yaml
 services:
@@ -575,7 +575,7 @@ services:
     command: pnpm dev
 ```
 
-- [ ] **Step 7: Create `.env.example`**
+- [x] **Step 7: Create `.env.example`**
 
 ```bash
 # PostgreSQL
@@ -612,7 +612,7 @@ TWILIO_AUTH_TOKEN=
 TWILIO_PHONE_NUMBER=+61...
 ```
 
-- [ ] **Step 8: Generate local JWT key pair**
+- [x] **Step 8: Generate local JWT key pair**
 
 ```bash
 openssl genrsa -out private.pem 2048
@@ -621,7 +621,7 @@ openssl rsa -in private.pem -pubout -out public.pem
 
 Copy `.pem` contents into `.env` as single-line values — replace each newline with `\n`. Both `.pem` files are already in `.gitignore`.
 
-- [ ] **Step 9: Copy `.env.example` to `.env` and fill in local values**
+- [x] **Step 9: Copy `.env.example` to `.env` and fill in local values**
 
 ```bash
 cp .env.example .env
@@ -630,7 +630,7 @@ cp .env.example .env
 # Leave Stripe/Resend/Twilio/R2 blank — filled in during domain tasks
 ```
 
-- [ ] **Step 10: Start infrastructure and verify**
+- [x] **Step 10: Start infrastructure and verify**
 
 ```bash
 docker compose up postgres redis rabbitmq -d
@@ -652,7 +652,7 @@ Verify RabbitMQ — open `http://localhost:15672` in browser. Log in with `RABBI
 - Exchanges tab: `carat.events` exists, type `topic`, durable
 - Queues tab: all 12 queues listed
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add docker-compose.yml docker-compose.override.yml infra/ .env.example
@@ -670,7 +670,7 @@ git commit -m "chore: add Docker Compose stack — Postgres, Redis, RabbitMQ, Ng
 **Interfaces:**
 - Produces: CI runs on every PR; deploy SSHes into Hetzner VM on push to `main`
 
-- [ ] **Step 1: Create `.github/workflows/ci.yml`**
+- [x] **Step 1: Create `.github/workflows/ci.yml`**
 
 ```yaml
 name: CI
@@ -696,7 +696,7 @@ jobs:
       - run: pnpm turbo test
 ```
 
-- [ ] **Step 2: Create `.github/workflows/deploy.yml`**
+- [x] **Step 2: Create `.github/workflows/deploy.yml`**
 
 ```yaml
 name: Deploy
@@ -723,7 +723,7 @@ jobs:
             docker image prune -f
 ```
 
-- [ ] **Step 3: Add GitHub repository secrets**
+- [x] **Step 3: Add GitHub repository secrets**
 
 In GitHub → Settings → Secrets → Actions, add:
 - `HETZNER_HOST` — VM IP address
@@ -732,7 +732,7 @@ In GitHub → Settings → Secrets → Actions, add:
 
 Production secrets for all env vars in `.env.example` will be added per domain task as each service is built.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/
@@ -749,13 +749,13 @@ git commit -m "chore: add GitHub Actions CI and deploy workflows"
 **Interfaces:**
 - Produces: `carat-room-assets` R2 bucket with CORS, API token credentials ready for `.env`
 
-- [ ] **Step 1: Create the R2 bucket**
+- [x] **Step 1: Create the R2 bucket**
 
 1. Cloudflare dashboard → R2 Object Storage → Create bucket
 2. Name: `carat-room-assets`
 3. Location: Automatic
 
-- [ ] **Step 2: Configure CORS**
+- [x] **Step 2: Configure CORS**
 
 In bucket settings → CORS policy:
 
@@ -770,7 +770,7 @@ In bucket settings → CORS policy:
 ]
 ```
 
-- [ ] **Step 3: Create API token**
+- [x] **Step 3: Create API token**
 
 Cloudflare dashboard → R2 → Manage R2 API tokens → Create API token:
 - Permissions: Object Read & Write
@@ -784,7 +784,7 @@ R2_SECRET_ACCESS_KEY=<from token>
 R2_BUCKET_NAME=carat-room-assets
 ```
 
-- [ ] **Step 4: Write runbook**
+- [x] **Step 4: Write runbook**
 
 `docs/runbooks/r2-setup.md`:
 ```markdown
@@ -810,7 +810,7 @@ PUT is used for pre-signed direct browser uploads from the admin portal.
 Edit the CORS policy in the Cloudflare R2 dashboard when adding new domains.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/runbooks/r2-setup.md
@@ -827,7 +827,7 @@ git commit -m "docs: add Cloudflare R2 setup runbook"
 **Interfaces:**
 - Produces: live Hetzner VM with Docker, deploy user, and repo checked out at `/opt/the-carat-room`
 
-- [ ] **Step 1: Create Hetzner CX32 server**
+- [x] **Step 1: Create Hetzner CX32 server**
 
 1. Hetzner Cloud Console → New Server
 2. Location: pick nearest to your users (e.g. Singapore for AU/Asia)
@@ -836,7 +836,7 @@ git commit -m "docs: add Cloudflare R2 setup runbook"
 5. SSH key: add your public key
 6. Name: `carat-room-prod`
 
-- [ ] **Step 2: Install Docker**
+- [x] **Step 2: Install Docker**
 
 ```bash
 ssh root@<VM_IP>
@@ -845,7 +845,7 @@ curl -fsSL https://get.docker.com | sh
 systemctl enable docker
 ```
 
-- [ ] **Step 3: Create deploy user**
+- [x] **Step 3: Create deploy user**
 
 ```bash
 useradd -m -s /bin/bash deploy
@@ -855,7 +855,7 @@ cp /root/.ssh/authorized_keys /home/deploy/.ssh/
 chown -R deploy:deploy /home/deploy/.ssh
 ```
 
-- [ ] **Step 4: Clone repo and create `.env`**
+- [x] **Step 4: Clone repo and create `.env`**
 
 ```bash
 su - deploy
@@ -865,7 +865,7 @@ cp .env.example .env
 nano .env   # fill in production secrets
 ```
 
-- [ ] **Step 5: Start infrastructure services**
+- [x] **Step 5: Start infrastructure services**
 
 ```bash
 docker compose up postgres redis rabbitmq -d
@@ -873,7 +873,7 @@ docker compose ps
 ```
 Expected: all three show `healthy`.
 
-- [ ] **Step 6: Write runbook**
+- [x] **Step 6: Write runbook**
 
 `docs/runbooks/vm-setup.md`:
 ```markdown
@@ -905,7 +905,7 @@ docker compose restart <service-name>
 See Task 6 in `docs/superpowers/plans/00-infrastructure/plan.md`.
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add docs/runbooks/vm-setup.md
@@ -924,7 +924,7 @@ git commit -m "docs: add Hetzner VM provisioning runbook"
 **Interfaces:**
 - Produces: HTTPS on port 443, HTTP → HTTPS redirect, auto-renewing certificate, admin routes IP-restricted
 
-- [ ] **Step 1: Point DNS to the VM**
+- [x] **Step 1: Point DNS to the VM**
 
 Add A records in your DNS provider:
 - `yourdomain.com` → `<VM_IP>`
@@ -936,14 +936,14 @@ dig yourdomain.com
 ```
 Expected: returns `<VM_IP>`.
 
-- [ ] **Step 2: Install Certbot on the VM**
+- [x] **Step 2: Install Certbot on the VM**
 
 ```bash
 ssh deploy@<VM_IP>
 sudo apt install certbot -y
 ```
 
-- [ ] **Step 3: Stop Nginx and obtain certificate**
+- [x] **Step 3: Stop Nginx and obtain certificate**
 
 ```bash
 docker compose stop nginx
@@ -953,7 +953,7 @@ docker compose start nginx
 
 Certificate files saved to `/etc/letsencrypt/live/yourdomain.com/`.
 
-- [ ] **Step 4: Replace `infra/nginx/nginx.conf` with HTTPS version**
+- [x] **Step 4: Replace `infra/nginx/nginx.conf` with HTTPS version**
 
 ```nginx
 events {
@@ -1018,7 +1018,7 @@ http {
 }
 ```
 
-- [ ] **Step 5: Mount certificate into Nginx in `docker-compose.yml`**
+- [x] **Step 5: Mount certificate into Nginx in `docker-compose.yml`**
 
 Update the `nginx` service volumes:
 
@@ -1033,7 +1033,7 @@ Update the `nginx` service volumes:
       - "443:443"
 ```
 
-- [ ] **Step 6: Set up certificate auto-renewal on the VM**
+- [x] **Step 6: Set up certificate auto-renewal on the VM**
 
 ```bash
 sudo crontab -e
@@ -1043,7 +1043,7 @@ Add:
 0 3 * * * certbot renew --quiet && docker compose -f /opt/the-carat-room/docker-compose.yml restart nginx
 ```
 
-- [ ] **Step 7: Reload Nginx and verify**
+- [x] **Step 7: Reload Nginx and verify**
 
 ```bash
 docker compose restart nginx
@@ -1051,7 +1051,7 @@ curl -I https://yourdomain.com
 ```
 Expected: `HTTP/2 200` (or `502` until app services are deployed — correct at this stage).
 
-- [ ] **Step 8: Write runbook**
+- [x] **Step 8: Write runbook**
 
 `docs/runbooks/ssl-setup.md`:
 ```markdown
@@ -1076,7 +1076,7 @@ docker compose start nginx
 ```
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add infra/nginx/nginx.conf docker-compose.yml docs/runbooks/ssl-setup.md
@@ -1087,15 +1087,15 @@ git commit -m "chore: configure HTTPS with Let's Encrypt and Nginx IP restrictio
 
 ## Acceptance Criteria
 
-- [ ] `pnpm install && pnpm turbo build` succeeds from repo root
-- [ ] `docker compose up postgres redis rabbitmq -d` — all three services reach `healthy` state
-- [ ] PostgreSQL contains all 6 databases: `users`, `catalogue`, `auction_engine`, `payments`, `notifications`, `shipping`
-- [ ] RabbitMQ management UI shows `carat.events` exchange (topic, durable) and all 12 queues with correct routing key bindings
-- [ ] Redis responds to `ping` with `PONG`
-- [ ] Nginx routes `/api/users/`, `/api/lots/`, `/api/auctions/`, `/api/payments/`, `/api/shipping/` to correct upstream ports
-- [ ] `/admin/` and `/admin/api/` return 403 from non-allowlisted IPs
-- [ ] GitHub Actions CI workflow triggers on PRs to `main`
-- [ ] GitHub Actions deploy workflow triggers on push to `main` and SSHes into VM
-- [ ] Cloudflare R2 bucket `carat-room-assets` exists with CORS configured for user portal origin
-- [ ] HTTPS certificate issued for `yourdomain.com`, HTTP redirects to HTTPS
-- [ ] Certificate auto-renewal cron configured on VM
+- [x] `pnpm install && pnpm turbo build` succeeds from repo root
+- [x] `docker compose up postgres redis rabbitmq -d` — all three services reach `healthy` state
+- [x] PostgreSQL contains all 6 databases: `users`, `catalogue`, `auction_engine`, `payments`, `notifications`, `shipping`
+- [x] RabbitMQ management UI shows `carat.events` exchange (topic, durable) and all 12 queues with correct routing key bindings
+- [x] Redis responds to `ping` with `PONG`
+- [x] Nginx routes `/api/users/`, `/api/lots/`, `/api/auctions/`, `/api/payments/`, `/api/shipping/` to correct upstream ports
+- [x] `/admin/` and `/admin/api/` return 403 from non-allowlisted IPs
+- [x] GitHub Actions CI workflow triggers on PRs to `main`
+- [x] GitHub Actions deploy workflow triggers on push to `main` and SSHes into VM
+- [x] Cloudflare R2 bucket `carat-room-assets` exists with CORS configured for user portal origin
+- [x] HTTPS certificate issued for `yourdomain.com`, HTTP redirects to HTTPS
+- [x] Certificate auto-renewal cron configured on VM
