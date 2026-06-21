@@ -51,6 +51,4 @@ app.use('/api/lots/:id/images/*', authMiddleware(jwtPublicKey));
 
 app.route('/', buildCatalogueRouter(useCases));
 
-serve({ fetch: app.fetch, port: PORT }, () => {
-  console.log(`Catalogue Service running on port ${PORT}`);
-});
+serve({ fetch: app.fetch, port: PORT });
