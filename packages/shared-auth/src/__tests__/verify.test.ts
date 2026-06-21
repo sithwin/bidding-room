@@ -48,6 +48,18 @@ describe('verifyJwt', () => {
     await expect(verifyJwt(token, publicKeyPem)).rejects.toThrow();
   });
 
+  it('should_throwError_when_requiredClaimsAreMissing', async () => {
+    const { privateKey, publicKeyPem } = await buildKeys();
+
+    const token = await new SignJWT({ someOtherField: 'value' })
+      .setProtectedHeader({ alg: 'RS256' })
+      .setIssuedAt()
+      .setExpirationTime('15m')
+      .sign(privateKey);
+
+    await expect(verifyJwt(token, publicKeyPem)).rejects.toThrow('missing required claims');
+  });
+
   it('should_throwError_when_tokenSignatureIsInvalid', async () => {
     const { publicKeyPem } = await buildKeys();
     const { privateKey: otherKey } = await buildKeys();

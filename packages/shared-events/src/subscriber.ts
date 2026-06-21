@@ -1,7 +1,7 @@
 import type { ChannelModel, Channel, ConsumeMessage } from 'amqplib';
 
 export class EventSubscriber {
-  private channel: Channel | null = null;
+  private channelPromise: Promise<Channel> | null = null;
 
   constructor(private readonly connection: ChannelModel) {}
 
@@ -27,14 +27,17 @@ export class EventSubscriber {
   }
 
   async close(): Promise<void> {
-    await this.channel?.close();
-    this.channel = null;
+    if (this.channelPromise) {
+      const ch = await this.channelPromise;
+      await ch.close();
+      this.channelPromise = null;
+    }
   }
 
-  private async getChannel(): Promise<Channel> {
-    if (!this.channel) {
-      this.channel = await this.connection.createChannel();
+  private getChannel(): Promise<Channel> {
+    if (!this.channelPromise) {
+      this.channelPromise = this.connection.createChannel();
     }
-    return this.channel;
+    return this.channelPromise;
   }
 }

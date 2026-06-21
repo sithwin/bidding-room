@@ -45,7 +45,7 @@ describe('authMiddleware', () => {
     expect(body.userId).toBe('user-123');
   });
 
-  it('should_return401_when_authorizationHeaderIsMissing', async () => {
+  it('should_return401_when_authorisationHeaderIsMissing', async () => {
     const { publicKeyPem } = await buildKeys();
 
     const app = new Hono();

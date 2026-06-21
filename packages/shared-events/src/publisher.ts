@@ -4,29 +4,37 @@ import type { RoutingKey } from '@carat-room/shared-types';
 const EXCHANGE = 'carat.events';
 
 export class EventPublisher {
-  private channel: Channel | null = null;
+  private channelPromise: Promise<Channel> | null = null;
 
   constructor(private readonly connection: ChannelModel) {}
 
   async publish<T>(routingKey: RoutingKey, payload: T): Promise<void> {
     const channel = await this.getChannel();
     const buffer = Buffer.from(JSON.stringify(payload));
-    channel.publish(EXCHANGE, routingKey, buffer, {
+    const ok = channel.publish(EXCHANGE, routingKey, buffer, {
       persistent: true,
       contentType: 'application/json',
     });
+    if (!ok) {
+      throw new Error(`[EventPublisher] Channel rejected publish to "${EXCHANGE}" with routing key "${routingKey}" — backpressure`);
+    }
   }
 
   async close(): Promise<void> {
-    await this.channel?.close();
-    this.channel = null;
+    if (this.channelPromise) {
+      const ch = await this.channelPromise;
+      await ch.close();
+      this.channelPromise = null;
+    }
   }
 
-  private async getChannel(): Promise<Channel> {
-    if (!this.channel) {
-      this.channel = await this.connection.createChannel();
-      await this.channel.assertExchange(EXCHANGE, 'topic', { durable: true });
+  private getChannel(): Promise<Channel> {
+    if (!this.channelPromise) {
+      this.channelPromise = this.connection.createChannel().then(async (ch) => {
+        await ch.assertExchange(EXCHANGE, 'topic', { durable: true });
+        return ch;
+      });
     }
-    return this.channel;
+    return this.channelPromise;
   }
 }

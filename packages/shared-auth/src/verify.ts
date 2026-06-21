@@ -12,10 +12,24 @@ export async function verifyJwt(token: string, publicKeyPem: string): Promise<Jw
   const publicKey = await importSPKI(publicKeyPem, 'RS256');
   const { payload } = await jwtVerify(token, publicKey, { algorithms: ['RS256'] });
 
+  const userId = payload['userId'];
+  const email = payload['email'];
+  const verificationStatus = payload['verificationStatus'];
+  const role = payload['role'];
+
+  if (
+    typeof userId !== 'string' ||
+    typeof email !== 'string' ||
+    typeof verificationStatus !== 'string' ||
+    typeof role !== 'string'
+  ) {
+    throw new TypeError('JWT payload is missing required claims');
+  }
+
   return {
-    userId: payload['userId'] as string,
-    email: payload['email'] as string,
-    verificationStatus: payload['verificationStatus'] as UserStatus,
-    role: payload['role'] as UserRole,
+    userId,
+    email,
+    verificationStatus: verificationStatus as UserStatus,
+    role: role as UserRole,
   };
 }

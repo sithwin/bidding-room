@@ -16,11 +16,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "amqplib": "^0.10.4"
+    "amqplib": "^0.10.4",
+    "@carat-room/shared-types": "workspace:*"
   },
   "devDependencies": {
     "@carat-room/tsconfig": "workspace:*",
-    "@carat-room/shared-types": "workspace:*",
     "@types/amqplib": "^0.10.5",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

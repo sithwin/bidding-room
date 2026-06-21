@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EventSubscriber } from '../subscriber.js';
-import type { Channel, Connection, ConsumeMessage } from 'amqplib';
+import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 
 const mockChannel = {
   assertQueue: vi.fn().mockResolvedValue(undefined),
@@ -13,7 +13,7 @@ const mockChannel = {
 
 const mockConnection = {
   createChannel: vi.fn().mockResolvedValue(mockChannel),
-} as unknown as Connection;
+} as unknown as ChannelModel;
 
 describe('EventSubscriber', () => {
   beforeEach(() => {
@@ -74,5 +74,13 @@ describe('EventSubscriber', () => {
     await capturedConsumer!(fakeMsg);
 
     expect(mockChannel.nack).toHaveBeenCalledWith(fakeMsg, false, false);
+  });
+
+  it('should_closeChannel_when_closeIsCalled', async () => {
+    const subscriber = new EventSubscriber(mockConnection);
+    await subscriber.subscribe('test.queue', vi.fn().mockResolvedValue(undefined));
+    await subscriber.close();
+
+    expect(mockChannel.close).toHaveBeenCalled();
   });
 });
