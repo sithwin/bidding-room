@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserRole } from '../domain/user';
 import { UserRepository } from '../domain/user-repository';
-import { TokenRepository } from '../infrastructure/db/postgres-token-repository';
+import { TokenRepository } from '../domain/token-repository';
 import { PasswordService } from './password-service';
 import { EventPublisher } from '@carat-room/shared-events';
 import { ROUTING_KEYS, UserRegisteredPayload } from '@carat-room/shared-types';

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { UserRepository } from '../domain/user-repository';
-import { TokenRepository } from '../infrastructure/db/postgres-token-repository';
+import { TokenRepository } from '../domain/token-repository';
 import { TokenService } from './token-service';
 
 interface RefreshDto {

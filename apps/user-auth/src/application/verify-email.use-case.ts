@@ -1,5 +1,5 @@
 import { UserRepository } from '../domain/user-repository';
-import { TokenRepository } from '../infrastructure/db/postgres-token-repository';
+import { TokenRepository } from '../domain/token-repository';
 
 interface VerifyEmailDto {
   userId: string;

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { RegisterUseCase } from './register.use-case';
 import { VerifyEmailUseCase } from './verify-email.use-case';
 import { LoginUseCase } from './login.use-case';
@@ -6,7 +6,7 @@ import { RequestPhoneOtpUseCase } from './request-phone-otp.use-case';
 import { VerifyPhoneOtpUseCase } from './verify-phone-otp.use-case';
 import { User, UserRole, UserStatus } from '../domain/user';
 import { UserRepository } from '../domain/user-repository';
-import { TokenRepository } from '../infrastructure/db/postgres-token-repository';
+import { TokenRepository } from '../domain/token-repository';
 import { PasswordService } from './password-service';
 import { TokenService } from './token-service';
 import { OtpService } from './otp-service';
