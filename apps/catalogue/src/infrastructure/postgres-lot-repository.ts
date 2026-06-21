@@ -138,14 +138,12 @@ export class PostgresLotRepository implements LotRepository {
         updated_at = EXCLUDED.updated_at
     `;
 
-    if (lot.images.length > 0) {
-      await this.db`DELETE FROM lot_images WHERE lot_id = ${lot.id}`;
-      for (const img of lot.images) {
-        await this.db`
-          INSERT INTO lot_images (id, lot_id, url, thumbnail_url, display_order, is_primary)
-          VALUES (${img.id}, ${img.lotId}, ${img.url}, ${img.thumbnailUrl}, ${img.displayOrder}, ${img.isPrimary})
-        `;
-      }
+    await this.db`DELETE FROM lot_images WHERE lot_id = ${lot.id}`;
+    for (const img of lot.images) {
+      await this.db`
+        INSERT INTO lot_images (id, lot_id, url, thumbnail_url, display_order, is_primary)
+        VALUES (${img.id}, ${img.lotId}, ${img.url}, ${img.thumbnailUrl}, ${img.displayOrder}, ${img.isPrimary})
+      `;
     }
   }
 }
