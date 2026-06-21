@@ -64,9 +64,7 @@ async function main(): Promise<void> {
     updateMe:        new UpdateMeUseCase(userRepo),
   }));
 
-  serve({ fetch: app.fetch, port }, () => {
-    console.log(`User auth service listening on port ${port}`);
-  });
+  serve({ fetch: app.fetch, port });
 }
 
 main().catch((err) => {
