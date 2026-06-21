@@ -4,7 +4,7 @@ import { PostgresSearchRepository } from './postgres-search-repository';
 import { PostgresLotRepository } from './postgres-lot-repository';
 import { Lot, LotCondition } from '../domain/lot';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/catalogue_test';
+const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/catalogue_test';
 
 describe('PostgresSearchRepository', () => {
   let db: Db;

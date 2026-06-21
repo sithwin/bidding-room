@@ -3,7 +3,7 @@ import { createDb, Db } from './db';
 import { PostgresLotRepository } from './postgres-lot-repository';
 import { Lot, LotCondition, LotImage } from '../domain/lot';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/catalogue_test';
+const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/catalogue_test';
 
 describe('PostgresLotRepository', () => {
   let db: Db;

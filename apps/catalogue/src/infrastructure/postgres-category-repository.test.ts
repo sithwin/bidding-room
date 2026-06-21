@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createDb, Db } from './db';
 import { PostgresCategoryRepository } from './postgres-category-repository';
 
-const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://localhost/catalogue_test';
+const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/catalogue_test';
 
 describe('PostgresCategoryRepository', () => {
   let db: Db;
