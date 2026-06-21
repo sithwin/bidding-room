@@ -1,5 +1,5 @@
 {
-  "extends": "@carat-room/tsconfig/service.json",
+  "extends": "@carat-room/tsconfig/service",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"
