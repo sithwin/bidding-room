@@ -157,6 +157,7 @@ SSE (Server-Sent Events) for bid and timer updates on the lot detail page. Bids 
 - **No `_` prefix** on private fields — use TypeScript `private` keyword
 - **No `Manager`, `Helper`, `Utils`** class names
 - Boolean variables must use `is`, `has`, `can`, `should`, `was`, or `will` prefix
+- **Test file co-location** — test files live in the same folder as the source file they test, named `<filename>.test.ts` (e.g. `user.service.ts` → `user.service.test.ts`). No separate `__tests__` directories.
 
 ---
 
