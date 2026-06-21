@@ -56,4 +56,15 @@ describe('runWithContext / getContext / getLogger', () => {
     expect(outerSeen).toEqual(['outer-req', 'outer-req']);
     expect(innerSeen).toEqual(['inner-req']);
   });
+
+  it('should_preserveContext_when_awaitIsUsed', async () => {
+    const ctx = buildContext();
+
+    const result = await runWithContext(ctx, async () => {
+      await Promise.resolve();
+      return getContext();
+    });
+
+    expect(result).toBe(ctx);
+  });
 });

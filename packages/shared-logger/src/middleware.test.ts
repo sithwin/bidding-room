@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Hono } from 'hono';
 import { createLogger } from './logger.js';
 import { requestContextMiddleware } from './middleware.js';
@@ -23,10 +23,9 @@ describe('requestContextMiddleware', () => {
 
     await app.request('/test');
 
-    expect(typeof requestId).toBe('string');
-    expect(requestId!.length).toBeGreaterThan(0);
-    expect(typeof correlationId).toBe('string');
-    expect(correlationId!.length).toBeGreaterThan(0);
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    expect(requestId).toMatch(uuidRegex);
+    expect(correlationId).toMatch(uuidRegex);
   });
 
   it('should_useProvidedCorrelationId_when_headerIsPresent', async () => {
@@ -69,5 +68,39 @@ describe('requestContextMiddleware', () => {
     expect(bindings).toBeDefined();
     expect(typeof bindings!['requestId']).toBe('string');
     expect(typeof bindings!['correlationId']).toBe('string');
+  });
+
+  it('should_completeRequest_when_handlerThrows', async () => {
+    const rootLogger = createLogger({ service: 'test' });
+    const completionCalls: unknown[] = [];
+
+    const originalChild = rootLogger.child.bind(rootLogger);
+    vi.spyOn(rootLogger, 'child').mockImplementation((...args) => {
+      const child = originalChild(...args);
+      const originalInfo = child.info.bind(child);
+      vi.spyOn(child, 'info').mockImplementation((...infoArgs) => {
+        const [obj] = infoArgs as [unknown, ...unknown[]];
+        if (
+          typeof obj === 'object' &&
+          obj !== null &&
+          'logEvent' in obj &&
+          (obj as Record<string, unknown>)['logEvent'] === 'REQUEST_COMPLETED'
+        ) {
+          completionCalls.push(obj);
+        }
+        return originalInfo(...(infoArgs as Parameters<typeof originalInfo>));
+      });
+      return child;
+    });
+
+    const errorApp = new Hono();
+    errorApp.use(requestContextMiddleware(rootLogger));
+    errorApp.get('/error', () => {
+      throw new Error('handler error');
+    });
+
+    await errorApp.request('/error').catch(() => {});
+
+    expect(completionCalls.length).toBeGreaterThan(0);
   });
 });

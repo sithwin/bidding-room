@@ -10,10 +10,18 @@ export function requestContextMiddleware(rootLogger: Logger): MiddlewareHandler 
 
     const logger = rootLogger.child({ requestId, correlationId });
 
-    logger.info({ method: c.req.method, path: c.req.path }, 'request received');
+    logger.info(
+      { logEvent: 'REQUEST_RECEIVED', payload: { method: c.req.method, routePath: c.req.routePath } },
+      'Request received',
+    );
 
-    await runWithContext({ requestId, correlationId, logger }, () => next());
-
-    logger.info({ status: c.res.status }, 'request completed');
+    try {
+      await runWithContext({ requestId, correlationId, logger }, () => next());
+    } finally {
+      logger.info(
+        { logEvent: 'REQUEST_COMPLETED', payload: { status: c.res.status } },
+        'Request completed',
+      );
+    }
   };
 }
