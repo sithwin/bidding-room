@@ -17,7 +17,7 @@
 - Named exports only — no `export default`
 - Single quotes for all string literals
 - `const`/`let` only — no `var`
-- Port: 3001
+- Port: 3002
 - Service name in monorepo: `apps/catalogue`
 - Database name: `catalogue`
 - Images stored in Cloudflare R2; service only stores URLs, never binary data
