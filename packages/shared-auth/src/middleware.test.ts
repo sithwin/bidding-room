@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Hono } from 'hono';
 import { SignJWT, generateKeyPair, exportSPKI } from 'jose';
-import { authMiddleware } from '../middleware.js';
-import type { JwtPayload } from '../verify.js';
+import { authMiddleware } from './middleware.js';
+import type { JwtPayload } from './verify.js';
 
 async function buildKeys() {
   const { privateKey, publicKey } = await generateKeyPair('RS256');

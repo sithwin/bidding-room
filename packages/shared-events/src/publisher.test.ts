@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EventPublisher } from '../publisher.js';
+import { EventPublisher } from './publisher.js';
 import type { Channel, ChannelModel } from 'amqplib';
 
 const mockChannel = {

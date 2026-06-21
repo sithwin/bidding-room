@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SignJWT, generateKeyPair, exportSPKI } from 'jose';
-import { verifyJwt } from '../verify.js';
+import { verifyJwt } from './verify.js';
 
 async function buildKeys() {
   const { privateKey, publicKey } = await generateKeyPair('RS256');

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EventSubscriber } from '../subscriber.js';
+import { EventSubscriber } from './subscriber.js';
 import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 
 const mockChannel = {
