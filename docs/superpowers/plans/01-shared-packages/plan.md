@@ -1,6 +1,6 @@
 # Shared Packages Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build three shared packages — `shared-types`, `shared-events`, and `shared-auth` — that every domain service imports before it can be built.
 
@@ -96,7 +96,7 @@ packages/
   - `Fulfilment`, `FulfilmentMethod`, `FulfilmentStatus`, `ShippingAddress`, `CollectionSlot` from `@carat-room/shared-types`
   - All event payload types and `ROUTING_KEYS` const, `RoutingKey` type from `@carat-room/shared-types`
 
-- [ ] **Step 1: Create package scaffold**
+- [x] **Step 1: Create package scaffold**
 
 ```bash
 mkdir -p packages/shared-types/src/domain packages/shared-types/src/events
@@ -139,7 +139,7 @@ mkdir -p packages/shared-types/src/domain packages/shared-types/src/events
 }
 ```
 
-- [ ] **Step 2: Create `src/domain/user.ts`**
+- [x] **Step 2: Create `src/domain/user.ts`**
 
 ```typescript
 export type UserStatus =
@@ -162,7 +162,7 @@ export interface User {
 }
 ```
 
-- [ ] **Step 3: Create `src/domain/lot.ts`**
+- [x] **Step 3: Create `src/domain/lot.ts`**
 
 ```typescript
 export type LotCondition = 'NEW' | 'EXCELLENT' | 'VERY_GOOD' | 'GOOD';
@@ -188,7 +188,7 @@ export interface Lot {
 }
 ```
 
-- [ ] **Step 4: Create `src/domain/auction.ts`**
+- [x] **Step 4: Create `src/domain/auction.ts`**
 
 ```typescript
 export type LotAuctionStatus =
@@ -219,7 +219,7 @@ export interface LotStatus {
 }
 ```
 
-- [ ] **Step 5: Create `src/domain/payment.ts`**
+- [x] **Step 5: Create `src/domain/payment.ts`**
 
 ```typescript
 export type InvoiceStatus =
@@ -243,7 +243,7 @@ export interface Invoice {
 }
 ```
 
-- [ ] **Step 6: Create `src/domain/shipping.ts`**
+- [x] **Step 6: Create `src/domain/shipping.ts`**
 
 ```typescript
 export type FulfilmentMethod = 'SHIP' | 'COLLECT';
@@ -285,7 +285,7 @@ export interface Fulfilment {
 }
 ```
 
-- [ ] **Step 7: Create `src/events/user-events.ts`**
+- [x] **Step 7: Create `src/events/user-events.ts`**
 
 ```typescript
 export interface UserRegisteredPayload {
@@ -301,7 +301,7 @@ export interface PhoneVerificationRequestedPayload {
 }
 ```
 
-- [ ] **Step 8: Create `src/events/auction-events.ts`**
+- [x] **Step 8: Create `src/events/auction-events.ts`**
 
 ```typescript
 export interface BidPlacedPayload {
@@ -329,7 +329,7 @@ export interface AuctionClosedPayload {
 }
 ```
 
-- [ ] **Step 9: Create `src/events/payment-events.ts`**
+- [x] **Step 9: Create `src/events/payment-events.ts`**
 
 ```typescript
 export interface InvoiceCreatedPayload {
@@ -358,7 +358,7 @@ export interface InvoiceExpiredPayload {
 }
 ```
 
-- [ ] **Step 10: Create `src/events/shipping-events.ts`**
+- [x] **Step 10: Create `src/events/shipping-events.ts`**
 
 ```typescript
 export interface ItemDispatchedPayload {
@@ -378,7 +378,7 @@ export interface ItemCollectedPayload {
 }
 ```
 
-- [ ] **Step 11: Create `src/events/index.ts`**
+- [x] **Step 11: Create `src/events/index.ts`**
 
 ```typescript
 export type { UserRegisteredPayload, PhoneVerificationRequestedPayload } from './user-events.js';
@@ -402,7 +402,7 @@ export const ROUTING_KEYS = {
 export type RoutingKey = typeof ROUTING_KEYS[keyof typeof ROUTING_KEYS];
 ```
 
-- [ ] **Step 12: Create `src/index.ts`**
+- [x] **Step 12: Create `src/index.ts`**
 
 ```typescript
 export type { User, UserStatus, UserRole } from './domain/user.js';
@@ -432,7 +432,7 @@ export { ROUTING_KEYS } from './events/index.js';
 export type { RoutingKey } from './events/index.js';
 ```
 
-- [ ] **Step 13: Build and verify**
+- [x] **Step 13: Build and verify**
 
 ```bash
 pnpm --filter @carat-room/shared-types build
@@ -440,7 +440,7 @@ pnpm --filter @carat-room/shared-types build
 
 Expected: `dist/` created, zero TypeScript errors.
 
-- [ ] **Step 14: Commit**
+- [x] **Step 14: Commit**
 
 ```bash
 git add packages/shared-types/
@@ -468,7 +468,7 @@ git commit -m "feat: add shared-types package — domain types and event payload
   - `EventPublisher` class: `publish<T>(routingKey: RoutingKey, payload: T): Promise<void>`, `close(): Promise<void>`
   - `EventSubscriber` class: `subscribe<T>(queue: string, handler: (payload: T) => Promise<void>): Promise<void>`, `close(): Promise<void>`
 
-- [ ] **Step 1: Create package scaffold**
+- [x] **Step 1: Create package scaffold**
 
 ```bash
 mkdir -p packages/shared-events/src/__tests__
@@ -518,7 +518,7 @@ mkdir -p packages/shared-events/src/__tests__
 }
 ```
 
-- [ ] **Step 2: Write failing test for `EventPublisher`**
+- [x] **Step 2: Write failing test for `EventPublisher`**
 
 `packages/shared-events/src/__tests__/publisher.test.ts`:
 ```typescript
@@ -569,7 +569,7 @@ describe('EventPublisher', () => {
 });
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 ```bash
 pnpm --filter @carat-room/shared-events test
@@ -577,7 +577,7 @@ pnpm --filter @carat-room/shared-events test
 
 Expected: FAIL — `publisher.ts` does not exist yet.
 
-- [ ] **Step 4: Create `src/connection.ts`**
+- [x] **Step 4: Create `src/connection.ts`**
 
 ```typescript
 import amqplib from 'amqplib';
@@ -592,7 +592,7 @@ export async function createAmqpConnection(url: string): Promise<Connection> {
 }
 ```
 
-- [ ] **Step 5: Create `src/publisher.ts`**
+- [x] **Step 5: Create `src/publisher.ts`**
 
 ```typescript
 import type { Connection, Channel } from 'amqplib';
@@ -629,7 +629,7 @@ export class EventPublisher {
 }
 ```
 
-- [ ] **Step 6: Run publisher tests — verify they pass**
+- [x] **Step 6: Run publisher tests — verify they pass**
 
 ```bash
 pnpm --filter @carat-room/shared-events test
@@ -637,7 +637,7 @@ pnpm --filter @carat-room/shared-events test
 
 Expected: 2 tests pass.
 
-- [ ] **Step 7: Write failing test for `EventSubscriber`**
+- [x] **Step 7: Write failing test for `EventSubscriber`**
 
 `packages/shared-events/src/__tests__/subscriber.test.ts`:
 ```typescript
@@ -721,7 +721,7 @@ describe('EventSubscriber', () => {
 });
 ```
 
-- [ ] **Step 8: Run test to verify it fails**
+- [x] **Step 8: Run test to verify it fails**
 
 ```bash
 pnpm --filter @carat-room/shared-events test
@@ -729,7 +729,7 @@ pnpm --filter @carat-room/shared-events test
 
 Expected: subscriber tests FAIL — `subscriber.ts` does not exist. Publisher tests still pass.
 
-- [ ] **Step 9: Create `src/subscriber.ts`**
+- [x] **Step 9: Create `src/subscriber.ts`**
 
 ```typescript
 import type { Connection, Channel, ConsumeMessage } from 'amqplib';
@@ -774,7 +774,7 @@ export class EventSubscriber {
 }
 ```
 
-- [ ] **Step 10: Create `src/index.ts`**
+- [x] **Step 10: Create `src/index.ts`**
 
 ```typescript
 export { createAmqpConnection } from './connection.js';
@@ -782,7 +782,7 @@ export { EventPublisher } from './publisher.js';
 export { EventSubscriber } from './subscriber.js';
 ```
 
-- [ ] **Step 11: Run all tests — verify they pass**
+- [x] **Step 11: Run all tests — verify they pass**
 
 ```bash
 pnpm --filter @carat-room/shared-events test
@@ -790,7 +790,7 @@ pnpm --filter @carat-room/shared-events test
 
 Expected: 5 tests pass.
 
-- [ ] **Step 12: Build**
+- [x] **Step 12: Build**
 
 ```bash
 pnpm --filter @carat-room/shared-events build
@@ -798,7 +798,7 @@ pnpm --filter @carat-room/shared-events build
 
 Expected: `dist/` created, no TypeScript errors.
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 git add packages/shared-events/
@@ -825,7 +825,7 @@ git commit -m "feat: add shared-events package — typed RabbitMQ publisher and 
   - `verifyJwt(token: string, publicKeyPem: string): Promise<JwtPayload>` from `@carat-room/shared-auth`
   - `authMiddleware(publicKey: string, options?: { adminOnly?: boolean }): MiddlewareHandler` — attaches payload to `c.get('jwtPayload')`, returns 401 if missing/invalid, 403 if `adminOnly` and role is not `ADMIN`
 
-- [ ] **Step 1: Create package scaffold**
+- [x] **Step 1: Create package scaffold**
 
 ```bash
 mkdir -p packages/shared-auth/src/__tests__
@@ -875,7 +875,7 @@ mkdir -p packages/shared-auth/src/__tests__
 }
 ```
 
-- [ ] **Step 2: Write failing test for `verifyJwt`**
+- [x] **Step 2: Write failing test for `verifyJwt`**
 
 `packages/shared-auth/src/__tests__/verify.test.ts`:
 ```typescript
@@ -949,7 +949,7 @@ describe('verifyJwt', () => {
 });
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 ```bash
 pnpm --filter @carat-room/shared-auth test
@@ -957,7 +957,7 @@ pnpm --filter @carat-room/shared-auth test
 
 Expected: FAIL — `verify.ts` does not exist yet.
 
-- [ ] **Step 4: Create `src/verify.ts`**
+- [x] **Step 4: Create `src/verify.ts`**
 
 ```typescript
 import { importSPKI, jwtVerify } from 'jose';
@@ -983,7 +983,7 @@ export async function verifyJwt(token: string, publicKeyPem: string): Promise<Jw
 }
 ```
 
-- [ ] **Step 5: Run verify tests — verify they pass**
+- [x] **Step 5: Run verify tests — verify they pass**
 
 ```bash
 pnpm --filter @carat-room/shared-auth test
@@ -991,7 +991,7 @@ pnpm --filter @carat-room/shared-auth test
 
 Expected: 3 tests pass.
 
-- [ ] **Step 6: Write failing test for `authMiddleware`**
+- [x] **Step 6: Write failing test for `authMiddleware`**
 
 `packages/shared-auth/src/__tests__/middleware.test.ts`:
 ```typescript
@@ -1082,7 +1082,7 @@ describe('authMiddleware', () => {
 });
 ```
 
-- [ ] **Step 7: Run test to verify it fails**
+- [x] **Step 7: Run test to verify it fails**
 
 ```bash
 pnpm --filter @carat-room/shared-auth test
@@ -1090,7 +1090,7 @@ pnpm --filter @carat-room/shared-auth test
 
 Expected: middleware tests FAIL — `middleware.ts` does not exist. Verify tests still pass.
 
-- [ ] **Step 8: Create `src/middleware.ts`**
+- [x] **Step 8: Create `src/middleware.ts`**
 
 ```typescript
 import type { MiddlewareHandler } from 'hono';
@@ -1136,7 +1136,7 @@ export function authMiddleware(publicKey: string, options: AuthOptions = {}): Mi
 }
 ```
 
-- [ ] **Step 9: Create `src/index.ts`**
+- [x] **Step 9: Create `src/index.ts`**
 
 ```typescript
 export { verifyJwt } from './verify.js';
@@ -1144,7 +1144,7 @@ export type { JwtPayload } from './verify.js';
 export { authMiddleware } from './middleware.js';
 ```
 
-- [ ] **Step 10: Run all tests — verify they pass**
+- [x] **Step 10: Run all tests — verify they pass**
 
 ```bash
 pnpm --filter @carat-room/shared-auth test
@@ -1152,7 +1152,7 @@ pnpm --filter @carat-room/shared-auth test
 
 Expected: 7 tests pass.
 
-- [ ] **Step 11: Build**
+- [x] **Step 11: Build**
 
 ```bash
 pnpm --filter @carat-room/shared-auth build
@@ -1160,7 +1160,7 @@ pnpm --filter @carat-room/shared-auth build
 
 Expected: `dist/` created, no TypeScript errors.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add packages/shared-auth/
@@ -1177,7 +1177,7 @@ git commit -m "feat: add shared-auth package — JWT verification and Hono middl
 **Interfaces:**
 - Produces: `pnpm turbo build` and `pnpm turbo test` run across all three packages from the repo root
 
-- [ ] **Step 1: Ensure `pnpm-workspace.yaml` includes both directories**
+- [x] **Step 1: Ensure `pnpm-workspace.yaml` includes both directories**
 
 `pnpm-workspace.yaml`:
 ```yaml
@@ -1186,7 +1186,7 @@ packages:
   - 'packages/*'
 ```
 
-- [ ] **Step 2: Install all dependencies from root**
+- [x] **Step 2: Install all dependencies from root**
 
 ```bash
 pnpm install
@@ -1194,7 +1194,7 @@ pnpm install
 
 Expected: resolves `@carat-room/tsconfig`, `@carat-room/shared-types` as workspace dependencies with no errors.
 
-- [ ] **Step 3: Build all packages from root**
+- [x] **Step 3: Build all packages from root**
 
 ```bash
 pnpm turbo build
@@ -1202,7 +1202,7 @@ pnpm turbo build
 
 Expected: builds in order — `tsconfig` → `shared-types` → (`shared-events` and `shared-auth` in parallel). Zero errors.
 
-- [ ] **Step 4: Run all tests from root**
+- [x] **Step 4: Run all tests from root**
 
 ```bash
 pnpm turbo test
@@ -1210,7 +1210,7 @@ pnpm turbo test
 
 Expected: `shared-events` — 5 tests pass. `shared-auth` — 7 tests pass. `shared-types` — no tests (types-only package, correct).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add pnpm-workspace.yaml
@@ -1221,11 +1221,11 @@ git commit -m "chore: verify all shared packages build and test cleanly via Turb
 
 ## Acceptance Criteria
 
-- [ ] `pnpm turbo build` builds all three packages without errors in correct dependency order
-- [ ] `pnpm turbo test` — 12 tests total: 5 in `shared-events`, 7 in `shared-auth`
-- [ ] `@carat-room/shared-types` exports all domain types: `User`, `Lot`, `LotAuctionStatus`, `Bid`, `LotStatus`, `Invoice`, `Fulfilment`, `ShippingAddress`, `CollectionSlot`, and all event payload types
-- [ ] `ROUTING_KEYS` const values match the 10 routing keys in `infra/rabbitmq/definitions.json` exactly
-- [ ] `EventPublisher.publish` serialises payload as JSON and publishes to `carat.events` exchange with `persistent: true`
-- [ ] `EventSubscriber.subscribe` parses JSON payload, acks message on success, nacks (no requeue) on handler error
-- [ ] `verifyJwt` throws on expired token and on token signed with a different private key
-- [ ] `authMiddleware` returns 401 for missing `Authorization` header, 401 for invalid token, 403 for non-admin on `adminOnly: true` route, attaches `JwtPayload` to `c.get('jwtPayload')` on success
+- [x] `pnpm turbo build` builds all three packages without errors in correct dependency order
+- [x] `pnpm turbo test` — 12 tests total: 5 in `shared-events`, 7 in `shared-auth`
+- [x] `@carat-room/shared-types` exports all domain types: `User`, `Lot`, `LotAuctionStatus`, `Bid`, `LotStatus`, `Invoice`, `Fulfilment`, `ShippingAddress`, `CollectionSlot`, and all event payload types
+- [x] `ROUTING_KEYS` const values match the 10 routing keys in `infra/rabbitmq/definitions.json` exactly
+- [x] `EventPublisher.publish` serialises payload as JSON and publishes to `carat.events` exchange with `persistent: true`
+- [x] `EventSubscriber.subscribe` parses JSON payload, acks message on success, nacks (no requeue) on handler error
+- [x] `verifyJwt` throws on expired token and on token signed with a different private key
+- [x] `authMiddleware` returns 401 for missing `Authorization` header, 401 for invalid token, 403 for non-admin on `adminOnly: true` route, attaches `JwtPayload` to `c.get('jwtPayload')` on success
