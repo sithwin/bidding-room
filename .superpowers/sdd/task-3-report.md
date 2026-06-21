@@ -42,7 +42,7 @@ Command: `node_modules/.pnpm/node_modules/.bin/vitest run apps/user-auth/src/inf
 Result: **5/5 passing** (4 pre-existing + 1 new `countRecentPhoneAttempts` test)
 
 ### Commit
-_See commit hash below._
+`64c2f0d`
 
 ---
 
