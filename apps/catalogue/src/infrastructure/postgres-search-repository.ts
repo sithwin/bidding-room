@@ -20,7 +20,7 @@ export class PostgresSearchRepository implements SearchRepository {
     offset: number,
   ): Promise<{ items: LotSearchResult[]; total: number }> {
     const conditions: string[] = [`l.search_vector @@ plainto_tsquery('english', $1)`];
-    const values: unknown[] = [query];
+    const values: (string | number | null)[] = [query];
     let paramIndex = 2;
 
     if (filters.categoryId) {

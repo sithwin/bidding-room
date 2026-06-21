@@ -75,7 +75,7 @@ export class PostgresLotRepository implements LotRepository {
 
   async findAll(filters: LotFilters, limit: number, offset: number): Promise<PaginatedResult<Lot>> {
     const conditions: string[] = [];
-    const values: unknown[] = [];
+    const values: (string | number | null)[] = [];
     let paramIndex = 1;
 
     if (filters.categoryId) {
