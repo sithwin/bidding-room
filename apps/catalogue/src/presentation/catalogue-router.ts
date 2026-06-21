@@ -7,6 +7,7 @@ import { ListCategoriesUseCase } from '../application/list-categories-use-case';
 import { RequestImageUploadUseCase } from '../application/request-image-upload-use-case';
 import { ConfirmImageUploadUseCase } from '../application/confirm-image-upload-use-case';
 import { LotCondition } from '../domain/lot';
+import { LotNotFoundError } from '../domain/errors';
 
 interface UseCases {
   getLot: Pick<GetLotUseCase, 'execute'>;
@@ -95,7 +96,14 @@ export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
     if (!body.imageKey) {
       return c.json({ error: { code: 'VALIDATION_ERROR', message: 'imageKey is required' } }, 400);
     }
-    await useCases.confirmImageUpload.execute(c.req.param('id'), body.imageKey, body.isPrimary ?? false);
+    try {
+      await useCases.confirmImageUpload.execute(c.req.param('id'), body.imageKey, body.isPrimary ?? false);
+    } catch (err) {
+      if (err instanceof LotNotFoundError) {
+        return c.json({ error: { code: 'NOT_FOUND', message: 'Lot not found' } }, 404);
+      }
+      throw err;
+    }
     return c.json({ data: null });
   });
 

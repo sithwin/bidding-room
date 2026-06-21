@@ -111,13 +111,25 @@ export class PostgresLotRepository implements LotRepository {
       [...values, limit, offset],
     );
 
-    const lots = await Promise.all(
-      rows.map(async row => {
-        const images = await fetchImages(this.db, row.id);
-        return rowToLot(row, images);
-      }),
-    );
+    if (rows.length === 0) {
+      return { items: [], total, limit, offset };
+    }
 
+    const lotIds = rows.map(row => row.id);
+    const imageRows = await this.db<LotImageRow[]>`
+      SELECT id, lot_id, url, thumbnail_url, display_order, is_primary
+      FROM lot_images WHERE lot_id IN ${this.db(lotIds)}
+      ORDER BY lot_id, display_order ASC
+    `;
+
+    const imagesByLotId = new Map<string, LotImage[]>();
+    for (const img of imageRows) {
+      const arr = imagesByLotId.get(img.lot_id) ?? [];
+      arr.push(rowToLotImage(img));
+      imagesByLotId.set(img.lot_id, arr);
+    }
+
+    const lots = rows.map(row => rowToLot(row, imagesByLotId.get(row.id) ?? []));
     return { items: lots, total, limit, offset };
   }
 
@@ -138,12 +150,14 @@ export class PostgresLotRepository implements LotRepository {
         updated_at = EXCLUDED.updated_at
     `;
 
-    await this.db`DELETE FROM lot_images WHERE lot_id = ${lot.id}`;
-    for (const img of lot.images) {
-      await this.db`
-        INSERT INTO lot_images (id, lot_id, url, thumbnail_url, display_order, is_primary)
-        VALUES (${img.id}, ${img.lotId}, ${img.url}, ${img.thumbnailUrl}, ${img.displayOrder}, ${img.isPrimary})
-      `;
-    }
+    await this.db.begin(async sql => {
+      await sql`DELETE FROM lot_images WHERE lot_id = ${lot.id}`;
+      for (const img of lot.images) {
+        await sql`
+          INSERT INTO lot_images (id, lot_id, url, thumbnail_url, display_order, is_primary)
+          VALUES (${img.id}, ${img.lotId}, ${img.url}, ${img.thumbnailUrl}, ${img.displayOrder}, ${img.isPrimary})
+        `;
+      }
+    });
   }
 }

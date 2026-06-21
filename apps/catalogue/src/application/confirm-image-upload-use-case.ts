@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Lot, LotImage } from '../domain/lot';
 import { LotRepository } from '../domain/lot-repository';
+import { LotNotFoundError } from '../domain/errors';
 import { ImageStorage } from './image-storage';
 
 export class ConfirmImageUploadUseCase {
@@ -12,7 +13,7 @@ export class ConfirmImageUploadUseCase {
   async execute(lotId: string, imageKey: string, isPrimary: boolean): Promise<void> {
     const lot = await this.lotRepository.findById(lotId);
     if (!lot) {
-      throw new Error(`Lot not found: ${lotId}`);
+      throw new LotNotFoundError(lotId);
     }
 
     const url = await this.imageStorage.getPublicUrl(imageKey);
