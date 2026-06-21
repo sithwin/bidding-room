@@ -6,6 +6,32 @@
 
 **Architecture:** Three exports — `createLogger` (pino factory), `requestContextMiddleware` (Hono middleware that seeds the context on each request), and `getLogger` (retrieves the logger bound to the current request context). Services that run outside Hono (e.g. Lambda, queue consumers) call `runWithContext` directly.
 
+**Log shape:** Every log call must follow this three-field structure:
+
+```typescript
+getLogger().info({
+  logEvent: 'USER_REGISTERED',        // machine-readable event identifier — SCREAMING_SNAKE_CASE string
+  payload: { userId: 'abc-123' },     // structured data relevant to the event — plain object, no PII
+}, 'User registered successfully');   // human-readable description — the pino `msg` field
+```
+
+The resulting JSON log line will be:
+
+```json
+{
+  "level": "info",
+  "time": "2026-06-21T10:00:00.000Z",
+  "service": "user-auth",
+  "requestId": "a1b2c3d4-...",
+  "correlationId": "e5f6g7h8-...",
+  "logEvent": "USER_REGISTERED",
+  "payload": { "userId": "abc-123" },
+  "msg": "User registered successfully"
+}
+```
+
+This is enforced via a typed `log()` helper exported from the package. Direct pino method calls (`getLogger().info(...)`) are not forbidden but callers must still pass `{ logEvent, payload }` as the merge object. The typed helper makes this impossible to forget.
+
 **Tech Stack:** TypeScript 5.4, pino, hono, uuid, vitest
 
 ## Global Constraints
@@ -35,9 +61,11 @@ packages/shared-logger/
     logger.ts             — createLogger(config): Logger factory (wraps pino)
     context.ts            — AsyncLocalStorage RequestContext: { requestId, correlationId, logger }
     middleware.ts         — requestContextMiddleware — Hono middleware
+    log.ts                — log(level, entry, description) typed helper enforcing { logEvent, payload, msg } shape
     logger.test.ts
     context.test.ts
     middleware.test.ts
+    log.test.ts
 ```
 
 ---
@@ -51,9 +79,11 @@ packages/shared-logger/
 - Create: `packages/shared-logger/src/context.ts`
 - Create: `packages/shared-logger/src/middleware.ts`
 - Create: `packages/shared-logger/src/index.ts`
+- Create: `packages/shared-logger/src/log.ts`
 - Create: `packages/shared-logger/src/logger.test.ts`
 - Create: `packages/shared-logger/src/context.test.ts`
 - Create: `packages/shared-logger/src/middleware.test.ts`
+- Create: `packages/shared-logger/src/log.test.ts`
 
 **Interfaces:**
 - Consumes: `@carat-room/tsconfig/service`
@@ -66,6 +96,8 @@ packages/shared-logger/
   - `RequestContext` type — `{ requestId: string; correlationId: string; logger: Logger }`
   - `LoggerConfig` type — `{ service: string; level?: LogLevel; pretty?: boolean }`
   - `LogLevel` type — `'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'`
+  - `LogEntry` type — `{ logEvent: string; payload?: Record<string, unknown> }`
+  - `log(level: LogLevel, entry: LogEntry, description: string): void` — typed helper that calls `getLogger()[level]({ logEvent: entry.logEvent, payload: entry.payload ?? {} }, description)`. This is the **preferred** call site for all services — enforces the three-field shape at compile time.
 
 ---
 
@@ -203,7 +235,26 @@ export function requestContextMiddleware(rootLogger: Logger): MiddlewareHandler 
 }
 ```
 
-- [ ] **Step 6: Create `packages/shared-logger/src/index.ts`**
+- [ ] **Step 6: Create `packages/shared-logger/src/log.ts`**
+
+```typescript
+import { type LogLevel } from './logger.js';
+import { getLogger } from './context.js';
+
+export interface LogEntry {
+  logEvent: string;
+  payload?: Record<string, unknown>;
+}
+
+export function log(level: LogLevel, entry: LogEntry, description: string): void {
+  getLogger()[level](
+    { logEvent: entry.logEvent, payload: entry.payload ?? {} },
+    description,
+  );
+}
+```
+
+- [ ] **Step 7: Create `packages/shared-logger/src/index.ts`**
 
 ```typescript
 export { createLogger } from './logger.js';
@@ -213,9 +264,12 @@ export { runWithContext, getContext, getLogger } from './context.js';
 export type { RequestContext } from './context.js';
 
 export { requestContextMiddleware } from './middleware.js';
+
+export { log } from './log.js';
+export type { LogEntry } from './log.js';
 ```
 
-- [ ] **Step 7: Create `packages/shared-logger/src/logger.test.ts`**
+- [ ] **Step 8: Create `packages/shared-logger/src/logger.test.ts`**
 
 Test the `createLogger` factory:
 
@@ -223,7 +277,7 @@ Test the `createLogger` factory:
 - `should_respectLogLevel_when_levelIsProvided` — creates logger with `level: 'warn'`, asserts `logger.level === 'warn'`
 - `should_includeServiceInBase_when_serviceIsProvided` — creates logger with `service: 'catalogue'`, asserts `logger.bindings().service === 'catalogue'`
 
-- [ ] **Step 8: Create `packages/shared-logger/src/context.test.ts`**
+- [ ] **Step 9: Create `packages/shared-logger/src/context.test.ts`**
 
 Test `runWithContext`, `getContext`, `getLogger`:
 
@@ -232,7 +286,7 @@ Test `runWithContext`, `getContext`, `getLogger`:
 - `should_throwError_when_getLoggerCalledOutsideContext` — calls `getLogger()` outside any context, asserts it throws with the expected message
 - `should_isolateContexts_when_runWithContextIsNested` — runs two nested `runWithContext` calls with different `requestId` values, asserts each `getContext()` returns its own context
 
-- [ ] **Step 9: Create `packages/shared-logger/src/middleware.test.ts`**
+- [ ] **Step 10: Create `packages/shared-logger/src/middleware.test.ts`**
 
 Test `requestContextMiddleware` using Hono's test utilities:
 
@@ -240,7 +294,15 @@ Test `requestContextMiddleware` using Hono's test utilities:
 - `should_useProvidedCorrelationId_when_headerIsPresent` — sends a request with `x-correlation-id: test-corr-id`; inside the handler calls `getContext()`, asserts `correlationId === 'test-corr-id'`
 - `should_bindLoggerToContext_when_requestIsProcessed` — asserts `getLogger()` inside the handler returns a logger whose bindings include `requestId` and `correlationId`
 
-- [ ] **Step 10: Run build and tests, confirm clean**
+- [ ] **Step 11: Create `packages/shared-logger/src/log.test.ts`**
+
+Test the `log()` helper inside a `runWithContext` block:
+
+- `should_callLoggerWithCorrectShape_when_logEventAndPayloadProvided` — runs inside `runWithContext`, calls `log('info', { logEvent: 'TEST_EVENT', payload: { id: '1' } }, 'test message')`, asserts the spy was called with `{ logEvent: 'TEST_EVENT', payload: { id: '1' } }` and `'test message'`
+- `should_defaultPayloadToEmptyObject_when_payloadIsOmitted` — calls `log('warn', { logEvent: 'NO_PAYLOAD' }, 'no payload')`, asserts spy called with `payload: {}`
+- `should_throwError_when_calledOutsideRequestContext` — calls `log(...)` outside `runWithContext`, asserts it throws
+
+- [ ] **Step 12: Run build and tests, confirm clean**
 
 ```bash
 # From packages/shared-logger
@@ -252,7 +314,7 @@ pnpm turbo build --filter=@carat-room/shared-logger
 pnpm turbo test --filter=@carat-room/shared-logger
 ```
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 13: Commit**
 
 ```
 feat(shared-logger): add shared pino logger with AsyncLocalStorage request context
