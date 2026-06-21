@@ -123,4 +123,15 @@ describe('PostgresTokenRepository', () => {
 
     expect(found!.revokedAt).not.toBeNull();
   });
+
+  it('should_countPhoneAttempts_when_tokensExistInWindow', async () => {
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await repo.saveVerificationToken({ id: uuidv4(), userId, type: 'PHONE', code: '111111', expiresAt });
+    await repo.saveVerificationToken({ id: uuidv4(), userId, type: 'PHONE', code: '222222', expiresAt });
+
+    const since = new Date(Date.now() - 60 * 1000); // 1 minute ago — before the tokens' expires_at
+    const count = await repo.countRecentPhoneAttempts(userId, since);
+
+    expect(count).toBe(2);
+  });
 });

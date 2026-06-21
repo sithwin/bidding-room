@@ -28,10 +28,11 @@ export class PostgresUserRepository implements UserRepository {
   }
 
   async save(user: User): Promise<void> {
-    const p = user.toProps();
+    const props = user.toProps();
     await this.db`
       INSERT INTO users (id, email, password_hash, phone, status, role, country, created_at, updated_at)
-      VALUES (${p.id}, ${p.email}, ${p.passwordHash}, ${p.phone}, ${p.status}, ${p.role}, ${p.country}, ${p.createdAt}, ${p.updatedAt})
+      VALUES (${props.id}, ${props.email}, ${props.passwordHash}, ${props.phone}, ${props.status}, ${props.role}, ${props.country}, ${props.createdAt}, ${props.updatedAt})
+      -- ON CONFLICT: email and password_hash are intentionally immutable after creation — only mutable fields are updated
       ON CONFLICT (id) DO UPDATE
         SET phone      = EXCLUDED.phone,
             status     = EXCLUDED.status,
