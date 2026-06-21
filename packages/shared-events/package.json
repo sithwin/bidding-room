@@ -1,0 +1,28 @@
+{
+  "name": "@carat-room/shared-events",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4"
+  },
+  "devDependencies": {
+    "@carat-room/tsconfig": "workspace:*",
+    "@carat-room/shared-types": "workspace:*",
+    "@types/amqplib": "^0.10.5",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
