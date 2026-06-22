@@ -1,6 +1,6 @@
-# Auction Engine — Part A: Core Engine Implementation Plan
+﻿# Auction Engine — Part A: Core Engine Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build the Auction Engine core — Event Sourcing aggregate, event store, all command handlers, read projection, BullMQ timer scheduling, and RabbitMQ publishing — with no HTTP or SSE (those are Part B).
 
@@ -80,7 +80,7 @@ apps/auction-engine/
 **Interfaces:**
 - Produces: runnable TypeScript scaffold + DB schema used by all subsequent tasks
 
-- [ ] **Step 1: Create `apps/auction-engine/package.json`**
+- [x] **Step 1: Create `apps/auction-engine/package.json`**
 
 ```json
 {
@@ -115,7 +115,7 @@ apps/auction-engine/
 }
 ```
 
-- [ ] **Step 2: Create `apps/auction-engine/tsconfig.json`**
+- [x] **Step 2: Create `apps/auction-engine/tsconfig.json`**
 
 ```json
 {
@@ -128,7 +128,7 @@ apps/auction-engine/
 }
 ```
 
-- [ ] **Step 3: Create `apps/auction-engine/vitest.config.ts`**
+- [x] **Step 3: Create `apps/auction-engine/vitest.config.ts`**
 
 ```typescript
 export default {
@@ -138,7 +138,7 @@ export default {
 };
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/migrations/001_create_auction_engine.sql`**
+- [x] **Step 4: Create `apps/auction-engine/migrations/001_create_auction_engine.sql`**
 
 ```sql
 -- Event store: append-only, never updated
@@ -177,7 +177,7 @@ CREATE TABLE bids (
 CREATE INDEX bids_lot_id_idx ON bids (lot_id, placed_at DESC);
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/auction-engine/
@@ -203,7 +203,7 @@ git commit -m "feat(auction): scaffold package, tsconfig, DB migration"
   - `PlaceBidResult` union type
   - `CloseAuctionResult` type
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/domain/auction-aggregate.test.ts`:
 
@@ -342,7 +342,7 @@ describe('AuctionAggregate', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd apps/auction-engine
@@ -351,7 +351,7 @@ npx vitest run src/domain/auction-aggregate.test.ts
 
 Expected: FAIL — `Cannot find module './auction-aggregate'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/domain/auction-events.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/domain/auction-events.ts`**
 
 ```typescript
 export interface AuctionScheduledPayload {
@@ -395,7 +395,7 @@ export type AuctionDomainEvent =
   | { type: 'AuctionCancelled'; payload: AuctionCancelledPayload };
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/src/domain/event-store.ts`**
+- [x] **Step 4: Create `apps/auction-engine/src/domain/event-store.ts`**
 
 ```typescript
 import { AuctionDomainEvent } from './auction-events';
@@ -415,7 +415,7 @@ export interface EventStore {
 }
 ```
 
-- [ ] **Step 5: Create `apps/auction-engine/src/domain/auction-aggregate.ts`**
+- [x] **Step 5: Create `apps/auction-engine/src/domain/auction-aggregate.ts`**
 
 ```typescript
 import {
@@ -626,7 +626,7 @@ export class AuctionAggregate {
 }
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/domain/auction-aggregate.test.ts
@@ -634,7 +634,7 @@ npx vitest run src/domain/auction-aggregate.test.ts
 
 Expected: 8 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/auction-engine/src/domain/
@@ -656,7 +656,7 @@ git commit -m "feat(auction): AuctionAggregate with full event sourcing state ma
 
 **Setup:** Requires `carat_auction_test` DB with Task 1 migration applied. Set `TEST_DATABASE_URL=postgres://localhost/carat_auction_test`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/infrastructure/postgres-event-store.test.ts`:
 
@@ -723,7 +723,7 @@ describe('PostgresEventStore', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/postgres-event-store.test.ts
@@ -731,7 +731,7 @@ npx vitest run src/infrastructure/postgres-event-store.test.ts
 
 Expected: FAIL — `Cannot find module './db'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/infrastructure/db.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/infrastructure/db.ts`**
 
 ```typescript
 import postgres from 'postgres';
@@ -743,7 +743,7 @@ export function createDb(url: string): Db {
 }
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/src/infrastructure/postgres-event-store.ts`**
+- [x] **Step 4: Create `apps/auction-engine/src/infrastructure/postgres-event-store.ts`**
 
 ```typescript
 import { v4 as uuidv4 } from 'uuid';
@@ -798,7 +798,7 @@ export class PostgresEventStore implements EventStore {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/postgres-event-store.test.ts
@@ -806,7 +806,7 @@ npx vitest run src/infrastructure/postgres-event-store.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/auction-engine/src/infrastructure/db.ts apps/auction-engine/src/infrastructure/postgres-event-store.ts apps/auction-engine/src/infrastructure/postgres-event-store.test.ts
@@ -837,7 +837,7 @@ git commit -m "feat(auction): PostgresEventStore with append-only semantics and 
   - `RedisLock` interface (exported from `place-bid-handler.ts`)
   - `ScheduleAuctionCommandHandler`, `StartAuctionCommandHandler`, `PlaceBidCommandHandler`, `CancelAuctionCommandHandler`, `CloseAuctionCommandHandler`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/application/command-handlers.test.ts`:
 
@@ -1043,7 +1043,7 @@ describe('CloseAuctionCommandHandler', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/application/command-handlers.test.ts
@@ -1051,7 +1051,7 @@ npx vitest run src/application/command-handlers.test.ts
 
 Expected: FAIL — `Cannot find module './projection-handler'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/application/projection-handler.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/application/projection-handler.ts`**
 
 ```typescript
 import { AuctionDomainEvent } from '../domain/auction-events';
@@ -1061,7 +1061,7 @@ export interface ProjectionHandler {
 }
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/src/application/timer-scheduler.ts`**
+- [x] **Step 4: Create `apps/auction-engine/src/application/timer-scheduler.ts`**
 
 ```typescript
 export interface TimerScheduler {
@@ -1072,7 +1072,7 @@ export interface TimerScheduler {
 }
 ```
 
-- [ ] **Step 5: Create `apps/auction-engine/src/application/auction-event-publisher.ts`**
+- [x] **Step 5: Create `apps/auction-engine/src/application/auction-event-publisher.ts`**
 
 ```typescript
 export interface AuctionEventPublisher {
@@ -1094,7 +1094,7 @@ export interface AuctionEventPublisher {
 }
 ```
 
-- [ ] **Step 6: Create `apps/auction-engine/src/application/schedule-auction-handler.ts`**
+- [x] **Step 6: Create `apps/auction-engine/src/application/schedule-auction-handler.ts`**
 
 ```typescript
 import { AuctionAggregate } from '../domain/auction-aggregate';
@@ -1148,7 +1148,7 @@ export class ScheduleAuctionCommandHandler {
 }
 ```
 
-- [ ] **Step 7: Create `apps/auction-engine/src/application/start-auction-handler.ts`**
+- [x] **Step 7: Create `apps/auction-engine/src/application/start-auction-handler.ts`**
 
 ```typescript
 import { AuctionAggregate } from '../domain/auction-aggregate';
@@ -1174,7 +1174,7 @@ export class StartAuctionCommandHandler {
 }
 ```
 
-- [ ] **Step 8: Create `apps/auction-engine/src/application/place-bid-handler.ts`**
+- [x] **Step 8: Create `apps/auction-engine/src/application/place-bid-handler.ts`**
 
 ```typescript
 import { AuctionAggregate, PlaceBidResult } from '../domain/auction-aggregate';
@@ -1251,7 +1251,7 @@ export class PlaceBidCommandHandler {
 }
 ```
 
-- [ ] **Step 9: Create `apps/auction-engine/src/application/cancel-auction-handler.ts`**
+- [x] **Step 9: Create `apps/auction-engine/src/application/cancel-auction-handler.ts`**
 
 ```typescript
 import { AuctionAggregate } from '../domain/auction-aggregate';
@@ -1277,7 +1277,7 @@ export class CancelAuctionCommandHandler {
 }
 ```
 
-- [ ] **Step 10: Create `apps/auction-engine/src/application/close-auction-handler.ts`**
+- [x] **Step 10: Create `apps/auction-engine/src/application/close-auction-handler.ts`**
 
 ```typescript
 import { AuctionAggregate } from '../domain/auction-aggregate';
@@ -1314,7 +1314,7 @@ export class CloseAuctionCommandHandler {
 }
 ```
 
-- [ ] **Step 11: Run tests to verify they pass**
+- [x] **Step 11: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/application/command-handlers.test.ts
@@ -1322,7 +1322,7 @@ npx vitest run src/application/command-handlers.test.ts
 
 Expected: 10 passed
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/auction-engine/src/application/
@@ -1350,7 +1350,7 @@ git commit -m "feat(auction): all 5 command handlers with TimerScheduler, Projec
 
 These job names are consumed by workers wired in Part B's `main.ts`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/infrastructure/redis-lock.test.ts`:
 
@@ -1452,7 +1452,7 @@ describe('BullMQTimerScheduler', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/redis-lock.test.ts src/infrastructure/bullmq-timer-scheduler.test.ts
@@ -1460,7 +1460,7 @@ npx vitest run src/infrastructure/redis-lock.test.ts src/infrastructure/bullmq-t
 
 Expected: FAIL — `Cannot find module './redis-lock'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/infrastructure/redis-lock.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/infrastructure/redis-lock.ts`**
 
 ```typescript
 import Redis from 'ioredis';
@@ -1489,7 +1489,7 @@ export class RedisLockAdapter implements RedisLock {
 }
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/src/infrastructure/bullmq-timer-scheduler.ts`**
+- [x] **Step 4: Create `apps/auction-engine/src/infrastructure/bullmq-timer-scheduler.ts`**
 
 ```typescript
 import { Queue } from 'bullmq';
@@ -1535,7 +1535,7 @@ export class BullMQTimerScheduler implements TimerScheduler {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/redis-lock.test.ts src/infrastructure/bullmq-timer-scheduler.test.ts
@@ -1543,7 +1543,7 @@ npx vitest run src/infrastructure/redis-lock.test.ts src/infrastructure/bullmq-t
 
 Expected: 5 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/auction-engine/src/infrastructure/redis-lock.ts apps/auction-engine/src/infrastructure/redis-lock.test.ts apps/auction-engine/src/infrastructure/bullmq-timer-scheduler.ts apps/auction-engine/src/infrastructure/bullmq-timer-scheduler.test.ts
@@ -1564,7 +1564,7 @@ git commit -m "feat(auction): RedisLockAdapter and BullMQTimerScheduler"
 
 **Setup:** Integration tests require `carat_auction_test` DB with Task 1 migration applied.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/infrastructure/postgres-projection-handler.test.ts`:
 
@@ -1651,7 +1651,7 @@ describe('PostgresProjectionHandler', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/postgres-projection-handler.test.ts
@@ -1659,7 +1659,7 @@ npx vitest run src/infrastructure/postgres-projection-handler.test.ts
 
 Expected: FAIL — `Cannot find module './postgres-projection-handler'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/infrastructure/postgres-projection-handler.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/infrastructure/postgres-projection-handler.ts`**
 
 ```typescript
 import {
@@ -1741,7 +1741,7 @@ export class PostgresProjectionHandler implements ProjectionHandler {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/postgres-projection-handler.test.ts
@@ -1749,7 +1749,7 @@ npx vitest run src/infrastructure/postgres-projection-handler.test.ts
 
 Expected: 5 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/auction-engine/src/infrastructure/postgres-projection-handler.ts apps/auction-engine/src/infrastructure/postgres-projection-handler.test.ts
@@ -1770,7 +1770,7 @@ git commit -m "feat(auction): PostgresProjectionHandler rebuilds lot_status and 
 
 **Routing keys:** `auction.bid.placed`, `auction.closing.soon`, `auction.closed` — match the `ROUTING_KEYS` constants in `@carat-room/shared-types`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/infrastructure/rabbitmq-auction-publisher.test.ts`:
 
@@ -1818,7 +1818,7 @@ describe('RabbitMQAuctionPublisher', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/rabbitmq-auction-publisher.test.ts
@@ -1826,7 +1826,7 @@ npx vitest run src/infrastructure/rabbitmq-auction-publisher.test.ts
 
 Expected: FAIL — `Cannot find module './rabbitmq-auction-publisher'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/infrastructure/rabbitmq-auction-publisher.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/infrastructure/rabbitmq-auction-publisher.ts`**
 
 ```typescript
 import { EventPublisher } from '@carat-room/shared-events';
@@ -1876,7 +1876,7 @@ export class RabbitMQAuctionPublisher implements AuctionEventPublisher {
 }
 ```
 
-- [ ] **Step 4: Run all tests**
+- [x] **Step 4: Run all tests**
 
 ```bash
 npx vitest run
@@ -1884,7 +1884,7 @@ npx vitest run
 
 Expected: 34 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/auction-engine/src/infrastructure/rabbitmq-auction-publisher.ts apps/auction-engine/src/infrastructure/rabbitmq-auction-publisher.test.ts

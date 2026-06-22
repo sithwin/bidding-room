@@ -1,6 +1,6 @@
-# Auction Engine — Part B: HTTP Layer Implementation Plan
+﻿# Auction Engine — Part B: HTTP Layer Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build the HTTP presentation layer for the Auction Engine — query use cases, Hono router (5 endpoints + SSE), in-memory SSE broadcaster, BullMQ job processor, and `main.ts` wiring.
 
@@ -72,7 +72,7 @@ apps/auction-engine/src/
   - `LotQueryRepository` interface with `findLotStatus`, `findBidHistory`, `findActiveLots`
   - `PostgresLotQueryRepository` implements `LotQueryRepository`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/infrastructure/postgres-lot-query-repository.test.ts`:
 
@@ -158,7 +158,7 @@ describe('PostgresLotQueryRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd apps/auction-engine
@@ -167,7 +167,7 @@ npx vitest run src/infrastructure/postgres-lot-query-repository.test.ts
 
 Expected: FAIL — `Cannot find module './postgres-lot-query-repository'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/application/lot-query-repository.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/application/lot-query-repository.ts`**
 
 ```typescript
 export interface LotStatusRow {
@@ -193,7 +193,7 @@ export interface LotQueryRepository {
 }
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/src/infrastructure/postgres-lot-query-repository.ts`**
+- [x] **Step 4: Create `apps/auction-engine/src/infrastructure/postgres-lot-query-repository.ts`**
 
 ```typescript
 import { BidRow, LotQueryRepository, LotStatusRow } from '../application/lot-query-repository';
@@ -277,7 +277,7 @@ function mapLotStatusRow(r: Record<string, unknown>): LotStatusRow {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/postgres-lot-query-repository.test.ts
@@ -285,7 +285,7 @@ npx vitest run src/infrastructure/postgres-lot-query-repository.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/auction-engine/src/application/lot-query-repository.ts apps/auction-engine/src/infrastructure/postgres-lot-query-repository.ts apps/auction-engine/src/infrastructure/postgres-lot-query-repository.test.ts
@@ -309,7 +309,7 @@ git commit -m "feat(auction): LotQueryRepository + PostgresLotQueryRepository re
   - `GetBidHistoryHandler` with `.execute({ lotId, page, pageSize }): Promise<{ bids, total }>`
   - `GetActiveLotsHandler` with `.execute({ page, pageSize }): Promise<{ lots, total }>`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/application/query-handlers.test.ts`:
 
@@ -390,7 +390,7 @@ describe('GetActiveLotsHandler', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/application/query-handlers.test.ts
@@ -398,7 +398,7 @@ npx vitest run src/application/query-handlers.test.ts
 
 Expected: FAIL — `Cannot find module './get-lot-status-handler'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/application/get-lot-status-handler.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/application/get-lot-status-handler.ts`**
 
 ```typescript
 import { LotQueryRepository, LotStatusRow } from './lot-query-repository';
@@ -412,7 +412,7 @@ export class GetLotStatusHandler {
 }
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/src/application/get-bid-history-handler.ts`**
+- [x] **Step 4: Create `apps/auction-engine/src/application/get-bid-history-handler.ts`**
 
 ```typescript
 import { BidRow, LotQueryRepository } from './lot-query-repository';
@@ -433,7 +433,7 @@ export class GetBidHistoryHandler {
 }
 ```
 
-- [ ] **Step 5: Create `apps/auction-engine/src/application/get-active-lots-handler.ts`**
+- [x] **Step 5: Create `apps/auction-engine/src/application/get-active-lots-handler.ts`**
 
 ```typescript
 import { LotQueryRepository, LotStatusRow } from './lot-query-repository';
@@ -453,7 +453,7 @@ export class GetActiveLotsHandler {
 }
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/application/query-handlers.test.ts
@@ -461,7 +461,7 @@ npx vitest run src/application/query-handlers.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/auction-engine/src/application/get-lot-status-handler.ts apps/auction-engine/src/application/get-bid-history-handler.ts apps/auction-engine/src/application/get-active-lots-handler.ts apps/auction-engine/src/application/query-handlers.test.ts
@@ -484,7 +484,7 @@ git commit -m "feat(auction): GetLotStatus, GetBidHistory, GetActiveLots query h
   - `SseBroadcaster` interface with `subscribe` and `broadcast`
   - `InMemorySseBroadcaster` implements `SseBroadcaster`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/infrastructure/in-memory-sse-broadcaster.test.ts`:
 
@@ -530,7 +530,7 @@ describe('InMemorySseBroadcaster', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/in-memory-sse-broadcaster.test.ts
@@ -538,7 +538,7 @@ npx vitest run src/infrastructure/in-memory-sse-broadcaster.test.ts
 
 Expected: FAIL — `Cannot find module './in-memory-sse-broadcaster'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/application/sse-broadcaster.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/application/sse-broadcaster.ts`**
 
 ```typescript
 export type SseEventType = 'bid_placed' | 'timer_extended' | 'auction_closed';
@@ -559,7 +559,7 @@ export interface SseBroadcaster {
 }
 ```
 
-- [ ] **Step 4: Create `apps/auction-engine/src/infrastructure/in-memory-sse-broadcaster.ts`**
+- [x] **Step 4: Create `apps/auction-engine/src/infrastructure/in-memory-sse-broadcaster.ts`**
 
 ```typescript
 import { SseBroadcaster, SseEventData, SseEventType } from '../application/sse-broadcaster';
@@ -596,7 +596,7 @@ export class InMemorySseBroadcaster implements SseBroadcaster {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/in-memory-sse-broadcaster.test.ts
@@ -604,7 +604,7 @@ npx vitest run src/infrastructure/in-memory-sse-broadcaster.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/auction-engine/src/application/sse-broadcaster.ts apps/auction-engine/src/infrastructure/in-memory-sse-broadcaster.ts apps/auction-engine/src/infrastructure/in-memory-sse-broadcaster.test.ts
@@ -630,7 +630,7 @@ git commit -m "feat(auction): SseBroadcaster interface + InMemorySseBroadcaster"
 
 Queue name `'auction-timers'` and job names `'start-auction'`, `'close-auction'`, `'closing-soon'` must exactly match Part A's `BullMQTimerScheduler` constants.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/infrastructure/bullmq-auction-worker.test.ts`:
 
@@ -726,7 +726,7 @@ describe('BullMQAuctionWorker', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/bullmq-auction-worker.test.ts
@@ -734,7 +734,7 @@ npx vitest run src/infrastructure/bullmq-auction-worker.test.ts
 
 Expected: FAIL — `Cannot find module './bullmq-auction-worker'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/infrastructure/bullmq-auction-worker.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/infrastructure/bullmq-auction-worker.ts`**
 
 ```typescript
 import { Job, Worker } from 'bullmq';
@@ -810,7 +810,7 @@ export class BullMQAuctionWorker {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/bullmq-auction-worker.test.ts
@@ -818,7 +818,7 @@ npx vitest run src/infrastructure/bullmq-auction-worker.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/auction-engine/src/infrastructure/bullmq-auction-worker.ts apps/auction-engine/src/infrastructure/bullmq-auction-worker.test.ts
@@ -847,7 +847,7 @@ git commit -m "feat(auction): BullMQAuctionWorker processes timer jobs and broad
 | GET | `/api/auctions/:lotId/stream` | none | 200 SSE |
 | POST | `/api/auctions/:lotId/bids` | APPROVED_BIDDER | 201, 400, 403, 409, 422 |
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/auction-engine/src/presentation/auction-router.test.ts`:
 
@@ -1045,7 +1045,7 @@ describe('POST /api/auctions/:lotId/bids', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/presentation/auction-router.test.ts
@@ -1053,7 +1053,7 @@ npx vitest run src/presentation/auction-router.test.ts
 
 Expected: FAIL — `Cannot find module './auction-router'`
 
-- [ ] **Step 3: Create `apps/auction-engine/src/presentation/auction-router.ts`**
+- [x] **Step 3: Create `apps/auction-engine/src/presentation/auction-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -1197,7 +1197,7 @@ function serializeLotStatus(row: LotStatusRow) {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/presentation/auction-router.test.ts
@@ -1205,7 +1205,7 @@ npx vitest run src/presentation/auction-router.test.ts
 
 Expected: 8 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/auction-engine/src/presentation/auction-router.ts apps/auction-engine/src/presentation/auction-router.test.ts
@@ -1225,7 +1225,7 @@ git commit -m "feat(auction): Hono router — 5 endpoints including SSE stream a
 
 No tests — `main.ts` is pure wiring; all dependencies are tested individually.
 
-- [ ] **Step 1: Create `apps/auction-engine/src/main.ts`**
+- [x] **Step 1: Create `apps/auction-engine/src/main.ts`**
 
 ```typescript
 import { serve } from '@hono/node-server';
@@ -1321,7 +1321,7 @@ async function main(): Promise<void> {
 main().catch(console.error);
 ```
 
-- [ ] **Step 2: Build to verify TypeScript compiles**
+- [x] **Step 2: Build to verify TypeScript compiles**
 
 ```bash
 cd apps/auction-engine
@@ -1330,7 +1330,7 @@ npx tsc --noEmit
 
 Expected: no errors
 
-- [ ] **Step 3: Run the full test suite**
+- [x] **Step 3: Run the full test suite**
 
 ```bash
 npx vitest run
@@ -1338,7 +1338,7 @@ npx vitest run
 
 Expected: 56 passed (34 from Part A + 22 from Part B)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/auction-engine/src/main.ts
