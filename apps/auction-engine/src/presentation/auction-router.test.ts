@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { authMiddleware } from '@carat-room/shared-auth';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
@@ -8,11 +7,18 @@ import { SseBroadcaster } from '../application/sse-broadcaster';
 import { LotStatusRow } from '../application/lot-query-repository';
 import { createAuctionRouter } from './auction-router';
 
+const jwtPayloadRef = vi.hoisted(() => ({
+  value: { userId: 'user-1', verificationStatus: 'APPROVED_BIDDER', role: 'BUYER', email: 'test@example.com' },
+}));
+
 vi.mock('@carat-room/shared-auth', () => ({
-  authMiddleware: vi.fn(async (c: { set: (k: string, v: unknown) => void }, next: () => Promise<void>) => {
-    c.set('user', { sub: 'user-1', status: 'APPROVED_BIDDER', role: 'BUYER' });
-    await next();
-  }),
+  authMiddleware: vi.fn().mockReturnValue(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async (c: any, next: () => Promise<void>) => {
+      c.set('jwtPayload', jwtPayloadRef.value);
+      await next();
+    },
+  ),
 }));
 
 const mockGetActiveLots = { execute: vi.fn() } as unknown as GetActiveLotsHandler;
@@ -27,6 +33,7 @@ const router = createAuctionRouter({
   getBidHistory: mockGetBidHistory,
   placeBidHandler: mockPlaceBid,
   sseBroadcaster: mockBroadcaster,
+  jwtPublicKey: 'test-public-key',
 });
 
 function fakeLotStatusRow(overrides: Partial<LotStatusRow> = {}): LotStatusRow {
@@ -44,6 +51,7 @@ function fakeLotStatusRow(overrides: Partial<LotStatusRow> = {}): LotStatusRow {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  jwtPayloadRef.value = { userId: 'user-1', verificationStatus: 'APPROVED_BIDDER', role: 'BUYER', email: 'test@example.com' };
 });
 
 describe('GET /api/auctions', () => {
@@ -173,12 +181,7 @@ describe('POST /api/auctions/:lotId/bids', () => {
   });
 
   it('should_return403_when_userNotApprovedBidder', async () => {
-    vi.mocked(authMiddleware).mockImplementationOnce(
-      async (c: { set: (k: string, v: unknown) => void }, next: () => Promise<void>) => {
-        c.set('user', { sub: 'user-1', status: 'EMAIL_VERIFIED', role: 'BUYER' });
-        await next();
-      },
-    );
+    jwtPayloadRef.value = { userId: 'user-1', verificationStatus: 'EMAIL_VERIFIED', role: 'BUYER', email: 'test@example.com' };
 
     const res = await router.request('/api/auctions/lot-1/bids', {
       method: 'POST',

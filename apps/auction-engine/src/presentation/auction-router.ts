@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { v4 as uuidv4 } from 'uuid';
-import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
+import { authMiddleware } from '@carat-room/shared-auth';
+import type { JwtPayload } from '@carat-room/shared-auth';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
@@ -9,7 +10,7 @@ import { PlaceBidCommandHandler } from '../application/place-bid-handler';
 import { SseBroadcaster } from '../application/sse-broadcaster';
 import { LotStatusRow } from '../application/lot-query-repository';
 
-type AppEnv = { Variables: { user: JwtPayload } };
+type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 export interface AuctionRouterDeps {
   getActiveLots: GetActiveLotsHandler;
@@ -17,6 +18,7 @@ export interface AuctionRouterDeps {
   getBidHistory: GetBidHistoryHandler;
   placeBidHandler: PlaceBidCommandHandler;
   sseBroadcaster: SseBroadcaster;
+  jwtPublicKey: string;
 }
 
 export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
@@ -74,9 +76,9 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
     });
   });
 
-  app.post('/api/auctions/:lotId/bids', authMiddleware, async (c) => {
-    const user = c.get('user');
-    if (user.status !== 'APPROVED_BIDDER') {
+  app.post('/api/auctions/:lotId/bids', authMiddleware(deps.jwtPublicKey), async (c) => {
+    const jwtPayload = c.get('jwtPayload');
+    if (jwtPayload.verificationStatus !== 'APPROVED_BIDDER') {
       return c.json(
         { error: { code: 'FORBIDDEN', message: 'Phone verification required to bid' } },
         403,
@@ -98,7 +100,7 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
     const result = await deps.placeBidHandler.execute({
       lotId,
       bidId,
-      userId: user.sub,
+      userId: jwtPayload.userId,
       amount,
       placedAt: new Date(),
     });

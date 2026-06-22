@@ -21,7 +21,7 @@ export class InMemorySseBroadcaster implements SseBroadcaster {
   broadcast(lotId: string, event: SseEventType, data: SseEventData): void {
     const subs = this.connections.get(lotId);
     if (!subs) return;
-    for (const send of subs) {
+    for (const send of Array.from(subs)) {
       try {
         send(event, data);
       } catch {
