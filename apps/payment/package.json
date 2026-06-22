@@ -1,0 +1,32 @@
+{
+  "name": "@carat-room/payment",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc --build",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate": "tsx scripts/migrate.ts"
+  },
+  "dependencies": {
+    "@carat-room/shared-auth": "workspace:*",
+    "@carat-room/shared-events": "workspace:*",
+    "@carat-room/shared-types": "workspace:*",
+    "@hono/node-server": "^1.12.0",
+    "bullmq": "^5.12.0",
+    "hono": "^4.4.0",
+    "ioredis": "^5.4.1",
+    "postgres": "^3.4.4",
+    "stripe": "^16.2.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^10.0.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
