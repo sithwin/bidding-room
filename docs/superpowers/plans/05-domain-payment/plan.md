@@ -90,7 +90,7 @@ apps/user-portal/
 **Interfaces:**
 - Produces: runnable TypeScript service scaffold; DB schema for all subsequent tasks
 
-- [ ] **Step 1: Create `apps/payment/package.json`**
+- [x] **Step 1: Create `apps/payment/package.json`**
 
 ```json
 {
@@ -127,7 +127,7 @@ apps/user-portal/
 }
 ```
 
-- [ ] **Step 2: Create `apps/payment/tsconfig.json`**
+- [x] **Step 2: Create `apps/payment/tsconfig.json`**
 
 ```json
 {
@@ -140,7 +140,7 @@ apps/user-portal/
 }
 ```
 
-- [ ] **Step 3: Create `apps/payment/vitest.config.ts`**
+- [x] **Step 3: Create `apps/payment/vitest.config.ts`**
 
 ```typescript
 export default {
@@ -150,7 +150,7 @@ export default {
 };
 ```
 
-- [ ] **Step 4: Create `apps/payment/migrations/001_create_payment.sql`**
+- [x] **Step 4: Create `apps/payment/migrations/001_create_payment.sql`**
 
 ```sql
 CREATE TABLE invoices (
@@ -180,7 +180,7 @@ CREATE INDEX invoices_winner_user_id_idx ON invoices (winner_user_id);
 CREATE INDEX invoices_lot_id_idx ON invoices (lot_id);
 ```
 
-- [ ] **Step 5: Create `apps/payment/Dockerfile`**
+- [x] **Step 5: Create `apps/payment/Dockerfile`**
 
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -199,7 +199,7 @@ EXPOSE 3003
 CMD ["node", "dist/main.js"]
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/payment/
@@ -223,7 +223,7 @@ git commit -m "feat(payment): scaffold package, tsconfig, migration"
   - `invoice.isOwnedBy(userId: string): boolean`
   - `invoice.isAwaitingPayment(): boolean`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/payment/src/domain/invoice.test.ts`:
 
@@ -279,7 +279,7 @@ describe('Invoice', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd apps/payment
@@ -288,7 +288,7 @@ npx vitest run src/domain/invoice.test.ts
 
 Expected: FAIL — `Cannot find module './invoice'`
 
-- [ ] **Step 3: Create `apps/payment/src/domain/invoice.ts`**
+- [x] **Step 3: Create `apps/payment/src/domain/invoice.ts`**
 
 ```typescript
 export enum InvoiceStatus {
@@ -349,7 +349,7 @@ export class Invoice {
 }
 ```
 
-- [ ] **Step 4: Create `apps/payment/src/domain/invoice-repository.ts`**
+- [x] **Step 4: Create `apps/payment/src/domain/invoice-repository.ts`**
 
 ```typescript
 import { Invoice } from './invoice';
@@ -368,7 +368,7 @@ export interface InvoiceRepository {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/domain/invoice.test.ts
@@ -376,7 +376,7 @@ npx vitest run src/domain/invoice.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/payment/src/domain/
@@ -400,7 +400,7 @@ git commit -m "feat(payment): Invoice domain entity and repository interface"
 
 **Setup:** Integration tests require a `carat_payment_test` database. Run the migration SQL from Task 1 against it before running tests. Set `TEST_DATABASE_URL=postgres://localhost/carat_payment_test` in your environment.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/payment/src/infrastructure/postgres-invoice-repository.test.ts`:
 
@@ -497,7 +497,7 @@ describe('PostgresInvoiceRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/postgres-invoice-repository.test.ts
@@ -505,7 +505,7 @@ npx vitest run src/infrastructure/postgres-invoice-repository.test.ts
 
 Expected: FAIL — `Cannot find module './db'`
 
-- [ ] **Step 3: Create `apps/payment/src/infrastructure/db.ts`**
+- [x] **Step 3: Create `apps/payment/src/infrastructure/db.ts`**
 
 ```typescript
 import postgres from 'postgres';
@@ -517,7 +517,7 @@ export function createDb(url: string): Db {
 }
 ```
 
-- [ ] **Step 4: Create `apps/payment/src/infrastructure/postgres-invoice-repository.ts`**
+- [x] **Step 4: Create `apps/payment/src/infrastructure/postgres-invoice-repository.ts`**
 
 ```typescript
 import { Invoice, InvoiceStatus } from '../domain/invoice';
@@ -616,7 +616,7 @@ export class PostgresInvoiceRepository implements InvoiceRepository {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/postgres-invoice-repository.test.ts
@@ -624,7 +624,7 @@ npx vitest run src/infrastructure/postgres-invoice-repository.test.ts
 
 Expected: 5 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/payment/src/infrastructure/db.ts apps/payment/src/infrastructure/postgres-invoice-repository.ts apps/payment/src/infrastructure/postgres-invoice-repository.test.ts
@@ -652,7 +652,7 @@ git commit -m "feat(payment): PostgresInvoiceRepository with idempotent payment 
   - `ExpiryScheduler` interface — implemented in Task 5
   - All 5 use case classes, each with an `.execute()` method
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/payment/src/application/use-cases.test.ts`:
 
@@ -825,7 +825,7 @@ describe('ExpireInvoiceUseCase', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/application/use-cases.test.ts
@@ -833,7 +833,7 @@ npx vitest run src/application/use-cases.test.ts
 
 Expected: FAIL — `Cannot find module './stripe-client'`
 
-- [ ] **Step 3: Create `apps/payment/src/application/stripe-client.ts`**
+- [x] **Step 3: Create `apps/payment/src/application/stripe-client.ts`**
 
 ```typescript
 export interface CheckoutSession {
@@ -860,7 +860,7 @@ export interface StripeClient {
 }
 ```
 
-- [ ] **Step 4: Create `apps/payment/src/application/expiry-scheduler.ts`**
+- [x] **Step 4: Create `apps/payment/src/application/expiry-scheduler.ts`**
 
 ```typescript
 export interface ExpiryScheduler {
@@ -869,7 +869,7 @@ export interface ExpiryScheduler {
 }
 ```
 
-- [ ] **Step 5: Create `apps/payment/src/application/get-invoice-use-case.ts`**
+- [x] **Step 5: Create `apps/payment/src/application/get-invoice-use-case.ts`**
 
 ```typescript
 import { Invoice } from '../domain/invoice';
@@ -888,7 +888,7 @@ export class GetInvoiceUseCase {
 }
 ```
 
-- [ ] **Step 6: Create `apps/payment/src/application/create-checkout-session-use-case.ts`**
+- [x] **Step 6: Create `apps/payment/src/application/create-checkout-session-use-case.ts`**
 
 ```typescript
 import { Invoice } from '../domain/invoice';
@@ -932,7 +932,7 @@ export class CreateCheckoutSessionUseCase {
 }
 ```
 
-- [ ] **Step 7: Create `apps/payment/src/application/handle-webhook-use-case.ts`**
+- [x] **Step 7: Create `apps/payment/src/application/handle-webhook-use-case.ts`**
 
 ```typescript
 import { Invoice, InvoiceStatus } from '../domain/invoice';
@@ -998,7 +998,7 @@ export class HandleWebhookUseCase {
 }
 ```
 
-- [ ] **Step 8: Create `apps/payment/src/application/create-invoice-use-case.ts`**
+- [x] **Step 8: Create `apps/payment/src/application/create-invoice-use-case.ts`**
 
 ```typescript
 import { v4 as uuidv4 } from 'uuid';
@@ -1058,7 +1058,7 @@ export class CreateInvoiceUseCase {
 }
 ```
 
-- [ ] **Step 9: Create `apps/payment/src/application/expire-invoice-use-case.ts`**
+- [x] **Step 9: Create `apps/payment/src/application/expire-invoice-use-case.ts`**
 
 ```typescript
 import { Invoice, InvoiceStatus } from '../domain/invoice';
@@ -1089,7 +1089,7 @@ export class ExpireInvoiceUseCase {
 }
 ```
 
-- [ ] **Step 10: Run tests to verify they pass**
+- [x] **Step 10: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/application/use-cases.test.ts
@@ -1097,7 +1097,7 @@ npx vitest run src/application/use-cases.test.ts
 
 Expected: 8 passed
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add apps/payment/src/application/
@@ -1120,7 +1120,7 @@ git commit -m "feat(payment): StripeClient + ExpiryScheduler interfaces, all 5 u
   - `StripeAdapter` implements `StripeClient`
   - `BullMQExpiryScheduler` implements `ExpiryScheduler`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/payment/src/infrastructure/stripe-adapter.test.ts`:
 
@@ -1232,7 +1232,7 @@ describe('BullMQExpiryScheduler', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/infrastructure/stripe-adapter.test.ts src/infrastructure/bullmq-expiry-scheduler.test.ts
@@ -1240,7 +1240,7 @@ npx vitest run src/infrastructure/stripe-adapter.test.ts src/infrastructure/bull
 
 Expected: FAIL — `Cannot find module './stripe-adapter'`
 
-- [ ] **Step 3: Create `apps/payment/src/infrastructure/stripe-adapter.ts`**
+- [x] **Step 3: Create `apps/payment/src/infrastructure/stripe-adapter.ts`**
 
 ```typescript
 import Stripe from 'stripe';
@@ -1296,7 +1296,7 @@ export class StripeAdapter implements StripeClient {
 }
 ```
 
-- [ ] **Step 4: Create `apps/payment/src/infrastructure/bullmq-expiry-scheduler.ts`**
+- [x] **Step 4: Create `apps/payment/src/infrastructure/bullmq-expiry-scheduler.ts`**
 
 ```typescript
 import { Queue } from 'bullmq';
@@ -1335,7 +1335,7 @@ export class BullMQExpiryScheduler implements ExpiryScheduler {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/infrastructure/stripe-adapter.test.ts src/infrastructure/bullmq-expiry-scheduler.test.ts
@@ -1343,7 +1343,7 @@ npx vitest run src/infrastructure/stripe-adapter.test.ts src/infrastructure/bull
 
 Expected: 4 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/payment/src/infrastructure/stripe-adapter.ts apps/payment/src/infrastructure/stripe-adapter.test.ts apps/payment/src/infrastructure/bullmq-expiry-scheduler.ts apps/payment/src/infrastructure/bullmq-expiry-scheduler.test.ts
@@ -1364,7 +1364,7 @@ git commit -m "feat(payment): StripeAdapter and BullMQExpiryScheduler infrastruc
   - `createPaymentEventPublisher(publisher): publish fn` — the `publish` callback passed to all use cases
   - `startAuctionClosedConsumer(subscriber, createInvoiceUseCase): Promise<void>` — called in `main.ts`
 
-- [ ] **Step 1: Create `apps/payment/src/infrastructure/payment-event-publisher.ts`**
+- [x] **Step 1: Create `apps/payment/src/infrastructure/payment-event-publisher.ts`**
 
 ```typescript
 import { EventPublisher } from '@carat-room/shared-events';
@@ -1377,7 +1377,7 @@ export function createPaymentEventPublisher(
 }
 ```
 
-- [ ] **Step 2: Create `apps/payment/src/infrastructure/auction-closed-consumer.ts`**
+- [x] **Step 2: Create `apps/payment/src/infrastructure/auction-closed-consumer.ts`**
 
 ```typescript
 import { EventSubscriber } from '@carat-room/shared-events';
@@ -1415,7 +1415,7 @@ export async function startAuctionClosedConsumer(
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/payment/src/infrastructure/payment-event-publisher.ts apps/payment/src/infrastructure/auction-closed-consumer.ts
@@ -1437,7 +1437,7 @@ git commit -m "feat(payment): RabbitMQ auction-closed consumer and event publish
 
 **Important:** The Stripe webhook endpoint (`POST /api/payments/webhooks/stripe`) must NOT have `authMiddleware` — Stripe calls it directly. Signature verification inside `HandleWebhookUseCase` is the security boundary.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/payment/src/presentation/payment-router.test.ts`:
 
@@ -1570,7 +1570,7 @@ describe('POST /api/payments/webhooks/stripe', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 npx vitest run src/presentation/payment-router.test.ts
@@ -1578,7 +1578,7 @@ npx vitest run src/presentation/payment-router.test.ts
 
 Expected: FAIL — `Cannot find module './payment-router'`
 
-- [ ] **Step 3: Create `apps/payment/src/presentation/payment-router.ts`**
+- [x] **Step 3: Create `apps/payment/src/presentation/payment-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -1637,7 +1637,7 @@ export function buildPaymentRouter(useCases: UseCases): Hono {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 npx vitest run src/presentation/payment-router.test.ts
@@ -1645,7 +1645,7 @@ npx vitest run src/presentation/payment-router.test.ts
 
 Expected: 5 passed
 
-- [ ] **Step 5: Create `apps/payment/src/main.ts`**
+- [x] **Step 5: Create `apps/payment/src/main.ts`**
 
 ```typescript
 import { serve } from '@hono/node-server';
@@ -1725,7 +1725,7 @@ async function main(): Promise<void> {
 main();
 ```
 
-- [ ] **Step 6: Run all tests**
+- [x] **Step 6: Run all tests**
 
 ```bash
 npx vitest run
@@ -1733,7 +1733,7 @@ npx vitest run
 
 Expected: 26 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/payment/src/presentation/ apps/payment/src/main.ts
@@ -1754,7 +1754,7 @@ git commit -m "feat(payment): Hono router, main.ts, BullMQ expiry worker wired"
 
 **Note:** `page.tsx` is a Next.js App Router Server Component. `InvoiceDetail.tsx` is a Client Component (`'use client'`) — it handles the interactive Pay Now button. Access token is read from the `access_token` cookie by the server component and forwarded as a Bearer token to the Payment Service.
 
-- [ ] **Step 1: Create `apps/user-portal/src/app/account/invoices/[id]/page.tsx`**
+- [x] **Step 1: Create `apps/user-portal/src/app/account/invoices/[id]/page.tsx`**
 
 ```typescript
 import { redirect } from 'next/navigation';
@@ -1819,7 +1819,7 @@ export default async function InvoicePage({
 }
 ```
 
-- [ ] **Step 2: Create `apps/user-portal/src/app/account/invoices/[id]/InvoiceDetail.tsx`**
+- [x] **Step 2: Create `apps/user-portal/src/app/account/invoices/[id]/InvoiceDetail.tsx`**
 
 ```typescript
 'use client';
@@ -1948,7 +1948,7 @@ export function InvoiceDetail({ invoice, paymentSuccess }: Props) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/user-portal/src/app/account/invoices/
