@@ -1,0 +1,10 @@
+{
+  "extends": "@carat-room/tsconfig/service",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "exclude": ["src/__tests__", "node_modules", "dist"]
+}

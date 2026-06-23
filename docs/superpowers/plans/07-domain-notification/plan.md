@@ -1,6 +1,6 @@
 # Notification Service Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build the Notification Service — a purely event-driven backend service that listens to RabbitMQ domain events and sends emails via Resend and SMS via Twilio.
 
@@ -98,7 +98,7 @@ apps/notification-service/
 - Consumes: `@carat-room/tsconfig/service`, `@carat-room/shared-types`, `@carat-room/shared-events`
 - Produces: `createPostgresClient(url: string)` — postgres.js client instance, type `PostgresClient`
 
-- [ ] **Step 1: Create directory structure**
+- [x] **Step 1: Create directory structure**
 
 ```bash
 mkdir -p apps/notification-service/src/domain
@@ -112,7 +112,7 @@ mkdir -p apps/notification-service/src/__tests__/handlers
 mkdir -p apps/notification-service/src/__tests__/infrastructure
 ```
 
-- [ ] **Step 2: Create `package.json`**
+- [x] **Step 2: Create `package.json`**
 
 ```json
 {
@@ -148,7 +148,7 @@ mkdir -p apps/notification-service/src/__tests__/infrastructure
 }
 ```
 
-- [ ] **Step 3: Create `tsconfig.json`**
+- [x] **Step 3: Create `tsconfig.json`**
 
 ```json
 {
@@ -162,7 +162,7 @@ mkdir -p apps/notification-service/src/__tests__/infrastructure
 }
 ```
 
-- [ ] **Step 4: Create `src/infrastructure/db/migrations/001-create-notification-log.sql`**
+- [x] **Step 4: Create `src/infrastructure/db/migrations/001-create-notification-log.sql`**
 
 ```sql
 CREATE TABLE IF NOT EXISTS notification_log (
@@ -188,7 +188,7 @@ docker compose exec postgres psql -U postgres -d notifications \
 
 Expected: `CREATE TABLE`, `CREATE INDEX`, `CREATE INDEX`
 
-- [ ] **Step 5: Create `src/infrastructure/db/postgres-client.ts`**
+- [x] **Step 5: Create `src/infrastructure/db/postgres-client.ts`**
 
 ```typescript
 import postgres from 'postgres';
@@ -204,13 +204,13 @@ export function createPostgresClient(url: string) {
 export type PostgresClient = ReturnType<typeof createPostgresClient>;
 ```
 
-- [ ] **Step 6: Install dependencies**
+- [x] **Step 6: Install dependencies**
 
 ```bash
 pnpm --filter @carat-room/notification-service install
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/notification-service/
@@ -233,7 +233,7 @@ git commit -m "chore(notification): scaffold package and database migration"
   - `Notification` interface
   - `NotificationRepository` interface: `save(notification: Notification): Promise<void>`
 
-- [ ] **Step 1: Create `src/domain/notification.ts`**
+- [x] **Step 1: Create `src/domain/notification.ts`**
 
 ```typescript
 export type NotificationChannel = 'EMAIL' | 'SMS';
@@ -264,7 +264,7 @@ export interface Notification {
 }
 ```
 
-- [ ] **Step 2: Create `src/domain/notification-repository.ts`**
+- [x] **Step 2: Create `src/domain/notification-repository.ts`**
 
 ```typescript
 import type { Notification } from './notification.js';
@@ -274,7 +274,7 @@ export interface NotificationRepository {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/notification-service/src/domain/
@@ -293,7 +293,7 @@ git commit -m "feat(notification): add domain layer"
 - Consumes: `NotificationRepository`, `PostgresClient`
 - Produces: `PostgresNotificationRepository` class implementing `NotificationRepository`
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 `apps/notification-service/src/__tests__/infrastructure/postgres-notification-repository.test.ts`:
 ```typescript
@@ -334,7 +334,7 @@ describe('PostgresNotificationRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 pnpm --filter @carat-room/notification-service test
@@ -342,7 +342,7 @@ pnpm --filter @carat-room/notification-service test
 
 Expected: FAIL — `postgres-notification-repository.ts` does not exist.
 
-- [ ] **Step 3: Create `src/infrastructure/db/postgres-notification-repository.ts`**
+- [x] **Step 3: Create `src/infrastructure/db/postgres-notification-repository.ts`**
 
 ```typescript
 import type { PostgresClient } from './postgres-client.js';
@@ -372,7 +372,7 @@ export class PostgresNotificationRepository implements NotificationRepository {
 }
 ```
 
-- [ ] **Step 4: Run tests — verify they pass**
+- [x] **Step 4: Run tests — verify they pass**
 
 ```bash
 pnpm --filter @carat-room/notification-service test
@@ -380,7 +380,7 @@ pnpm --filter @carat-room/notification-service test
 
 Expected: 2 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/notification-service/src/infrastructure/db/postgres-notification-repository.ts
@@ -404,7 +404,7 @@ git commit -m "feat(notification): add PostgresNotificationRepository"
   - `LogNotificationParams`: `{ userId: string; type: NotificationType; channel: NotificationChannel; send: () => Promise<void> }`
   - `LogNotificationUseCase`: `execute(params: LogNotificationParams): Promise<void>`
 
-- [ ] **Step 1: Create `src/application/email-sender.ts`**
+- [x] **Step 1: Create `src/application/email-sender.ts`**
 
 ```typescript
 export interface EmailSender {
@@ -412,7 +412,7 @@ export interface EmailSender {
 }
 ```
 
-- [ ] **Step 2: Create `src/application/sms-sender.ts`**
+- [x] **Step 2: Create `src/application/sms-sender.ts`**
 
 ```typescript
 export interface SmsSender {
@@ -420,7 +420,7 @@ export interface SmsSender {
 }
 ```
 
-- [ ] **Step 3: Create `src/application/log-notification.use-case.ts`**
+- [x] **Step 3: Create `src/application/log-notification.use-case.ts`**
 
 ```typescript
 import { randomUUID } from 'crypto';
@@ -468,7 +468,7 @@ export class LogNotificationUseCase {
 }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/notification-service/src/application/
@@ -487,7 +487,7 @@ git commit -m "feat(notification): add application layer — LogNotificationUseC
 - Consumes: `EmailSender`, `SmsSender`
 - Produces: `ResendEmailSender` implementing `EmailSender`, `TwilioSmsSender` implementing `SmsSender`
 
-- [ ] **Step 1: Create `src/infrastructure/email/resend-email-sender.ts`**
+- [x] **Step 1: Create `src/infrastructure/email/resend-email-sender.ts`**
 
 ```typescript
 import { Resend } from 'resend';
@@ -514,7 +514,7 @@ export class ResendEmailSender implements EmailSender {
 }
 ```
 
-- [ ] **Step 2: Create `src/infrastructure/sms/twilio-sms-sender.ts`**
+- [x] **Step 2: Create `src/infrastructure/sms/twilio-sms-sender.ts`**
 
 ```typescript
 import twilio from 'twilio';
@@ -537,7 +537,7 @@ export class TwilioSmsSender implements SmsSender {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/notification-service/src/infrastructure/email/resend-email-sender.ts
@@ -554,7 +554,7 @@ git commit -m "feat(notification): add Resend email sender and Twilio SMS sender
 **Interfaces:**
 - Produces: one `render<Name>Email(props): Promise<string>` async function per template
 
-- [ ] **Step 1: Create `user-registered.tsx`**
+- [x] **Step 1: Create `user-registered.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text, Button } from '@react-email/components';
@@ -585,7 +585,7 @@ export async function renderUserRegisteredEmail(props: Props): Promise<string> {
 }
 ```
 
-- [ ] **Step 2: Create `phone-verification.tsx`**
+- [x] **Step 2: Create `phone-verification.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text } from '@react-email/components';
@@ -613,7 +613,7 @@ export async function renderPhoneVerificationEmail(props: Props): Promise<string
 }
 ```
 
-- [ ] **Step 3: Create `bid-placed.tsx`**
+- [x] **Step 3: Create `bid-placed.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text, Button } from '@react-email/components';
@@ -642,7 +642,7 @@ export async function renderBidPlacedEmail(props: Props): Promise<string> {
 }
 ```
 
-- [ ] **Step 4: Create `auction-closing-soon.tsx`**
+- [x] **Step 4: Create `auction-closing-soon.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text, Button } from '@react-email/components';
@@ -671,7 +671,7 @@ export async function renderAuctionClosingSoonEmail(props: Props): Promise<strin
 }
 ```
 
-- [ ] **Step 5: Create `auction-closed-won.tsx`**
+- [x] **Step 5: Create `auction-closed-won.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text, Button } from '@react-email/components';
@@ -701,7 +701,7 @@ export async function renderAuctionClosedWonEmail(props: Props): Promise<string>
 }
 ```
 
-- [ ] **Step 6: Create `auction-closed-unsold.tsx`**
+- [x] **Step 6: Create `auction-closed-unsold.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text } from '@react-email/components';
@@ -729,7 +729,7 @@ export async function renderAuctionClosedUnsoldEmail(props: Props): Promise<stri
 }
 ```
 
-- [ ] **Step 7: Create `invoice-created.tsx`**
+- [x] **Step 7: Create `invoice-created.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text, Button } from '@react-email/components';
@@ -759,7 +759,7 @@ export async function renderInvoiceCreatedEmail(props: Props): Promise<string> {
 }
 ```
 
-- [ ] **Step 8: Create `payment-received.tsx`**
+- [x] **Step 8: Create `payment-received.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text, Button } from '@react-email/components';
@@ -788,7 +788,7 @@ export async function renderPaymentReceivedEmail(props: Props): Promise<string> 
 }
 ```
 
-- [ ] **Step 9: Create `invoice-expired.tsx`**
+- [x] **Step 9: Create `invoice-expired.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text } from '@react-email/components';
@@ -816,7 +816,7 @@ export async function renderInvoiceExpiredEmail(props: Props): Promise<string> {
 }
 ```
 
-- [ ] **Step 10: Create `item-dispatched.tsx`**
+- [x] **Step 10: Create `item-dispatched.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text } from '@react-email/components';
@@ -845,7 +845,7 @@ export async function renderItemDispatchedEmail(props: Props): Promise<string> {
 }
 ```
 
-- [ ] **Step 11: Create `item-collected.tsx`**
+- [x] **Step 11: Create `item-collected.tsx`**
 
 ```tsx
 import { Html, Head, Body, Container, Text } from '@react-email/components';
@@ -872,7 +872,7 @@ export async function renderItemCollectedEmail(props: Props): Promise<string> {
 }
 ```
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/notification-service/src/infrastructure/email/templates/
@@ -889,7 +889,7 @@ git commit -m "feat(notification): add React Email templates for all 11 notifica
 - Consumes: `LogNotificationUseCase`, `EmailSender`, `SmsSender`, all template render functions, all event payload types
 - Produces: `handle<EventName>(payload, useCase, emailSender, ...) => Promise<void>` per event
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 `apps/notification-service/src/__tests__/handlers/user-registered.handler.test.ts`:
 ```typescript
@@ -990,7 +990,7 @@ describe('handleAuctionClosed', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 pnpm --filter @carat-room/notification-service test
@@ -998,7 +998,7 @@ pnpm --filter @carat-room/notification-service test
 
 Expected: 5 handler tests FAIL. 2 repository tests still pass.
 
-- [ ] **Step 3: Create `handlers/user-registered.handler.ts`**
+- [x] **Step 3: Create `handlers/user-registered.handler.ts`**
 
 ```typescript
 import type { UserRegisteredPayload } from '@carat-room/shared-types';
@@ -1025,7 +1025,7 @@ export async function handleUserRegistered(
 }
 ```
 
-- [ ] **Step 4: Create `handlers/phone-verification.handler.ts`**
+- [x] **Step 4: Create `handlers/phone-verification.handler.ts`**
 
 ```typescript
 import type { PhoneVerificationRequestedPayload } from '@carat-room/shared-types';
@@ -1051,7 +1051,7 @@ export async function handlePhoneVerification(
 }
 ```
 
-- [ ] **Step 5: Create `handlers/bid-placed.handler.ts`**
+- [x] **Step 5: Create `handlers/bid-placed.handler.ts`**
 
 ```typescript
 import type { BidPlacedPayload } from '@carat-room/shared-types';
@@ -1089,7 +1089,7 @@ export async function handleBidPlaced(
 }
 ```
 
-- [ ] **Step 6: Create `handlers/auction-closing-soon.handler.ts`**
+- [x] **Step 6: Create `handlers/auction-closing-soon.handler.ts`**
 
 ```typescript
 import type { AuctionClosingSoonPayload } from '@carat-room/shared-types';
@@ -1132,7 +1132,7 @@ export async function handleAuctionClosingSoon(
 }
 ```
 
-- [ ] **Step 7: Create `handlers/auction-closed.handler.ts`**
+- [x] **Step 7: Create `handlers/auction-closed.handler.ts`**
 
 ```typescript
 import type { AuctionClosedPayload } from '@carat-room/shared-types';
@@ -1185,7 +1185,7 @@ export async function handleAuctionClosed(
 }
 ```
 
-- [ ] **Step 8: Create remaining 4 handlers**
+- [x] **Step 8: Create remaining 4 handlers**
 
 `handlers/invoice-created.handler.ts`:
 ```typescript
@@ -1330,7 +1330,7 @@ export async function handleItemCollected(
 }
 ```
 
-- [ ] **Step 9: Run all tests — verify they pass**
+- [x] **Step 9: Run all tests — verify they pass**
 
 ```bash
 pnpm --filter @carat-room/notification-service test
@@ -1338,7 +1338,7 @@ pnpm --filter @carat-room/notification-service test
 
 Expected: 7 tests pass (2 repository + 1 user-registered + 2 bid-placed + 2 auction-closed).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add apps/notification-service/src/application/handlers/
@@ -1359,7 +1359,7 @@ git commit -m "feat(notification): add all 10 event handlers"
 **Interfaces:**
 - Produces: runnable service — subscribes to 10 RabbitMQ queues, exposes `GET /health`
 
-- [ ] **Step 1: Create `src/infrastructure/subscribers/notification-subscribers.ts`**
+- [x] **Step 1: Create `src/infrastructure/subscribers/notification-subscribers.ts`**
 
 ```typescript
 import { EventSubscriber, createAmqpConnection } from '@carat-room/shared-events';
@@ -1408,7 +1408,7 @@ export async function startNotificationSubscribers(deps: Deps): Promise<void> {
 }
 ```
 
-- [ ] **Step 2: Create `src/presentation/health-router.ts`**
+- [x] **Step 2: Create `src/presentation/health-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -1418,7 +1418,7 @@ export const healthRouter = new Hono();
 healthRouter.get('/health', (c) => c.json({ status: 'ok' }));
 ```
 
-- [ ] **Step 3: Create `src/main.ts`**
+- [x] **Step 3: Create `src/main.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -1484,7 +1484,7 @@ serve({ fetch: app.fetch, port: PORT }, () => {
 });
 ```
 
-- [ ] **Step 4: Create `Dockerfile`**
+- [x] **Step 4: Create `Dockerfile`**
 
 ```dockerfile
 FROM node:20-alpine AS base
@@ -1508,7 +1508,7 @@ EXPOSE 3005
 CMD ["node", "dist/main.js"]
 ```
 
-- [ ] **Step 5: Build the service**
+- [x] **Step 5: Build the service**
 
 ```bash
 pnpm --filter @carat-room/notification-service build
@@ -1516,7 +1516,7 @@ pnpm --filter @carat-room/notification-service build
 
 Expected: `dist/` created, zero TypeScript errors.
 
-- [ ] **Step 6: Smoke test locally**
+- [x] **Step 6: Smoke test locally**
 
 ```bash
 docker compose up postgres rabbitmq -d
@@ -1541,7 +1541,7 @@ curl http://localhost:3005/health
 
 Expected: `{"status":"ok"}`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/notification-service/src/infrastructure/subscribers/
@@ -1555,12 +1555,12 @@ git commit -m "feat(notification): wire subscribers and add service entry point"
 
 ## Acceptance Criteria
 
-- [ ] `pnpm --filter @carat-room/notification-service test` — 7 tests pass
-- [ ] `pnpm --filter @carat-room/notification-service build` — zero TypeScript errors
-- [ ] `GET /health` returns `{"status":"ok"}`
-- [ ] Service logs "Subscribed to all 10 queues" on startup
-- [ ] Every notification attempt recorded in `notification_log` — both SENT and FAILED
-- [ ] `handleBidPlaced` does nothing when `previousHighestBidderId` is null
-- [ ] `handleAuctionClosed` sends AUCTION_CLOSED_WON when `reserveMet: true`, AUCTION_CLOSED_UNSOLD when `reserveMet: false`
-- [ ] Phone OTP sent via Twilio SMS — all other notifications sent via Resend email
-- [ ] Infrastructure layer never imported by domain or application layers
+- [x] `pnpm --filter @carat-room/notification-service test` — 7 tests pass
+- [x] `pnpm --filter @carat-room/notification-service build` — zero TypeScript errors
+- [x] `GET /health` returns `{"status":"ok"}`
+- [x] Service logs "Subscribed to all 10 queues" on startup
+- [x] Every notification attempt recorded in `notification_log` — both SENT and FAILED
+- [x] `handleBidPlaced` does nothing when `previousHighestBidderId` is null
+- [x] `handleAuctionClosed` sends AUCTION_CLOSED_WON when `reserveMet: true`, AUCTION_CLOSED_UNSOLD when `reserveMet: false`
+- [x] Phone OTP sent via Twilio SMS — all other notifications sent via Resend email
+- [x] Infrastructure layer never imported by domain or application layers
