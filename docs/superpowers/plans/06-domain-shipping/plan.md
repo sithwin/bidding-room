@@ -35,7 +35,7 @@
 **Interfaces:**
 - Produces: runnable `vitest` and `tsc --noEmit` commands with zero errors
 
-- [ ] **Step 1: Create `apps/shipping/package.json`**
+- [x] **Step 1: Create `apps/shipping/package.json`**
 
 ```json
 {
@@ -68,7 +68,7 @@
 }
 ```
 
-- [ ] **Step 2: Create `apps/shipping/tsconfig.json`**
+- [x] **Step 2: Create `apps/shipping/tsconfig.json`**
 
 ```json
 {
@@ -81,7 +81,7 @@
 }
 ```
 
-- [ ] **Step 3: Create `apps/shipping/vitest.config.ts`**
+- [x] **Step 3: Create `apps/shipping/vitest.config.ts`**
 
 ```typescript
 import { defineConfig } from 'vitest/config';
@@ -94,7 +94,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 4: Create `apps/shipping/migrations/001_create_fulfilments.sql`**
+- [x] **Step 4: Create `apps/shipping/migrations/001_create_fulfilments.sql`**
 
 ```sql
 CREATE TABLE fulfilments (
@@ -131,7 +131,7 @@ CREATE INDEX idx_fulfilments_user_id ON fulfilments(user_id);
 CREATE INDEX idx_fulfilments_lot_id  ON fulfilments(lot_id);
 ```
 
-- [ ] **Step 5: Verify TypeScript compiles**
+- [x] **Step 5: Verify TypeScript compiles**
 
 ```bash
 cd apps/shipping && npx tsc --noEmit
@@ -139,7 +139,7 @@ cd apps/shipping && npx tsc --noEmit
 
 Expected: no errors (no source files yet — just config validation)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/shipping/
@@ -164,7 +164,7 @@ git commit -m "feat(shipping): scaffold package and DB migration"
   - `CollectionSlot` interface
   - `FulfilmentRepository` interface
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/shipping/src/domain/fulfilment.test.ts`:
 
@@ -280,7 +280,7 @@ describe('Fulfilment', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd apps/shipping && npx vitest run src/domain/fulfilment.test.ts
@@ -288,7 +288,7 @@ cd apps/shipping && npx vitest run src/domain/fulfilment.test.ts
 
 Expected: FAIL — `Cannot find module './fulfilment'`
 
-- [ ] **Step 3: Implement the domain entities**
+- [x] **Step 3: Implement the domain entities**
 
 Create `apps/shipping/src/domain/fulfilment.ts`:
 
@@ -414,7 +414,7 @@ export class Fulfilment {
 }
 ```
 
-- [ ] **Step 4: Create `apps/shipping/src/domain/fulfilment-repository.ts`**
+- [x] **Step 4: Create `apps/shipping/src/domain/fulfilment-repository.ts`**
 
 ```typescript
 import { Fulfilment, ShippingAddress, CollectionSlot } from './fulfilment';
@@ -428,7 +428,7 @@ export interface FulfilmentRepository {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 ```bash
 cd apps/shipping && npx vitest run src/domain/fulfilment.test.ts
@@ -436,7 +436,7 @@ cd apps/shipping && npx vitest run src/domain/fulfilment.test.ts
 
 Expected: all 7 tests PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/shipping/src/domain/
@@ -456,7 +456,7 @@ git commit -m "feat(shipping): domain layer — Fulfilment entity and repository
 - Consumes: `FulfilmentRepository` interface from Task 2; `Fulfilment`, `FulfilmentStatus`, `FulfilmentMethod`, `ShippingAddress`, `CollectionSlot`, `FulfilmentProps` from Task 2
 - Produces: `PostgresFulfilmentRepository` class implementing `FulfilmentRepository`; `createDb(url)` factory; `Db` type
 
-- [ ] **Step 1: Create `apps/shipping/src/infrastructure/db/db.ts`**
+- [x] **Step 1: Create `apps/shipping/src/infrastructure/db/db.ts`**
 
 ```typescript
 import postgres from 'postgres';
@@ -468,7 +468,7 @@ export function createDb(connectionUrl: string): Db {
 }
 ```
 
-- [ ] **Step 2: Write failing tests**
+- [x] **Step 2: Write failing tests**
 
 Create `apps/shipping/src/infrastructure/db/postgres-fulfilment-repository.test.ts`:
 
@@ -584,7 +584,7 @@ describe('PostgresFulfilmentRepository', () => {
 });
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 ```bash
 cd apps/shipping && npx vitest run src/infrastructure/db/postgres-fulfilment-repository.test.ts
@@ -592,7 +592,7 @@ cd apps/shipping && npx vitest run src/infrastructure/db/postgres-fulfilment-rep
 
 Expected: FAIL — `Cannot find module './postgres-fulfilment-repository'`
 
-- [ ] **Step 4: Implement `PostgresFulfilmentRepository`**
+- [x] **Step 4: Implement `PostgresFulfilmentRepository`**
 
 Create `apps/shipping/src/infrastructure/db/postgres-fulfilment-repository.ts`:
 
@@ -747,7 +747,7 @@ export class PostgresFulfilmentRepository implements FulfilmentRepository {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 First create the test database if it does not exist:
 
@@ -763,7 +763,7 @@ cd apps/shipping && npx vitest run src/infrastructure/db/postgres-fulfilment-rep
 
 Expected: all 3 tests PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/shipping/src/infrastructure/db/
@@ -787,7 +787,7 @@ git commit -m "feat(shipping): PostgresFulfilmentRepository with TDD"
 - Consumes: `Fulfilment`, `FulfilmentStatus`, `ShippingAddress`, `CollectionSlot` from Task 2; `FulfilmentRepository` from Task 2
 - Produces: six use case classes, each with a single `execute(dto)` method
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/shipping/src/application/use-cases.test.ts`:
 
@@ -920,7 +920,7 @@ describe('GetFulfilmentUseCase', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd apps/shipping && npx vitest run src/application/use-cases.test.ts
@@ -928,7 +928,7 @@ cd apps/shipping && npx vitest run src/application/use-cases.test.ts
 
 Expected: FAIL — cannot find modules
 
-- [ ] **Step 3: Implement `CreateFulfilmentUseCase`**
+- [x] **Step 3: Implement `CreateFulfilmentUseCase`**
 
 Create `apps/shipping/src/application/create-fulfilment.use-case.ts`:
 
@@ -956,7 +956,7 @@ export class CreateFulfilmentUseCase {
 }
 ```
 
-- [ ] **Step 4: Implement `ChooseShipUseCase`**
+- [x] **Step 4: Implement `ChooseShipUseCase`**
 
 Create `apps/shipping/src/application/choose-ship.use-case.ts`:
 
@@ -1009,7 +1009,7 @@ export class ChooseShipUseCase {
 }
 ```
 
-- [ ] **Step 5: Implement `ChooseCollectUseCase`**
+- [x] **Step 5: Implement `ChooseCollectUseCase`**
 
 Create `apps/shipping/src/application/choose-collect.use-case.ts`:
 
@@ -1050,7 +1050,7 @@ export class ChooseCollectUseCase {
 }
 ```
 
-- [ ] **Step 6: Implement `MarkDispatchedUseCase`**
+- [x] **Step 6: Implement `MarkDispatchedUseCase`**
 
 Create `apps/shipping/src/application/mark-dispatched.use-case.ts`:
 
@@ -1073,7 +1073,7 @@ export class MarkDispatchedUseCase {
 }
 ```
 
-- [ ] **Step 7: Implement `MarkCollectedUseCase`**
+- [x] **Step 7: Implement `MarkCollectedUseCase`**
 
 Create `apps/shipping/src/application/mark-collected.use-case.ts`:
 
@@ -1096,7 +1096,7 @@ export class MarkCollectedUseCase {
 }
 ```
 
-- [ ] **Step 8: Implement `GetFulfilmentUseCase`**
+- [x] **Step 8: Implement `GetFulfilmentUseCase`**
 
 Create `apps/shipping/src/application/get-fulfilment.use-case.ts`:
 
@@ -1121,7 +1121,7 @@ export class GetFulfilmentUseCase {
 }
 ```
 
-- [ ] **Step 9: Run tests to verify they pass**
+- [x] **Step 9: Run tests to verify they pass**
 
 ```bash
 cd apps/shipping && npx vitest run src/application/use-cases.test.ts
@@ -1129,7 +1129,7 @@ cd apps/shipping && npx vitest run src/application/use-cases.test.ts
 
 Expected: all 7 tests PASS
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add apps/shipping/src/application/
@@ -1150,7 +1150,7 @@ git commit -m "feat(shipping): application use cases with TDD"
 - Consumes: `CreateFulfilmentUseCase` from Task 4; `EventSubscriber`, `EventPublisher` from `@carat-room/shared-events`; `ROUTING_KEYS`, `PaymentReceivedPayload`, `ItemDispatchedPayload`, `ItemCollectedPayload` from `@carat-room/shared-types`
 - Produces: `PaymentReceivedHandler` class; `ItemDispatchedPublisher` class; `ItemCollectedPublisher` class
 
-- [ ] **Step 1: Write failing test**
+- [x] **Step 1: Write failing test**
 
 Create `apps/shipping/src/infrastructure/events/payment-received-handler.test.ts`:
 
@@ -1192,7 +1192,7 @@ describe('PaymentReceivedHandler', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```bash
 cd apps/shipping && npx vitest run src/infrastructure/events/payment-received-handler.test.ts
@@ -1200,7 +1200,7 @@ cd apps/shipping && npx vitest run src/infrastructure/events/payment-received-ha
 
 Expected: FAIL — cannot find module
 
-- [ ] **Step 3: Implement `PaymentReceivedHandler`**
+- [x] **Step 3: Implement `PaymentReceivedHandler`**
 
 Create `apps/shipping/src/infrastructure/events/payment-received-handler.ts`:
 
@@ -1220,7 +1220,7 @@ export class PaymentReceivedHandler {
 }
 ```
 
-- [ ] **Step 4: Implement `ItemDispatchedPublisher`**
+- [x] **Step 4: Implement `ItemDispatchedPublisher`**
 
 Create `apps/shipping/src/infrastructure/events/item-dispatched-publisher.ts`:
 
@@ -1237,7 +1237,7 @@ export class ItemDispatchedPublisher {
 }
 ```
 
-- [ ] **Step 5: Implement `ItemCollectedPublisher`**
+- [x] **Step 5: Implement `ItemCollectedPublisher`**
 
 Create `apps/shipping/src/infrastructure/events/item-collected-publisher.ts`:
 
@@ -1254,7 +1254,7 @@ export class ItemCollectedPublisher {
 }
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 ```bash
 cd apps/shipping && npx vitest run src/infrastructure/events/payment-received-handler.test.ts
@@ -1262,7 +1262,7 @@ cd apps/shipping && npx vitest run src/infrastructure/events/payment-received-ha
 
 Expected: 1 test PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/shipping/src/infrastructure/events/
@@ -1283,7 +1283,7 @@ git commit -m "feat(shipping): RabbitMQ handlers and publishers"
 - Consumes: `GetFulfilmentUseCase`, `ChooseShipUseCase`, `ChooseCollectUseCase`, `MarkDispatchedUseCase`, `MarkCollectedUseCase` from Task 4; `authMiddleware`, `JwtPayload` from `@carat-room/shared-auth`; `PaymentReceivedHandler` from Task 5; `createAmqpConnection`, `EventSubscriber`, `EventPublisher` from `@carat-room/shared-events`; `createDb` from Task 3
 - Produces: Hono app on port 3004 with `GET /health` + 3 buyer routes
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/shipping/src/presentation/shipping-router.test.ts`:
 
@@ -1373,7 +1373,7 @@ describe('POST /api/shipping/fulfilments/:id/choose-ship', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd apps/shipping && npx vitest run src/presentation/shipping-router.test.ts
@@ -1381,7 +1381,7 @@ cd apps/shipping && npx vitest run src/presentation/shipping-router.test.ts
 
 Expected: FAIL — cannot find module
 
-- [ ] **Step 3: Implement `buildShippingRouter`**
+- [x] **Step 3: Implement `buildShippingRouter`**
 
 Create `apps/shipping/src/presentation/shipping-router.ts`:
 
@@ -1505,7 +1505,7 @@ export function buildShippingRouter(useCases: UseCases): Hono<AppEnv> {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd apps/shipping && npx vitest run src/presentation/shipping-router.test.ts
@@ -1513,7 +1513,7 @@ cd apps/shipping && npx vitest run src/presentation/shipping-router.test.ts
 
 Expected: all 3 tests PASS
 
-- [ ] **Step 5: Create `apps/shipping/src/main.ts`**
+- [x] **Step 5: Create `apps/shipping/src/main.ts`**
 
 ```typescript
 import { serve } from '@hono/node-server';
@@ -1590,7 +1590,7 @@ main().catch((err) => {
 });
 ```
 
-- [ ] **Step 6: Create `apps/shipping/Dockerfile`**
+- [x] **Step 6: Create `apps/shipping/Dockerfile`**
 
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -1610,7 +1610,7 @@ EXPOSE 3004
 CMD ["node", "dist/main.js"]
 ```
 
-- [ ] **Step 7: Run all tests**
+- [x] **Step 7: Run all tests**
 
 ```bash
 cd apps/shipping && npx vitest run
@@ -1618,7 +1618,7 @@ cd apps/shipping && npx vitest run
 
 Expected: all tests PASS
 
-- [ ] **Step 8: Verify TypeScript compiles cleanly**
+- [x] **Step 8: Verify TypeScript compiles cleanly**
 
 ```bash
 cd apps/shipping && npx tsc --noEmit
@@ -1626,7 +1626,7 @@ cd apps/shipping && npx tsc --noEmit
 
 Expected: no errors
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/shipping/src/presentation/ apps/shipping/src/main.ts apps/shipping/Dockerfile
