@@ -1,5 +1,11 @@
 # CLAUDE.md — The Carat Room Auction Platform
 
+## Output Token Limit — CRITICAL
+
+**Never generate large file content in a single response.** Claude has a 32,000 output token limit. Writing a large plan or file in one `Write` call will exceed it and waste the entire response.
+
+**Rule: Write large files in chunks using multiple sequential `Edit` calls.** Write the first section, then append the next section with another `Edit`, and so on. Each `Edit` call should stay well under 500 lines of output.
+
 ## Project Overview
 
 The Carat Room is a timed online auction platform for premium goods (jewellery, designer bags, etc.). The business lists all lots — no third-party sellers. Buyers register, verify via phone OTP, and bid on timed auctions. Winners pay via Stripe Checkout and choose shipping or collection.
@@ -195,3 +201,6 @@ docs/superpowers/
 ```
 
 Before implementing any domain, read its plan file in full.
+
+
+admin@caratroom.com / Test1234!
