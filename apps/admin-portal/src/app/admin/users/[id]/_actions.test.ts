@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 import { adminApi } from '@/lib/admin-api';
 import { suspendUser, reinstateUser } from './_actions';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('suspendUser', () => {
   it('should_callAdminApiPatch_with_reason', async () => {

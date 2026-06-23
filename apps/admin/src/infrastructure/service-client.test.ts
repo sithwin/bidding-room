@@ -3,7 +3,7 @@ import { ServiceClient, ServiceError } from './service-client';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
-afterEach(() => vi.clearAllMocks());
+afterEach(() => { vi.clearAllMocks(); });
 
 describe('ServiceClient', () => {
   const client = new ServiceClient('http://catalogue-service:3001');
@@ -56,6 +56,6 @@ describe('ServiceClient', () => {
     const err = await client.get('/api/lots', 'bad-token').catch(e => e);
 
     expect(err).toBeInstanceOf(ServiceError);
-    expect(err.status).toBe(403);
+    expect((err as ServiceError).status).toBe(403);
   });
 });

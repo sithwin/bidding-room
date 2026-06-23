@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { adminApi, AdminApiError } from '@/lib/admin-api';
 import { LotFormSchema } from '@/lib/schemas/lot.schema';
 
-type ActionState = Record<string, unknown>;
+type ActionState = { ok?: boolean; errors?: Record<string, string[] | undefined>; [key: string]: unknown };
 
 export async function createLot(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const raw = {

@@ -8,12 +8,12 @@ import { cookies } from 'next/headers';
 import { getAdminToken } from './auth';
 
 describe('getAdminToken', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('should_returnToken_when_cookieIsPresent', async () => {
     vi.mocked(cookies).mockReturnValue({
       get: vi.fn().mockReturnValue({ value: 'admin-jwt-abc' }),
-    } as ReturnType<typeof cookies>);
+    } as unknown as ReturnType<typeof cookies>);
 
     const token = getAdminToken();
 
@@ -23,7 +23,7 @@ describe('getAdminToken', () => {
   it('should_returnUndefined_when_cookieIsAbsent', async () => {
     vi.mocked(cookies).mockReturnValue({
       get: vi.fn().mockReturnValue(undefined),
-    } as ReturnType<typeof cookies>);
+    } as unknown as ReturnType<typeof cookies>);
 
     const token = getAdminToken();
 

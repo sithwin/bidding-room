@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 import { adminApi } from '@/lib/admin-api';
 import { scheduleAuction, cancelAuction } from './_actions';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 const futureDate = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
 

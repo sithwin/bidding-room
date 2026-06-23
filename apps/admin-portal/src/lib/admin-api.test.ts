@@ -9,7 +9,7 @@ vi.mock('next/headers', () => ({
 
 import { adminApi, AdminApiError } from './admin-api';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('adminApi', () => {
   it('should_returnJson_when_responseIsOk', async () => {
@@ -48,7 +48,7 @@ describe('adminApi', () => {
 
     const err = await adminApi.post('/admin/api/lots', {}).catch(e => e);
     expect(err).toBeInstanceOf(AdminApiError);
-    expect(err.status).toBe(409);
+    expect((err as AdminApiError).status).toBe(409);
   });
 
   it('should_sendBodyAsJson_when_posting', async () => {

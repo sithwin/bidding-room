@@ -11,7 +11,7 @@ vi.mock('next/headers', () => ({
 
 import { POST, DELETE } from './route';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('POST /api/auth', () => {
   it('should_setCookieAndReturn200_when_adminCredentialsAreValid', async () => {

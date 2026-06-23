@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 import { adminApi } from '@/lib/admin-api';
 import { markDispatched, markCollected } from './_actions';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('markDispatched', () => {
   it('should_callAdminApiPatch_with_trackingAndCarrier', async () => {

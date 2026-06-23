@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 import { adminApi } from '@/lib/admin-api';
 import { extendDueDate, cancelInvoice } from './_actions';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('extendDueDate', () => {
   it('should_callAdminApiPatch_with_futureDate', async () => {

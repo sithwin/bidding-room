@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 import { adminApi } from '@/lib/admin-api';
 import { createLot, updateLot, deleteLot } from './_actions';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('createLot', () => {
   it('should_callAdminApiPostAndReturn_when_formDataIsValid', async () => {

@@ -1,8 +1,8 @@
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import { authMiddleware } from '@carat-room/shared-auth';
 import { ServiceClient, ServiceError } from '../infrastructure/service-client';
 
-type Ctx = Parameters<Parameters<Hono['get']>[1]>[0];
+type Ctx = Context;
 
 const jwtPublicKey = process.env['JWT_PUBLIC_KEY'] ?? '';
 const tok = (c: Ctx) => c.req.header('Authorization')?.replace('Bearer ', '') ?? '';

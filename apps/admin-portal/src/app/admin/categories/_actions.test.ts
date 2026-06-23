@@ -12,7 +12,7 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 import { adminApi, AdminApiError } from '@/lib/admin-api';
 import { createCategory, renameCategory, deleteCategory } from './_actions';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); });
 
 describe('createCategory', () => {
   it('should_callAdminApiPost_when_dataIsValid', async () => {
