@@ -1,0 +1,24 @@
+{
+  "name": "@carat-room/admin",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc --build",
+    "start": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@carat-room/shared-auth": "workspace:*",
+    "@hono/node-server": "^1.12.0",
+    "hono": "^4.4.0"
+  },
+  "devDependencies": {
+    "@carat-room/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
