@@ -4,6 +4,10 @@ import { ServiceClient, ServiceError } from '../infrastructure/service-client';
 import { buildLotsRouter } from './lots-router';
 import { buildCategoriesRouter } from './categories-router';
 import { buildAuctionsRouter } from './auctions-router';
+import { buildUsersRouter } from './users-router';
+import { buildInvoicesRouter } from './invoices-router';
+import { buildFulfilmentsRouter } from './fulfilments-router';
+import { buildReportsRouter } from './reports-router';
 
 vi.mock('@carat-room/shared-auth', () => ({
   authMiddleware: () => async (
@@ -110,6 +114,79 @@ describe('Auctions router', () => {
     const app = new Hono().route('/', buildAuctionsRouter(mockClient));
 
     const res = await app.request('/admin/api/auctions', { headers: authHeader() });
+
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('Users router', () => {
+  it('should_return200_when_listingUsers', async () => {
+    vi.mocked(mockClient.get).mockResolvedValue({ data: [] });
+    const app = new Hono().route('/', buildUsersRouter(mockClient));
+
+    const res = await app.request('/admin/api/users', { headers: authHeader() });
+
+    expect(res.status).toBe(200);
+    expect(mockClient.get).toHaveBeenCalledWith(expect.stringContaining('/api/users'), 'admin-token');
+  });
+
+  it('should_return200_when_suspendingUser', async () => {
+    vi.mocked(mockClient.patch).mockResolvedValue({ data: { id: 'user-1' } });
+    const app = new Hono().route('/', buildUsersRouter(mockClient));
+
+    const res = await app.request('/admin/api/users/user-1/suspend', {
+      method: 'PATCH',
+      headers: authHeader(),
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockClient.patch).toHaveBeenCalledWith('/api/users/user-1/suspend', 'admin-token', undefined);
+  });
+});
+
+describe('Invoices router', () => {
+  it('should_return200_when_listingInvoices', async () => {
+    vi.mocked(mockClient.get).mockResolvedValue({ data: [] });
+    const app = new Hono().route('/', buildInvoicesRouter(mockClient));
+
+    const res = await app.request('/admin/api/invoices', { headers: authHeader() });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should_return200_when_cancellingInvoice', async () => {
+    vi.mocked(mockClient.patch).mockResolvedValue({ data: { id: 'inv-1' } });
+    const app = new Hono().route('/', buildInvoicesRouter(mockClient));
+
+    const res = await app.request('/admin/api/invoices/inv-1/cancel', {
+      method: 'PATCH',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'Customer request' }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('Fulfilments + Reports routers', () => {
+  it('should_return200_when_dispatchingFulfilment', async () => {
+    vi.mocked(mockClient.patch).mockResolvedValue({ data: { id: 'ful-1' } });
+    const app = new Hono().route('/', buildFulfilmentsRouter(mockClient));
+
+    const res = await app.request('/admin/api/fulfilments/ful-1/dispatch', {
+      method: 'PATCH',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trackingNumber: 'TRK123', carrier: 'AusPost' }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should_return200_when_fetchingRevenueReport', async () => {
+    vi.mocked(mockClient.get).mockResolvedValue({ data: {} });
+    const app = new Hono().route('/', buildReportsRouter(mockClient));
+
+    const res = await app.request('/admin/api/reports/revenue', { headers: authHeader() });
 
     expect(res.status).toBe(200);
   });
