@@ -12,6 +12,7 @@ import { SearchLotsUseCase } from './application/search-lots-use-case';
 import { ListCategoriesUseCase } from './application/list-categories-use-case';
 import { RequestImageUploadUseCase } from './application/request-image-upload-use-case';
 import { ConfirmImageUploadUseCase } from './application/confirm-image-upload-use-case';
+import { CreateLotUseCase } from './application/create-lot-use-case';
 import { buildCatalogueRouter } from './presentation/catalogue-router';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
@@ -41,6 +42,7 @@ const useCases = {
   listCategories: new ListCategoriesUseCase(categoryRepository),
   requestImageUpload: new RequestImageUploadUseCase(imageStorage),
   confirmImageUpload: new ConfirmImageUploadUseCase(lotRepository, imageStorage),
+  createLot: new CreateLotUseCase(lotRepository),
 };
 
 const app = new Hono<AppEnv>();
@@ -48,6 +50,28 @@ const app = new Hono<AppEnv>();
 app.get('/health', c => c.json({ status: 'ok', service: 'catalogue' }));
 
 app.use('/api/lots/:id/images/*', authMiddleware(jwtPublicKey));
+app.post('/api/lots', authMiddleware(jwtPublicKey, { adminOnly: true }), async c => {
+  const jwtPayload = c.get('jwtPayload');
+  const body = await c.req.json() as {
+    title?: string;
+    description?: string;
+    categoryId?: string;
+    condition?: string;
+    estimatedValue?: number;
+  };
+  if (!body.title?.trim()) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'title is required' } }, 400);
+  }
+  const result = await useCases.createLot.execute({
+    title: body.title,
+    description: body.description,
+    categoryId: body.categoryId,
+    condition: body.condition,
+    estimatedValue: body.estimatedValue,
+    createdBy: jwtPayload.userId,
+  });
+  return c.json({ data: result }, 201);
+});
 
 app.route('/', buildCatalogueRouter(useCases));
 

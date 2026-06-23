@@ -7,6 +7,7 @@ import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
 import { PlaceBidCommandHandler } from '../application/place-bid-handler';
+import { ScheduleAuctionCommandHandler } from '../application/schedule-auction-handler';
 import { SseBroadcaster } from '../application/sse-broadcaster';
 import { LotStatusRow } from '../application/lot-query-repository';
 
@@ -17,12 +18,15 @@ export interface AuctionRouterDeps {
   getLotStatus: GetLotStatusHandler;
   getBidHistory: GetBidHistoryHandler;
   placeBidHandler: PlaceBidCommandHandler;
+  scheduleAuctionHandler: ScheduleAuctionCommandHandler;
   sseBroadcaster: SseBroadcaster;
   jwtPublicKey: string;
 }
 
 export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+
+  app.get('/health', (c) => c.json({ status: 'ok', service: 'auction-engine' }));
 
   app.get('/api/auctions', async (c) => {
     const page = Math.max(1, Number(c.req.query('page') ?? '1'));
@@ -74,6 +78,37 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
         unsub();
       }
     });
+  });
+
+  app.post('/api/auctions', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
+    const body = await c.req.json<{
+      lotId?: string;
+      startAt?: string;
+      endAt?: string;
+      reservePrice?: number;
+      minBidIncrement?: number;
+      autoExtendWindowMinutes?: number;
+      autoExtendDurationMinutes?: number;
+    }>();
+
+    if (!body.lotId || !body.startAt || !body.endAt) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'lotId, startAt and endAt are required' } },
+        400,
+      );
+    }
+
+    await deps.scheduleAuctionHandler.execute({
+      lotId: body.lotId,
+      startAt: new Date(body.startAt),
+      endAt: new Date(body.endAt),
+      reservePrice: body.reservePrice ?? 0,
+      minBidIncrement: body.minBidIncrement ?? 1,
+      autoExtendWindowMinutes: body.autoExtendWindowMinutes ?? 5,
+      autoExtendDurationMinutes: body.autoExtendDurationMinutes ?? 5,
+    });
+
+    return c.json({ data: { lotId: body.lotId } }, 201);
   });
 
   app.post('/api/auctions/:lotId/bids', authMiddleware(deps.jwtPublicKey), async (c) => {

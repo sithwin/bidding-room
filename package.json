@@ -5,9 +5,12 @@
     "build": "turbo build",
     "test": "turbo test",
     "dev": "turbo dev",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "test:integration": "vitest run --config tests/vitest.integration.config.ts"
   },
   "devDependencies": {
+    "pg": "^8.13.0",
+    "@types/pg": "^8.11.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
   },

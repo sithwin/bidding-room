@@ -1,0 +1,74 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all services
+        run: pnpm turbo build
+
+      - name: Start test environment
+        run: docker compose -f docker-compose.test.yml up -d --build
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+
+      - name: Wait for all services to be healthy
+        run: |
+          echo "Waiting for services to pass health checks..."
+          timeout 180 bash -c '
+            until docker compose -f docker-compose.test.yml ps --format json | \
+              python3 -c "
+import sys, json
+data = sys.stdin.read()
+services = [json.loads(line) for line in data.strip().splitlines() if line.strip()]
+unhealthy = [s[\"Service\"] for s in services if s.get(\"Health\") not in (\"healthy\", \"\")]
+print(\"\\n\".join(unhealthy) if unhealthy else \"\")
+" | grep -q .; do
+              sleep 5
+            done
+          ' || true
+          sleep 10
+
+      - name: Run integration tests
+        run: pnpm run test:integration
+        env:
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+
+      - name: Collect service logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.test.yml logs --no-color > /tmp/service-logs.txt 2>&1
+
+      - name: Upload service logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: service-logs
+          path: /tmp/service-logs.txt
+          retention-days: 3
+
+      - name: Tear down test environment
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v

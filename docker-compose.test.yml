@@ -1,0 +1,245 @@
+# docker-compose.test.yml
+# Spins up all services + infrastructure for integration tests.
+# Usage: docker compose -f docker-compose.test.yml up -d --build
+# Test RSA keypair is embedded below — these keys are not used in production.
+
+# Keep these variables at the top for easy reference by the JWT block scalars.
+x-jwt-private-key: &jwt-private-key |
+  -----BEGIN PRIVATE KEY-----
+  MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC9IBuUYC44K9UP
+  q2o/6bQD8EZIasrT+2PZcCKg0Gj82vrubAqm9xL7QHzv2Bdj5pvWGuKUpeL2Vgfm
+  FGNylvkqwcdy8QA7H49Ez5wiN1/ujF3vkF0WQvjlU5GwwWF4HjxtTJi1AbGS8Y0H
+  x7+HPdTdIpfdtPe5TohVGSgiPIwfmr2JDuiuCCTFHeG/AD3yCsm85J+E43x/GGfP
+  0hp9ZkfhJV8Tf/rh29dXB/27AcIm7igtiIzOFMIFbC2iAaptFQkXW3jnQuKiLhmE
+  mD9pTPEwhJ9ycQ4Y1ABMpuFLa2OilX5fXWyorLnPvUo+3h+WIi/A+V7o45ndvT5t
+  rCOsPWaRAgMBAAECggEAALb7SbPVGuLeBdaTUsljo/frkRSfvn46y/Ckvdw5yFpc
+  xEvJ3MSOaJ8PVdH4kSjnBf+xI2gO1/jeY+YH8+/6gjkMI5zh8AdEEanR9I5mZTq4
+  NGqEkovnYEkBAgSyFUvSdUSKx3TZnqU9b+YHLRf8iucpgSXQ4Z04jk9Hd70oN6qa
+  snyt44LSU1PZZGF0zrqbT+RoLuschGiT6kvZEtuNDO1irUtlgwwR7FPzppPolqUD
+  yLCeoH2D2AMGUZVp7gizo8ihSPGa5kE/fv6fHzl3V4cOGi5zC1Sd8ulYtavnhs4I
+  Sc0H1lpkrcP0obplivj+eXk7k4K/c9PVfihPEoj04QKBgQDli0Sfe21TYyn4u8+1
+  QxzezoZ1dMZcTb8erGr8a54zM3Ig/TVHwZtH8H4BPJYI8x/GQXozaTiJHNGq+PfN
+  8hIkTVWqG19x7ZPU3lCII/yDjvxPtfLG0ae59eHeE0bRy4T3MLEu1QfX+LZPCTov
+  IclYjsojEf6TS3DtU3nEczOZ4QKBgQDS7EhhKRXZ8vzKm5pHgbwzJvy84TwBW/MU
+  r6FjwGOY7p9NqbEoXTZR4UY+3pwhBTBzaQXRXf7TArUrqiegdXL8Dy+pH9mGbQFd
+  ZeJOdXo4BYG3sAmC3uAE79Gc8VrzKoc6CAlxLDoy3/8kXLFKDqHj9Im/fvcmqcYj
+  w4SgHGRCsQKBgQDEtwlkM36Ji94YT7u9d3pyZ0NLvXuQ9v/m5ZP6JrA46MnSA615
+  hS3yBOO3Y5igqtp8KPj0viO5PX1hrGORlvZ9LdlQIo01MYkTUEJrqYtpo0wPc7pP
+  MLUw5MtgadyzRlr5DD2MCPzj1T1HlnzKj4Xh4tzQGUe2K1znxjYAaUm7gQKBgEq3
+  ySwiEcuTeFmNpamPG8xDE2UVpNwWZpX9YX6kuKOEZIpugoN6AbQfyXKcCVLpM7Cu
+  k5EHay3015kQPdlpwcHo30laLwSfuMwNO43vr8wIp1sa0UO7EECvc+HU3hMmDaFR
+  F4cv064SC6Al9ef2JwNJrUJZB9R6b+ZbbLALXrkBAoGBAJkpC6T3jL+Zxhg7AsOf
+  oIBmnfRDr889RapO/zxpBoaTlCQlmEk8KOD+DV5O4I3hKx4+1hYO85jTSihoAhAO
+  9TtJs6EwZlR2Moh/wEiTmu3/UoTgzg31GVUJBEcbPYskO7mOmGOqCK0vgTYIHq0V
+  QTKzuCiAn8KIeIOhNrXvPzKE
+  -----END PRIVATE KEY-----
+
+x-jwt-public-key: &jwt-public-key |
+  -----BEGIN PUBLIC KEY-----
+  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvSAblGAuOCvVD6tqP+m0
+  A/BGSGrK0/tj2XAioNBo/Nr67mwKpvcS+0B879gXY+ab1hrilKXi9lYH5hRjcpb5
+  KsHHcvEAOx+PRM+cIjdf7oxd75BdFkL45VORsMFheB48bUyYtQGxkvGNB8e/hz3U
+  3SKX3bT3uU6IVRkoIjyMH5q9iQ7orggkxR3hvwA98grJvOSfhON8fxhnz9IafWZH
+  4SVfE3/64dvXVwf9uwHCJu4oLYiMzhTCBWwtogGqbRUJF1t450Lioi4ZhJg/aUzx
+  MISfcnEOGNQATKbhS2tjopV+X11sqKy5z71KPt4fliIvwPle6OOZ3b0+bawjrD1m
+  kQIDAQAB
+  -----END PUBLIC KEY-----
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: carat
+      POSTGRES_PASSWORD: carat_test
+      POSTGRES_DB: postgres
+    ports:
+      - '5433:5432'
+    volumes:
+      - ./tests/db-init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U carat']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: carat
+      RABBITMQ_DEFAULT_PASS: carat_test
+    ports:
+      - '5673:5672'
+      - '15673:15672'
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  user-auth:
+    build:
+      context: .
+      dockerfile: apps/user-auth/Dockerfile
+    environment:
+      PORT: '3001'
+      DATABASE_URL: postgresql://carat:carat_test@postgres:5432/user_test
+      AMQP_URL: amqp://carat:carat_test@rabbitmq:5672
+      JWT_PRIVATE_KEY: *jwt-private-key
+      JWT_PUBLIC_KEY: *jwt-public-key
+      NODE_ENV: test
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3001/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  catalogue:
+    build:
+      context: .
+      dockerfile: apps/catalogue/Dockerfile
+    environment:
+      PORT: '3002'
+      DATABASE_URL: postgresql://carat:carat_test@postgres:5432/catalogue_test
+      JWT_PUBLIC_KEY: *jwt-public-key
+      R2_BUCKET: test-bucket
+      R2_ACCOUNT_ID: test-account
+      R2_ACCESS_KEY_ID: test-key
+      R2_SECRET_ACCESS_KEY: test-secret
+      R2_PUBLIC_BASE_URL: http://localhost:9000
+      NODE_ENV: test
+    ports:
+      - '3002:3002'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3002/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  auction-engine:
+    build:
+      context: .
+      dockerfile: apps/auction-engine/Dockerfile
+    environment:
+      PORT: '3003'
+      DATABASE_URL: postgresql://carat:carat_test@postgres:5432/auction_test
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      RABBITMQ_URL: amqp://carat:carat_test@rabbitmq:5672
+      JWT_PUBLIC_KEY: *jwt-public-key
+      NODE_ENV: test
+    ports:
+      - '3003:3003'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3003/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  payment:
+    build:
+      context: .
+      dockerfile: apps/payment/Dockerfile
+    environment:
+      PORT: '3004'
+      DATABASE_URL: postgresql://carat:carat_test@postgres:5432/payment_test
+      RABBITMQ_URL: amqp://carat:carat_test@rabbitmq:5672
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_test}
+      FRONTEND_URL: http://localhost:3000
+      JWT_PUBLIC_KEY: *jwt-public-key
+      NODE_ENV: test
+    ports:
+      - '3004:3004'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3004/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  shipping:
+    build:
+      context: .
+      dockerfile: apps/shipping/Dockerfile
+    environment:
+      PORT: '3006'
+      DATABASE_URL: postgresql://carat:carat_test@postgres:5432/shipping_test
+      AMQP_URL: amqp://carat:carat_test@rabbitmq:5672
+      JWT_PUBLIC_KEY: *jwt-public-key
+      NODE_ENV: test
+    ports:
+      - '3006:3006'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3006/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  notification:
+    build:
+      context: .
+      dockerfile: apps/notification-service/Dockerfile
+    environment:
+      PORT: '3005'
+      DATABASE_URL: postgresql://carat:carat_test@postgres:5432/notification_test
+      RABBITMQ_URL: amqp://carat:carat_test@rabbitmq:5672
+      RESEND_API_KEY: re_test_key
+      RESEND_FROM: noreply@test.carat-room.internal
+      TWILIO_ACCOUNT_SID: test-sid
+      TWILIO_AUTH_TOKEN: test-token
+      TWILIO_PHONE_NUMBER: '+15005550006'
+      USER_SERVICE_URL: http://user-auth:3001
+      CATALOGUE_SERVICE_URL: http://catalogue:3002
+      AUCTION_ENGINE_URL: http://auction-engine:3003
+      APP_BASE_URL: http://localhost:3000
+      NODE_ENV: test
+    ports:
+      - '3005:3005'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3005/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 15

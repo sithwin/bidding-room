@@ -15,7 +15,7 @@ import { CreateInvoiceUseCase } from './application/create-invoice-use-case';
 import { ExpireInvoiceUseCase } from './application/expire-invoice-use-case';
 import { buildPaymentRouter } from './presentation/payment-router';
 
-const PORT = Number(process.env['PORT'] ?? 3003);
+const PORT = Number(process.env['PORT'] ?? 3004);
 const DATABASE_URL = process.env['DATABASE_URL']!;
 const RABBITMQ_URL = process.env['RABBITMQ_URL']!;
 const REDIS_HOST = process.env['REDIS_HOST'] ?? 'localhost';
@@ -62,6 +62,7 @@ async function main(): Promise<void> {
   );
 
   const app = new Hono();
+  app.get('/health', (c) => c.json({ status: 'ok', service: 'payment' }));
   app.route('/', buildPaymentRouter({
     getInvoice: getInvoiceUseCase,
     createCheckoutSession: createCheckoutSessionUseCase,

@@ -19,7 +19,7 @@ import { GetBidHistoryHandler } from './application/get-bid-history-handler';
 import { GetActiveLotsHandler } from './application/get-active-lots-handler';
 import { createAuctionRouter } from './presentation/auction-router';
 
-const PORT = 3002;
+const PORT = Number(process.env['PORT'] ?? 3003);
 
 async function main(): Promise<void> {
   const db = createDb(process.env['DATABASE_URL'] ?? 'postgres://localhost/carat_auction');
@@ -55,8 +55,6 @@ async function main(): Promise<void> {
   const cancelAuctionHandler = new CancelAuctionCommandHandler(eventStore, projectionHandler);
   const closeAuctionHandler = new CloseAuctionCommandHandler(eventStore, projectionHandler, auctionPublisher);
 
-  // Suppress unused warnings — these are used in Plan 08's admin endpoints
-  void scheduleAuctionHandler;
   void cancelAuctionHandler;
 
   // Query handlers
@@ -82,6 +80,7 @@ async function main(): Promise<void> {
     getLotStatus: getLotStatusHandler,
     getBidHistory: getBidHistoryHandler,
     placeBidHandler,
+    scheduleAuctionHandler,
     sseBroadcaster,
     jwtPublicKey,
   });

@@ -37,7 +37,7 @@
   - `getDb(service: 'user' | 'catalogue' | 'auction' | 'payment' | 'shipping' | 'notification'): Pool` — returns a `pg.Pool` connected to that service's test database
   - `resetDb(service: 'user' | 'catalogue' | 'auction' | 'payment' | 'shipping' | 'notification'): Promise<void>` — truncates all tables in that service's DB
 
-- [ ] **Step 1: Create `docker-compose.test.yml`**
+- [x] **Step 1: Create `docker-compose.test.yml`**
 
 ```yaml
 # docker-compose.test.yml
@@ -239,7 +239,7 @@ services:
       retries: 15
 ```
 
-- [ ] **Step 2: Create `tests/vitest.integration.config.ts`**
+- [x] **Step 2: Create `tests/vitest.integration.config.ts`**
 
 ```typescript
 // tests/vitest.integration.config.ts
@@ -259,7 +259,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 3: Create `tests/helpers/wait.ts`**
+- [x] **Step 3: Create `tests/helpers/wait.ts`**
 
 ```typescript
 // tests/helpers/wait.ts
@@ -302,7 +302,7 @@ export async function waitFor(
 }
 ```
 
-- [ ] **Step 4: Create `tests/helpers/db.ts`**
+- [x] **Step 4: Create `tests/helpers/db.ts`**
 
 ```typescript
 // tests/helpers/db.ts
@@ -374,7 +374,7 @@ export async function closeAllPools(): Promise<void> {
 }
 ```
 
-- [ ] **Step 5: Add `pg` as a dev dependency and verify Docker Compose file is valid**
+- [x] **Step 5: Add `pg` as a dev dependency and verify Docker Compose file is valid**
 
 ```bash
 # Run from monorepo root
@@ -386,7 +386,7 @@ docker compose -f docker-compose.test.yml config --quiet
 
 Expected: no errors printed.
 
-- [ ] **Step 6: Add integration test script to root `package.json`**
+- [x] **Step 6: Add integration test script to root `package.json`**
 
 Open `package.json` at monorepo root. Add to the `scripts` section:
 
@@ -394,7 +394,7 @@ Open `package.json` at monorepo root. Add to the `scripts` section:
 "test:integration": "vitest run --config tests/vitest.integration.config.ts"
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add docker-compose.test.yml tests/vitest.integration.config.ts tests/helpers/wait.ts tests/helpers/db.ts package.json
@@ -419,7 +419,7 @@ git commit -m "test: add integration test infrastructure (docker-compose, vitest
   - `seedAuction(lotId: string, adminToken: string, opts?: { reservePrice?: number; durationSeconds?: number }): Promise<{ auctionId: string }>` — schedules an auction via Auction Engine API
   - `api(port: number): { get, post, patch, delete }` — thin fetch wrapper with JSON helpers
 
-- [ ] **Step 1: Create `tests/helpers/api.ts`**
+- [x] **Step 1: Create `tests/helpers/api.ts`**
 
 ```typescript
 // tests/helpers/api.ts
@@ -472,7 +472,7 @@ export function api(port: number) {
 }
 ```
 
-- [ ] **Step 2: Create `tests/helpers/seed.ts`**
+- [x] **Step 2: Create `tests/helpers/seed.ts`**
 
 ```typescript
 // tests/helpers/seed.ts
@@ -630,7 +630,7 @@ export async function seedAuction(
 }
 ```
 
-- [ ] **Step 3: Verify helpers compile**
+- [x] **Step 3: Verify helpers compile**
 
 ```bash
 pnpm exec tsc --project tests/tsconfig.json --noEmit
@@ -653,7 +653,7 @@ Create `tests/tsconfig.json` if it doesn't exist:
 
 Expected: no type errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/helpers/api.ts tests/helpers/seed.ts tests/tsconfig.json
@@ -676,7 +676,7 @@ git commit -m "test: add seed helpers and API client for integration tests"
   - `resetDb(service: ServiceName): Promise<void>` from `tests/helpers/db.ts`
   - `api(port: number)` from `tests/helpers/api.ts`
 
-- [ ] **Step 1: Start Docker Compose and confirm all services are healthy**
+- [x] **Step 1: Start Docker Compose and confirm all services are healthy**
 
 ```bash
 docker compose -f docker-compose.test.yml up -d --build
@@ -689,7 +689,7 @@ Expected: all services show `healthy` in the `STATUS` column. If any are `unheal
 docker compose -f docker-compose.test.yml logs user-service
 ```
 
-- [ ] **Step 2: Write the test file**
+- [x] **Step 2: Write the test file**
 
 ```typescript
 // tests/integration/flow-1-buyer-onboarding.test.ts
@@ -822,7 +822,7 @@ describe('Flow 1 — Buyer onboarding', () => {
 });
 ```
 
-- [ ] **Step 3: Run the test**
+- [x] **Step 3: Run the test**
 
 ```bash
 pnpm run test:integration -- --reporter=verbose tests/integration/flow-1-buyer-onboarding.test.ts
@@ -836,7 +836,7 @@ Expected output:
 
 If the test fails with a DB column name mismatch (e.g. `emailVerified` vs `email_verified`), check the actual column names in the user service migration files at `apps/user-service/src/db/migrations/` and update the query in `flow-1-buyer-onboarding.test.ts` accordingly.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/integration/flow-1-buyer-onboarding.test.ts
@@ -877,7 +877,7 @@ Then restart the payment service container so it picks up the new secret:
 docker compose -f docker-compose.test.yml up -d --no-deps payment-service
 ```
 
-- [ ] **Step 1: Write the test file**
+- [x] **Step 1: Write the test file**
 
 ```typescript
 // tests/integration/flow-2-full-auction-lifecycle.test.ts
@@ -1137,7 +1137,7 @@ describe('Flow 2 — Full auction lifecycle', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 Ensure `stripe listen` is running in a separate terminal first (see task preamble above). Then:
 
@@ -1155,7 +1155,7 @@ If the Stripe step fails, confirm:
 - `STRIPE_SECRET_KEY` is set in your shell
 - `stripe listen` is running and `STRIPE_WEBHOOK_SECRET` is exported
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add tests/integration/flow-2-full-auction-lifecycle.test.ts
@@ -1178,7 +1178,7 @@ git commit -m "test(integration): flow 2 — full auction lifecycle happy path"
   - `api` from `tests/helpers/api.ts`
   - `seedAdminUser`, `seedBuyerUser`, `seedLot`, `seedAuction` from `tests/helpers/seed.ts`
 
-- [ ] **Step 1: Write the test file**
+- [x] **Step 1: Write the test file**
 
 ```typescript
 // tests/integration/flow-3-reserve-not-met.test.ts
@@ -1314,7 +1314,7 @@ describe('Flow 3 — Reserve not met', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test**
+- [x] **Step 2: Run the test**
 
 ```bash
 pnpm run test:integration -- --reporter=verbose tests/integration/flow-3-reserve-not-met.test.ts
@@ -1326,7 +1326,7 @@ Expected output:
   ✓ marks the lot UNSOLD and creates no invoice when no bid meets the reserve
 ```
 
-- [ ] **Step 3: Run all three flows together**
+- [x] **Step 3: Run all three flows together**
 
 ```bash
 pnpm run test:integration
@@ -1342,7 +1342,7 @@ Test Files  3 passed (3)
 Tests       3 passed (3)
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/integration/flow-3-reserve-not-met.test.ts
@@ -1360,7 +1360,7 @@ git commit -m "test(integration): flow 3 — reserve not met, lot UNSOLD, no inv
 - Consumes: `docker-compose.test.yml`, `pnpm run test:integration`
 - Produces: a GitHub Actions workflow that runs on push to `develop` and `master`
 
-- [ ] **Step 1: Create `.github/workflows/integration-tests.yml`**
+- [x] **Step 1: Create `.github/workflows/integration-tests.yml`**
 
 ```yaml
 # .github/workflows/integration-tests.yml
@@ -1445,7 +1445,7 @@ jobs:
         run: docker compose -f docker-compose.test.yml down -v
 ```
 
-- [ ] **Step 2: Add `STRIPE_TEST_SECRET_KEY` to GitHub repository secrets**
+- [x] **Step 2: Add `STRIPE_TEST_SECRET_KEY` to GitHub repository secrets**
 
 In the GitHub repository settings:
 1. Go to **Settings → Secrets and variables → Actions**
@@ -1453,7 +1453,7 @@ In the GitHub repository settings:
 3. Name: `STRIPE_TEST_SECRET_KEY`
 4. Value: your Stripe test mode secret key (starts with `sk_test_`)
 
-- [ ] **Step 3: Commit and push to trigger the workflow**
+- [x] **Step 3: Commit and push to trigger the workflow**
 
 ```bash
 git add .github/workflows/integration-tests.yml

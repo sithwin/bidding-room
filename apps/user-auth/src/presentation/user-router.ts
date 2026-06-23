@@ -30,6 +30,15 @@ const REFRESH_COOKIE = 'carat_refresh';
 export function buildUserRouter(useCases: UseCases): Hono<AppEnv> {
   const router = new Hono<AppEnv>();
 
+  router.get('/:id/email', async (c) => {
+    try {
+      const user = await useCases.getMe.execute(c.req.param('id'));
+      return c.json({ email: user.email });
+    } catch {
+      return c.json({ error: { code: 'NOT_FOUND', message: 'User not found' } }, 404);
+    }
+  });
+
   router.post('/register', async (c) => {
     const body = await c.req.json();
     const { email, password, country } = body;
