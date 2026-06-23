@@ -6,6 +6,21 @@
 
 **Rule: Write large files in chunks using multiple sequential `Edit` calls.** Write the first section, then append the next section with another `Edit`, and so on. Each `Edit` call should stay well under 500 lines of output.
 
+---
+
+## Plan Writing — CRITICAL: Spec Coverage
+
+**Never write a plan from memory.** After reading a spec once, important details are forgotten or skimmed. Always follow this process:
+
+### Step 1 — Build a coverage checklist FIRST
+Before writing any task, re-read the spec line by line. For every sentence that describes a feature, behaviour, component detail, or error state — extract it as a checklist item. Do not write a single plan task until the full checklist exists.
+
+### Step 2 — Write tasks that tick off checklist items
+Each task must reference which checklist items it satisfies. No checklist item may be left uncovered.
+
+### Step 3 — Self-review from the spec, not the plan
+The final self-review must open the spec file and go paragraph by paragraph asking "which task number covers this line?" Do NOT read the plan backwards and assume it is correct. Re-read the spec forward.
+
 ## Project Overview
 
 The Carat Room is a timed online auction platform for premium goods (jewellery, designer bags, etc.). The business lists all lots — no third-party sellers. Buyers register, verify via phone OTP, and bid on timed auctions. Winners pay via Stripe Checkout and choose shipping or collection.

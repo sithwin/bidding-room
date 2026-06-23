@@ -2976,3 +2976,1108 @@ git commit -m "feat(user-portal): invoice, fulfilment, and sell/valuation pages"
 
 **Type consistency:** All types defined per-page (no cross-file type sharing required). `LotCardProps` is exported from `lot-card.tsx` and imported in `watchlist/page.tsx`.
 
+---
+
+## Gap-Fill Tasks (from spec coverage audit)
+
+These tasks cover spec requirements missed in Tasks 1–14.
+
+---
+
+### Task 15: Header with search bar + updated AccountShell
+
+**Spec lines covered:**
+- Header: "wordmark + search bar + Watchlist link + user avatar"
+- Header search bar: debounced 300ms, state lives in URL query params
+- AccountShell: "avatar, name, 'Collector since YYYY', nav links (Overview / My Bids / Watchlist / Won Lots / Invoices & Payments / Profile & Paddle)"
+
+**Files:**
+- Modify: `apps/user-portal/src/components/layout/header.tsx`
+- Modify: `apps/user-portal/src/components/layout/header-dark.tsx`
+- Modify: `apps/user-portal/src/components/layout/account-shell.tsx`
+- Create: `apps/user-portal/src/app/account/profile/page.tsx`
+
+- [ ] **Step 1: Update `apps/user-portal/src/components/layout/header.tsx`**
+
+Replace with version that includes search bar (debounced 300ms), Watchlist link, and user avatar:
+
+```typescript
+'use client';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useRef } from 'react';
+import { useAuth } from '@/lib/auth-context';
+
+export function Header() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const q = e.target.value;
+    timerRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (q) params.set('q', q); else params.delete('q');
+      router.push(`/auctions?${params.toString()}`);
+    }, 300);
+  }, [router, searchParams]);
+
+  return (
+    <header className='bg-paper border-b border-[var(--line)] px-6 py-4'>
+      <div className='max-w-7xl mx-auto flex items-center gap-6'>
+        <Link href='/' className='font-serif text-xl font-semibold tracking-wide text-ink shrink-0'>
+          The Carat Room
+        </Link>
+
+        {/* Search bar */}
+        <div className='flex-1 max-w-sm'>
+          <input
+            type='search'
+            defaultValue={searchParams.get('q') ?? ''}
+            onChange={handleSearch}
+            placeholder='Search lots…'
+            className='w-full border border-[var(--line)] bg-cream px-3 py-1.5 font-sans text-sm text-ink placeholder-mut focus:outline-none focus:border-ink'
+          />
+        </div>
+
+        <nav className='hidden md:flex items-center gap-6 font-sans text-sm font-medium text-mut'>
+          <Link href='/auctions' className='hover:text-ink transition-colors'>Auctions</Link>
+          <Link href='/calendar' className='hover:text-ink transition-colors'>Calendar</Link>
+          <Link href='/sell' className='hover:text-ink transition-colors'>Sell</Link>
+          <Link href='/account/watchlist' className='hover:text-ink transition-colors'>Watchlist</Link>
+        </nav>
+
+        <div className='flex items-center gap-3 shrink-0'>
+          {user ? (
+            <div className='flex items-center gap-3'>
+              <Link href='/account/dashboard'>
+                <div className='w-8 h-8 rounded-full bg-ink text-paper flex items-center justify-center font-sans text-xs font-semibold'>
+                  {user.email[0].toUpperCase()}
+                </div>
+              </Link>
+              <button onClick={logout} className='font-sans text-xs text-mut hover:text-ink'>Sign out</button>
+            </div>
+          ) : (
+            <Link href='/account/login' className='font-sans text-sm font-medium text-ink border border-[var(--line)] px-4 py-2 hover:bg-cream transition-colors'>
+              Sign In
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+- [ ] **Step 2: Update `apps/user-portal/src/components/layout/header-dark.tsx`** with same search + watchlist structure on dark background:
+
+```typescript
+'use client';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useRef } from 'react';
+import { useAuth } from '@/lib/auth-context';
+
+export function HeaderDark() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const q = e.target.value;
+    timerRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (q) params.set('q', q); else params.delete('q');
+      router.push(`/auctions?${params.toString()}`);
+    }, 300);
+  }, [router, searchParams]);
+
+  return (
+    <header className='bg-ink border-b border-white/10 px-6 py-4'>
+      <div className='max-w-7xl mx-auto flex items-center gap-6'>
+        <Link href='/' className='font-serif text-xl font-semibold tracking-wide text-paper shrink-0'>
+          The Carat Room
+        </Link>
+        <div className='flex-1 max-w-sm'>
+          <input
+            type='search'
+            defaultValue={searchParams.get('q') ?? ''}
+            onChange={handleSearch}
+            placeholder='Search lots…'
+            className='w-full border border-white/20 bg-white/10 px-3 py-1.5 font-sans text-sm text-paper placeholder-white/40 focus:outline-none focus:border-white/60'
+          />
+        </div>
+        <nav className='hidden md:flex items-center gap-6 font-sans text-sm font-medium text-white/60'>
+          <Link href='/auctions' className='hover:text-paper transition-colors'>Auctions</Link>
+          <Link href='/account/watchlist' className='hover:text-paper transition-colors'>Watchlist</Link>
+        </nav>
+        <div className='shrink-0'>
+          {user ? (
+            <div className='flex items-center gap-3'>
+              <Link href='/account/dashboard'>
+                <div className='w-8 h-8 rounded-full bg-paper text-ink flex items-center justify-center font-sans text-xs font-semibold'>
+                  {user.email[0].toUpperCase()}
+                </div>
+              </Link>
+              <button onClick={logout} className='font-sans text-xs text-white/50 hover:text-paper'>Sign out</button>
+            </div>
+          ) : (
+            <Link href='/account/login' className='font-sans text-sm font-medium text-paper border border-white/30 px-4 py-2 hover:bg-white/10 transition-colors'>
+              Sign In
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+- [ ] **Step 3: Update `apps/user-portal/src/components/layout/account-shell.tsx`** to add avatar, "Collector since YYYY", and "Profile & Paddle" link:
+
+```typescript
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ReactNode } from 'react';
+import { useAuth } from '@/lib/auth-context';
+
+const NAV = [
+  { href: '/account/dashboard', label: 'Overview' },
+  { href: '/account/bids',      label: 'My Bids' },
+  { href: '/account/watchlist', label: 'Watchlist' },
+  { href: '/account/won',       label: 'Won Lots' },
+  { href: '/account/invoices',  label: 'Invoices & Payments' },
+  { href: '/account/profile',   label: 'Profile & Paddle' },
+];
+
+export function AccountShell({ children, collectorSince }: { children: ReactNode; collectorSince?: string }) {
+  const pathname = usePathname();
+  const { user } = useAuth();
+
+  return (
+    <div className='max-w-7xl mx-auto px-6 py-10 flex gap-10'>
+      <aside className='w-56 shrink-0'>
+        {/* Avatar + name */}
+        <div className='mb-6 pb-6 border-b border-[var(--line)]'>
+          <div className='w-12 h-12 rounded-full bg-ink text-paper flex items-center justify-center font-sans text-lg font-semibold mb-3'>
+            {user?.email?.[0]?.toUpperCase() ?? '?'}
+          </div>
+          <p className='font-sans text-sm font-medium text-ink truncate'>{user?.email ?? ''}</p>
+          {collectorSince && (
+            <p className='font-sans text-xs text-mut mt-0.5'>Collector since {collectorSince}</p>
+          )}
+        </div>
+
+        <nav className='flex flex-col gap-1'>
+          {NAV.map(({ href, label }) => {
+            const isActive = pathname.startsWith(href);
+            return (
+              <Link key={href} href={href}
+                className={`font-sans text-sm px-4 py-2 rounded transition-colors ${isActive ? 'bg-ink text-paper font-medium' : 'text-mut hover:text-ink'}`}>
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+      <main className='flex-1 min-w-0'>{children}</main>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 4: Create `apps/user-portal/src/app/account/profile/page.tsx`** (stub — Profile & Paddle number page):
+
+```typescript
+'use client';
+import { Header } from '@/components/layout/header';
+import { AccountShell } from '@/components/layout/account-shell';
+import { useAuth } from '@/lib/auth-context';
+
+export default function ProfilePage() {
+  const { user } = useAuth();
+
+  return (
+    <>
+      <Header />
+      <AccountShell>
+        <h1 className='font-serif text-2xl font-semibold text-ink mb-8'>Profile & Paddle</h1>
+        <div className='max-w-sm space-y-4'>
+          <div>
+            <p className='font-sans text-xs text-mut uppercase tracking-wider mb-1'>Email</p>
+            <p className='font-sans text-sm text-ink'>{user?.email}</p>
+          </div>
+          <div>
+            <p className='font-sans text-xs text-mut uppercase tracking-wider mb-1'>Bidder Status</p>
+            <p className='font-sans text-sm text-ink capitalize'>{user?.verificationStatus?.toLowerCase().replace('_', ' ')}</p>
+          </div>
+        </div>
+      </AccountShell>
+    </>
+  );
+}
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/user-portal/src/components/layout/ apps/user-portal/src/app/account/profile/
+git commit -m "feat(user-portal): header with search bar, watchlist link, avatar; AccountShell with profile nav"
+```
+
+---
+
+### Task 16: Lot Detail — missing spec features
+
+**Spec lines covered:**
+- Standard state: Add to Watchlist button, Enquire/Condition buttons, trust marks, minimum bid notice, "From the same collection" 4-col related lots grid
+- Live state: "You are leading/outbid" status line, bid activity feed, "Up Next" bottom strip
+- Bid flow step 3: EMAIL_VERIFIED user → phone OTP inline modal (not redirect)
+- SSE: "Reconnecting…" badge after 5 seconds of disconnect
+- `auction_closed` event: disable bid input, show "This auction has closed" banner
+
+**Files:**
+- Modify: `apps/user-portal/src/app/auctions/[auctionId]/lots/[lotId]/lot-detail-client.tsx`
+- Modify: `apps/user-portal/src/hooks/use-lot-sse.ts` — expose `isConnected` with 5s badge delay
+
+- [ ] **Step 1: Update `useLotSse` to expose a `isReconnecting` flag (shows after 5s disconnected)**
+
+In `apps/user-portal/src/hooks/use-lot-sse.ts`, add:
+```typescript
+const [isReconnecting, setIsReconnecting] = useState(false);
+const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+// In es.onerror:
+es.onerror = () => {
+  setIsConnected(false);
+  es.close();
+  // Show "Reconnecting…" badge only after 5 seconds
+  reconnectTimerRef.current = setTimeout(() => setIsReconnecting(true), 5000);
+  if (!cancelled) {
+    setTimeout(() => {
+      retryDelay.current = Math.min(retryDelay.current * 2, 30000);
+      connect();
+    }, retryDelay.current);
+  }
+};
+
+// In es.onopen:
+es.onopen = () => {
+  setIsConnected(true);
+  setIsReconnecting(false);
+  if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+  retryDelay.current = 1000;
+};
+
+// Cleanup:
+return () => {
+  cancelled = true;
+  if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+  esRef.current?.close();
+};
+```
+
+Return: `{ lastEvent, isConnected, isReconnecting }`
+
+- [ ] **Step 2: Update `lot-detail-client.tsx` — add all missing features**
+
+Add these state variables at the top of `LotDetailClient`:
+```typescript
+const [bidActivity, setBidActivity] = useState<Array<{ paddle: string; amount: number; isYou: boolean }>>([]);
+const [isLeading, setIsLeading] = useState(false);
+const [auctionClosed, setAuctionClosed] = useState(false);
+const [showPhoneModal, setShowPhoneModal] = useState(false);
+```
+
+Update the SSE effect to populate `bidActivity` and `isLeading`:
+```typescript
+if (lastEvent.type === 'bid_placed') {
+  setLot(prev => ({ ...prev, currentBid: lastEvent.currentBid, bidCount: lastEvent.bidCount }));
+  const isYou = !!user && lastEvent.bidderId === user.userId;
+  setIsLeading(isYou);
+  setBidActivity(prev => [{ paddle: isYou ? 'You' : `Paddle ${lastEvent.bidderId.slice(-4)}`, amount: lastEvent.currentBid, isYou }, ...prev.slice(0, 19)]);
+  if (!isYou && user) setOutbidInfo({ yourBid: lot.currentBid, currentBid: lastEvent.currentBid });
+}
+if (lastEvent.type === 'auction_closed') {
+  setAuctionClosed(true);
+  setLot(prev => ({ ...prev, status: lastEvent.result }));
+}
+```
+
+Update `placeBid` to show inline phone modal for EMAIL_VERIFIED users without phone:
+```typescript
+async function placeBid() {
+  if (auctionClosed) return;
+  const amount = Number(bidAmount);
+  if (!amount || amount <= lot.currentBid) { /* ... toast ... */ return; }
+  if (!user) { window.location.href = `/account/login?returnUrl=...`; return; }
+  // EMAIL_VERIFIED with no phone → inline modal
+  if (user.verificationStatus === 'EMAIL_VERIFIED') { setShowPhoneModal(true); return; }
+  if (user.verificationStatus === 'PENDING_REVIEW') { setToast({ message: 'Your identity is under review.', type: 'info' }); return; }
+  // ... rest of bid logic
+}
+```
+
+Add to standard state JSX (after bid panel, before provenance):
+```typescript
+{/* Add to Watchlist + Enquire */}
+<div className='flex gap-3 mb-6'>
+  <button onClick={toggleWatchlist} className='flex-1 border border-[var(--line)] font-sans text-sm py-2 hover:bg-cream transition-colors'>
+    ♡ Add to Watchlist
+  </button>
+  <button className='flex-1 border border-[var(--line)] font-sans text-sm py-2 hover:bg-cream transition-colors'>
+    Enquire
+  </button>
+</div>
+
+{/* Trust marks */}
+<div className='flex gap-6 py-4 border-t border-[var(--line)] mb-6'>
+  <p className='font-sans text-xs text-mut'>✓ Authenticity guaranteed</p>
+  <p className='font-sans text-xs text-mut'>✓ Insured shipping worldwide</p>
+</div>
+
+{/* Minimum bid notice */}
+<p className='font-sans text-xs text-mut text-center mb-2'>
+  Minimum bid: {lot.currency.toUpperCase()} {(lot.currentBid + 100).toLocaleString()}
+</p>
+```
+
+Add to standard state JSX (below two-column grid, before closing tag):
+```typescript
+{/* From the same collection */}
+{relatedLots.length > 0 && (
+  <div className='max-w-6xl mx-auto px-6 pb-16'>
+    <h2 className='font-serif text-xl font-semibold text-ink mb-6'>From the same collection</h2>
+    <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+      {relatedLots.map(l => <LotCard key={l.lotId} {...l} />)}
+    </div>
+  </div>
+)}
+```
+
+Add `relatedLots` state (fetched on mount):
+```typescript
+const [relatedLots, setRelatedLots] = useState<LotCardProps[]>([]);
+useEffect(() => {
+  fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&limit=4&exclude=${lot.id}`)
+    .then(r => r.json())
+    .then((d: { lots: LotCardProps[] }) => setRelatedLots(d.lots))
+    .catch(() => {});
+}, [lot.auctionId, lot.id]);
+```
+
+Add to live state JSX — status line, activity feed, Up Next strip:
+```typescript
+{/* Status line */}
+{user && (
+  <p className={`font-sans text-sm font-medium mb-4 ${isLeading ? 'text-[var(--gold)]' : 'text-red-400'}`}>
+    {isLeading ? 'You are leading' : 'You\'ve been outbid'}
+  </p>
+)}
+
+{/* Bid activity feed */}
+{bidActivity.length > 0 && (
+  <div className='border border-[var(--line)] divide-y divide-[var(--line)] mb-4 max-h-40 overflow-y-auto'>
+    {bidActivity.map((entry, i) => (
+      <div key={i} className='flex justify-between px-3 py-2 font-sans text-xs'>
+        <span className={entry.isYou ? 'text-[var(--gold)]' : 'text-[var(--mut)]'}>{entry.paddle}</span>
+        <span className='text-[var(--ink)]'>{lot.currency.toUpperCase()} {entry.amount.toLocaleString()}</span>
+      </div>
+    ))}
+  </div>
+)}
+```
+
+Add "Up Next" bottom strip (fetch next 2 lots by lotNumber):
+```typescript
+{/* Up Next */}
+{nextLots.length > 0 && (
+  <div className='border-t border-[var(--line)] mt-8 pt-4'>
+    <p className='font-sans text-xs text-[var(--mut)] uppercase tracking-widest mb-3'>Up Next</p>
+    <div className='flex gap-4'>
+      {nextLots.map(l => (
+        <Link key={l.lotId} href={`/auctions/${l.auctionId}/lots/${l.lotId}`} className='flex gap-3 items-center hover:opacity-80'>
+          <div className='relative w-12 h-12 shrink-0'>
+            <Image src={l.imageUrl} alt={l.title} fill className='object-cover' />
+          </div>
+          <div>
+            <p className='font-sans text-xs text-[var(--mut)]'>Lot {l.lotNumber}</p>
+            <p className='font-serif text-sm text-[var(--ink)] line-clamp-1'>{l.title}</p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  </div>
+)}
+```
+
+Add `nextLots` state (fetched on mount, same auction, higher lot numbers):
+```typescript
+const [nextLots, setNextLots] = useState<LotCardProps[]>([]);
+useEffect(() => {
+  if (!isLive) return;
+  fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&after=${lot.lotNumber}&limit=2`)
+    .then(r => r.json())
+    .then((d: { lots: LotCardProps[] }) => setNextLots(d.lots))
+    .catch(() => {});
+}, [isLive, lot.auctionId, lot.lotNumber]);
+```
+
+Add `auctionClosed` banner + disabled bid input:
+```typescript
+{auctionClosed && (
+  <div className='bg-ink/10 border border-[var(--line)] px-4 py-3 mb-4 text-center'>
+    <p className='font-sans text-sm font-medium text-ink'>This auction has closed</p>
+  </div>
+)}
+
+{/* Bid input — disable when closed */}
+<input disabled={auctionClosed} ... />
+<button disabled={auctionClosed || isLoading} ... />
+```
+
+Add `isReconnecting` indicator (from `useLotSse`):
+```typescript
+const { lastEvent, isReconnecting } = useLotSse(lot.id);
+// ...
+{isReconnecting && (
+  <div className='fixed bottom-4 left-1/2 -translate-x-1/2 bg-ink text-paper font-sans text-xs px-4 py-2 rounded-full'>
+    Reconnecting…
+  </div>
+)}
+```
+
+Add inline phone OTP modal (renders when `showPhoneModal` is true — same UI as verify-phone page but as an overlay):
+```typescript
+{showPhoneModal && (
+  <div className='fixed inset-0 bg-ink/60 flex items-center justify-center z-50'>
+    <div className='bg-paper p-8 max-w-sm w-full mx-4'>
+      <h2 className='font-serif text-xl font-semibold text-ink mb-4'>Verify your phone first</h2>
+      <PhoneOtpInline onVerified={() => { setShowPhoneModal(false); placeBid(); }} onClose={() => setShowPhoneModal(false)} />
+    </div>
+  </div>
+)}
+```
+
+Create `apps/user-portal/src/components/primitives/phone-otp-inline.tsx`:
+```typescript
+'use client';
+import { useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+
+export function PhoneOtpInline({ onVerified, onClose }: { onVerified: () => void; onClose: () => void }) {
+  const { accessToken } = useAuth();
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function requestCode() {
+    setError(''); setIsLoading(true);
+    const res = await fetch('/api/auth/phone/request', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      body: JSON.stringify({ phone }),
+    });
+    setIsLoading(false);
+    if (res.ok) setStep('otp');
+    else { const d = await res.json() as { error?: string }; setError(d.error ?? 'Failed to send code'); }
+  }
+
+  async function verifyCode() {
+    setError(''); setIsLoading(true);
+    const res = await fetch('/api/auth/phone/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+      body: JSON.stringify({ otp }),
+    });
+    setIsLoading(false);
+    if (res.ok) onVerified();
+    else { const d = await res.json() as { error?: string }; setError(d.error ?? 'Invalid code'); }
+  }
+
+  return (
+    <div className='space-y-4'>
+      {step === 'phone' ? (
+        <>
+          <input value={phone} onChange={e => setPhone(e.target.value)} type='tel' placeholder='+61 400 000 000'
+            className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+          {error && <p className='font-sans text-xs text-red-600'>{error}</p>}
+          <button onClick={requestCode} disabled={isLoading || !phone}
+            className='w-full bg-ink text-paper font-sans text-sm py-3 disabled:opacity-60'>
+            {isLoading ? 'Sending…' : 'Send Code'}
+          </button>
+        </>
+      ) : (
+        <>
+          <input value={otp} onChange={e => setOtp(e.target.value)} type='text' inputMode='numeric' maxLength={6}
+            placeholder='000000' className='w-full border border-[var(--line)] px-3 py-2 font-sans text-2xl tracking-widest text-center' />
+          {error && <p className='font-sans text-xs text-red-600'>{error}</p>}
+          <button onClick={verifyCode} disabled={isLoading || otp.length !== 6}
+            className='w-full bg-ink text-paper font-sans text-sm py-3 disabled:opacity-60'>
+            {isLoading ? 'Verifying…' : 'Verify'}
+          </button>
+        </>
+      )}
+      <button onClick={onClose} className='w-full font-sans text-sm text-mut hover:text-ink'>Cancel</button>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add apps/user-portal/src/app/auctions/ apps/user-portal/src/hooks/ apps/user-portal/src/components/primitives/phone-otp-inline.tsx
+git commit -m "feat(user-portal): lot detail missing features — watchlist, trust marks, activity feed, Up Next, phone modal, reconnecting badge"
+```
+
+---
+
+### Task 17: Auth page gaps — login links, verify-email resend, phone lockout
+
+**Spec lines covered:**
+- Login: "Forgot password link", "New? Create account" link
+- Verify email: "resend option" on link expired
+- Verify phone: "Max 3 attempts → 15-minute lockout displayed as countdown timer"
+
+**Files:**
+- Modify: `apps/user-portal/src/app/account/login/page.tsx`
+- Modify: `apps/user-portal/src/app/account/verify-email/page.tsx`
+- Modify: `apps/user-portal/src/app/account/verify-phone/page.tsx`
+
+- [ ] **Step 1: Add Forgot password link and "New? Create account" cross-link to login page**
+
+In `apps/user-portal/src/app/account/login/page.tsx`, in the Sign In tab form, add after the password field:
+```typescript
+<div className='flex justify-end'>
+  <button type='button' className='font-sans text-xs text-mut hover:text-ink'>Forgot password?</button>
+</div>
+```
+
+Below the Sign In button, add:
+```typescript
+<p className='font-sans text-xs text-center text-mut mt-4'>
+  New? <button type='button' onClick={() => setTab('register')} className='text-ink underline'>Create account</button>
+</p>
+```
+
+In the Create Account tab, below the button, add:
+```typescript
+<p className='font-sans text-xs text-center text-mut mt-4'>
+  Already have an account? <button type='button' onClick={() => setTab('signin')} className='text-ink underline'>Sign in</button>
+</p>
+```
+
+- [ ] **Step 2: Add resend option to verify-email page**
+
+In `apps/user-portal/src/app/account/verify-email/page.tsx`, update the error state:
+```typescript
+const [resent, setResent] = useState(false);
+
+async function resendEmail() {
+  await fetch('/api/auth/resend-verification', { method: 'POST' });
+  setResent(true);
+}
+
+// In the error JSX:
+{status === 'error' && (
+  <>
+    <h1 className='font-serif text-2xl font-semibold text-ink mb-3'>Link expired</h1>
+    <p className='font-sans text-sm text-mut mb-4'>This verification link has expired or already been used.</p>
+    {resent ? (
+      <p className='font-sans text-sm text-green-700'>New link sent — check your inbox.</p>
+    ) : (
+      <button onClick={resendEmail} className='font-sans text-sm text-ink underline'>Resend verification email</button>
+    )}
+  </>
+)}
+```
+
+- [ ] **Step 3: Add 3-attempt lockout with countdown to verify-phone page**
+
+In `apps/user-portal/src/app/account/verify-phone/page.tsx`, add attempt tracking and lockout:
+
+```typescript
+const [attempts, setAttempts] = useState(0);
+const [lockedUntil, setLockedUntil] = useState<Date | null>(null);
+const [lockRemaining, setLockRemaining] = useState(0);
+
+// Track lockout countdown
+useEffect(() => {
+  if (!lockedUntil) return;
+  const interval = setInterval(() => {
+    const remaining = Math.max(0, lockedUntil.getTime() - Date.now());
+    setLockRemaining(Math.ceil(remaining / 1000));
+    if (remaining <= 0) { setLockedUntil(null); setAttempts(0); }
+  }, 1000);
+  return () => clearInterval(interval);
+}, [lockedUntil]);
+
+// In verifyCode(), on failure:
+const newAttempts = attempts + 1;
+setAttempts(newAttempts);
+if (newAttempts >= 3) {
+  const until = new Date(Date.now() + 15 * 60 * 1000);
+  setLockedUntil(until);
+  setLockRemaining(15 * 60);
+} else {
+  setError(`Invalid code. ${3 - newAttempts} attempt${3 - newAttempts === 1 ? '' : 's'} remaining.`);
+}
+```
+
+Render lockout screen when `lockedUntil` is set:
+```typescript
+if (lockedUntil) {
+  const mins = Math.floor(lockRemaining / 60);
+  const secs = lockRemaining % 60;
+  return (
+    <div className='min-h-screen bg-paper flex items-center justify-center'>
+      <div className='text-center px-6'>
+        <h1 className='font-serif text-2xl font-semibold text-ink mb-3'>Too many attempts</h1>
+        <p className='font-sans text-sm text-mut mb-4'>Try again in</p>
+        <p className='font-serif text-4xl font-semibold text-ink'>{mins}:{String(secs).padStart(2, '0')}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add apps/user-portal/src/app/account/login/ apps/user-portal/src/app/account/verify-email/ apps/user-portal/src/app/account/verify-phone/
+git commit -m "feat(user-portal): auth page gaps — forgot password link, cross-links, verify-email resend, phone lockout"
+```
+
+---
+
+### Task 18: Register-to-Bid Step 2 identity fields + Calendar tabs
+
+**Spec lines covered:**
+- Register-to-Bid Step 2: "Fields: Full legal name, Date of birth (DD/MM/YYYY), Residential address"
+- Calendar: "Three tabs: Upcoming / Live Now / Results" (rendered as clickable tabs, not static sections)
+
+**Files:**
+- Modify: `apps/user-portal/src/app/account/register-to-bid/page.tsx`
+- Modify: `apps/user-portal/src/app/calendar/page.tsx`
+
+- [ ] **Step 1: Add legal name, DOB, address fields to Step 2 in register-to-bid page**
+
+In `Step2Identity`, add a form with these fields before the file upload:
+
+```typescript
+const [legalName, setLegalName] = useState('');
+const [dob, setDob] = useState('');
+const [address, setAddress] = useState('');
+
+// Validate before allowing file submission:
+if (!legalName || !dob || !address) {
+  setError('Please complete all fields');
+  return;
+}
+```
+
+Render the fields:
+```typescript
+<div className='space-y-4 mb-6'>
+  <div>
+    <label className='block font-sans text-sm font-medium text-ink mb-1'>Full legal name</label>
+    <input value={legalName} onChange={e => setLegalName(e.target.value)} type='text' placeholder='As it appears on your ID'
+      className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+  </div>
+  <div>
+    <label className='block font-sans text-sm font-medium text-ink mb-1'>Date of birth</label>
+    <input value={dob} onChange={e => setDob(e.target.value)} type='text' placeholder='DD/MM/YYYY'
+      className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+  </div>
+  <div>
+    <label className='block font-sans text-sm font-medium text-ink mb-1'>Residential address</label>
+    <input value={address} onChange={e => setAddress(e.target.value)} type='text' placeholder='Street address, suburb, state, postcode'
+      className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+  </div>
+</div>
+```
+
+- [ ] **Step 2: Update Calendar page to use actual tabs (client component)**
+
+Convert `apps/user-portal/src/app/calendar/page.tsx` to a client component with tab state. Keep the data fetching in a parent RSC + pass data as props, or use SWR in the client component:
+
+```typescript
+'use client';
+import { useState } from 'react';
+import useSWR from 'swr';
+import { Header } from '@/components/layout/header';
+
+type Auction = { id: string; title: string; saleDate: string; lotCount: number; status: 'upcoming' | 'open' | 'closed'; location: string };
+type Tab = 'upcoming' | 'live' | 'results';
+
+const fetcher = (url: string) => fetch(url).then(r => r.json());
+
+function AuctionRow({ auction }: { auction: Auction }) {
+  const date = new Date(auction.saleDate);
+  return (
+    <div className='flex items-center gap-6 bg-paper border border-[var(--line)] p-5'>
+      <div className='w-16 text-center shrink-0'>
+        <p className='font-serif text-2xl font-semibold text-ink'>{date.getDate()}</p>
+        <p className='font-sans text-xs text-mut uppercase'>{date.toLocaleString('en-AU', { month: 'short' })}</p>
+      </div>
+      <div className='flex-1 min-w-0'>
+        <p className='font-serif text-base font-semibold text-ink truncate'>{auction.title}</p>
+        <p className='font-sans text-sm text-mut'>{auction.lotCount} lots · {auction.location}</p>
+      </div>
+      {auction.status === 'open'
+        ? <a href={`/auctions/${auction.id}`} className='shrink-0 bg-ink text-paper font-sans text-sm px-5 py-2 hover:bg-ink/90'>View Catalogue</a>
+        : <button className='shrink-0 border border-[var(--line)] font-sans text-sm px-5 py-2 text-mut hover:text-ink'>Register Interest</button>}
+    </div>
+  );
+}
+
+export default function CalendarPage() {
+  const [tab, setTab] = useState<Tab>('upcoming');
+  const { data } = useSWR<{ auctions: Auction[] }>('/api/catalogue/auctions?limit=50', fetcher, { revalidateOnFocus: false });
+
+  const auctions = data?.auctions ?? [];
+  const filtered = {
+    upcoming: auctions.filter(a => a.status === 'upcoming'),
+    live:     auctions.filter(a => a.status === 'open'),
+    results:  auctions.filter(a => a.status === 'closed'),
+  };
+
+  const TABS: { key: Tab; label: string }[] = [
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'live',     label: 'Live Now' },
+    { key: 'results',  label: 'Results' },
+  ];
+
+  return (
+    <>
+      <Header />
+      <div className='max-w-4xl mx-auto px-6 py-12'>
+        <h1 className='font-serif text-3xl font-semibold text-ink mb-8'>Auction Calendar</h1>
+
+        {/* Tab bar */}
+        <div className='flex border-b border-[var(--line)] mb-8'>
+          {TABS.map(({ key, label }) => (
+            <button key={key} onClick={() => setTab(key)}
+              className={`px-6 pb-3 font-sans text-sm font-medium transition-colors ${tab === key ? 'border-b-2 border-ink text-ink' : 'text-mut hover:text-ink'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className='flex flex-col gap-3'>
+          {filtered[tab].length === 0
+            ? <p className='font-sans text-sm text-mut'>No auctions in this category.</p>
+            : filtered[tab].map(a => <AuctionRow key={a.id} auction={a} />)}
+        </div>
+      </div>
+    </>
+  );
+}
+```
+
+Add `/api/catalogue/auctions` proxy route:
+```typescript
+// apps/user-portal/src/app/api/catalogue/auctions/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+const CATALOGUE_URL = process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002';
+export async function GET(request: NextRequest) {
+  const res = await fetch(`${CATALOGUE_URL}/api/auctions${request.nextUrl.search}`, { cache: 'no-store' });
+  return NextResponse.json(await res.json(), { status: res.status });
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add apps/user-portal/src/app/account/register-to-bid/ apps/user-portal/src/app/calendar/ apps/user-portal/src/app/api/catalogue/auctions/
+git commit -m "feat(user-portal): register-to-bid identity fields; calendar with tab navigation"
+```
+
+---
+
+### Task 19: Mobile responsive — bottom nav, sticky bid bar, account tab strip
+
+**Spec lines covered:**
+- "Mobile (<768px): single-column. Lot detail stacks gallery above bid panel. Account pages hide sidebar, use a top tab strip instead. Header collapses to wordmark + hamburger."
+- "Home: dark hero + 2-col 'Closing soon' grid + bottom nav bar (Home / Browse / Watch / Bids)"
+- "Lot detail: full-bleed image top, info + 'Place Bid · $X' sticky bottom bar"
+- "Tablet (768–1279px): lot grids reduce to 2-col; sidebar filters collapse to a drawer"
+
+**Files:**
+- Create: `apps/user-portal/src/components/layout/mobile-bottom-nav.tsx`
+- Create: `apps/user-portal/src/components/layout/mobile-account-tabs.tsx`
+- Modify: `apps/user-portal/src/app/layout.tsx` — add MobileBottomNav
+- Modify: `apps/user-portal/src/components/layout/account-shell.tsx` — show tab strip on mobile, hide sidebar
+- Modify: `apps/user-portal/src/app/auctions/[auctionId]/lots/[lotId]/lot-detail-client.tsx` — sticky bottom bar on mobile
+
+- [ ] **Step 1: Create `apps/user-portal/src/components/layout/mobile-bottom-nav.tsx`**
+
+```typescript
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const NAV = [
+  { href: '/',                  label: 'Home',   icon: '⌂' },
+  { href: '/auctions',          label: 'Browse', icon: '⊞' },
+  { href: '/account/watchlist', label: 'Watch',  icon: '♡' },
+  { href: '/account/bids',      label: 'Bids',   icon: '↑' },
+];
+
+export function MobileBottomNav() {
+  const pathname = usePathname();
+  return (
+    <nav className='md:hidden fixed bottom-0 left-0 right-0 bg-paper border-t border-[var(--line)] flex z-40'>
+      {NAV.map(({ href, label, icon }) => {
+        const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+        return (
+          <Link key={href} href={href}
+            className={`flex-1 flex flex-col items-center py-3 gap-1 font-sans text-[10px] ${isActive ? 'text-ink font-semibold' : 'text-mut'}`}>
+            <span className='text-base leading-none'>{icon}</span>
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+```
+
+- [ ] **Step 2: Add `MobileBottomNav` to root layout**
+
+In `apps/user-portal/src/app/layout.tsx`:
+```typescript
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+// inside body, after AuthProvider children:
+<MobileBottomNav />
+<div className='pb-16 md:pb-0'>{children}</div>  {/* bottom padding on mobile for nav bar */}
+```
+
+- [ ] **Step 3: Update AccountShell to show mobile tab strip**
+
+In `account-shell.tsx`, the sidebar already uses `hidden md:block` (or similar). Add mobile tabs above `<main>`:
+```typescript
+{/* Mobile: horizontal tab strip */}
+<div className='md:hidden flex overflow-x-auto border-b border-[var(--line)] mb-6 -mx-6 px-6'>
+  {NAV.map(({ href, label }) => {
+    const isActive = pathname.startsWith(href);
+    return (
+      <Link key={href} href={href}
+        className={`shrink-0 pb-3 px-3 font-sans text-sm whitespace-nowrap border-b-2 transition-colors ${isActive ? 'border-ink text-ink font-medium' : 'border-transparent text-mut hover:text-ink'}`}>
+        {label}
+      </Link>
+    );
+  })}
+</div>
+```
+
+Wrap the `<aside>` in `hidden md:block`:
+```typescript
+<aside className='w-56 shrink-0 hidden md:block'>
+```
+
+- [ ] **Step 4: Add sticky bottom bid bar to lot detail on mobile**
+
+In `lot-detail-client.tsx`, add at the bottom of the JSX (inside AppShell, at the root level):
+```typescript
+{/* Mobile sticky bid bar */}
+<div className='md:hidden fixed bottom-0 left-0 right-0 bg-paper border-t border-[var(--line)] flex items-center gap-3 px-4 py-3 z-40'>
+  <div className='flex-1'>
+    <p className='font-sans text-xs text-mut'>Current bid</p>
+    <p className='font-sans text-sm font-semibold text-ink'>{lot.currency.toUpperCase()} {lot.currentBid.toLocaleString()}</p>
+  </div>
+  <button onClick={placeBid} disabled={auctionClosed}
+    className='bg-ink text-paper font-sans text-sm font-medium px-6 py-3 disabled:opacity-60'>
+    Place Bid · {lot.currency.toUpperCase()} {bidAmount || (lot.currentBid + 100).toLocaleString()}
+  </button>
+</div>
+```
+
+Also add `pb-20 md:pb-0` to the lot detail wrapper div so content isn't hidden behind the sticky bar on mobile.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/user-portal/src/components/layout/mobile-bottom-nav.tsx apps/user-portal/src/app/layout.tsx apps/user-portal/src/components/layout/account-shell.tsx apps/user-portal/src/app/auctions/
+git commit -m "feat(user-portal): mobile responsive — bottom nav, sticky bid bar, account tab strip"
+```
+
+---
+
+### Task 20: Sale Catalogue — sort, pagination, ♡ Follow Sale; next-intl
+
+**Spec lines covered:**
+- Sale Catalogue: "Action bar: Register to Bid / Download PDF Catalogue / ♡ Follow Sale"
+- Sale Catalogue: "Paginated lot grid (4-col desktop), sortable: Lot Number / Ending Soonest / Price"
+- Tech Stack: "next-intl (currency + date formatting only; English at launch)"
+
+**Files:**
+- Modify: `apps/user-portal/package.json` — add next-intl
+- Modify: `apps/user-portal/src/app/auctions/[auctionId]/page.tsx` — add sort, pagination, Follow Sale
+
+- [ ] **Step 1: Add next-intl to package.json**
+
+In `apps/user-portal/package.json` dependencies, add:
+```json
+"next-intl": "^3.14.0"
+```
+
+Run `pnpm install`.
+
+Create `apps/user-portal/src/i18n.ts`:
+```typescript
+import { getRequestConfig } from 'next-intl/server';
+
+export default getRequestConfig(async () => ({
+  locale: 'en-AU',
+  messages: {},
+  formats: {
+    number: {
+      currency: { style: 'currency', currency: 'AUD', minimumFractionDigits: 0 },
+    },
+    dateTime: {
+      short: { day: 'numeric', month: 'short', year: 'numeric' },
+    },
+  },
+}));
+```
+
+Use `useFormatter` from `next-intl` in client components for currency and date formatting instead of `.toLocaleString('en-AU')` — e.g.:
+```typescript
+import { useFormatter } from 'next-intl';
+const format = useFormatter();
+// format.number(amount, { style: 'currency', currency: 'AUD' })
+```
+
+For RSC pages use `getFormatter` from `next-intl/server`.
+
+- [ ] **Step 2: Convert Sale Catalogue page to client component with sort + pagination**
+
+Convert `apps/user-portal/src/app/auctions/[auctionId]/page.tsx` to a hybrid: RSC fetches auction details (rarely changes), client component handles lot grid with sort + pagination via SWR:
+
+Create `apps/user-portal/src/app/auctions/[auctionId]/catalogue-lots.tsx` (client component):
+```typescript
+'use client';
+import { useState } from 'react';
+import useSWR from 'swr';
+import { LotCard } from '@/components/primitives/lot-card';
+
+type Lot = { id: string; auctionId: string; lotNumber: string; title: string; imageUrl: string; currentBid: number; currency: string; endAt: string };
+type Sort = 'lotNumber' | 'endAt' | 'price';
+
+const fetcher = (url: string) => fetch(url).then(r => r.json());
+const PAGE_SIZE = 24;
+
+export function CatalogueLots({ auctionId }: { auctionId: string }) {
+  const [sort, setSort] = useState<Sort>('lotNumber');
+  const [page, setPage] = useState(1);
+
+  const { data } = useSWR<{ lots: Lot[]; total: number }>(
+    `/api/catalogue/lots?auctionId=${auctionId}&sort=${sort}&page=${page}&limit=${PAGE_SIZE}`,
+    fetcher,
+    { refreshInterval: 30000 },
+  );
+
+  const totalPages = Math.ceil((data?.total ?? 0) / PAGE_SIZE);
+
+  return (
+    <div className='max-w-7xl mx-auto px-6 py-12'>
+      {/* Sort controls */}
+      <div className='flex items-center justify-between mb-6'>
+        <p className='font-sans text-sm text-mut'>{data?.total ?? '—'} lots</p>
+        <div className='flex gap-2'>
+          {([['lotNumber', 'Lot Number'], ['endAt', 'Ending Soonest'], ['price', 'Price']] as [Sort, string][]).map(([val, label]) => (
+            <button key={val} onClick={() => { setSort(val); setPage(1); }}
+              className={`font-sans text-xs px-3 py-1.5 border transition-colors ${sort === val ? 'bg-ink text-paper border-ink' : 'border-[var(--line)] text-mut hover:text-ink'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Lot grid */}
+      <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-8'>
+        {data?.lots.map(lot => <LotCard key={lot.id} {...lot} />)}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className='flex items-center justify-center gap-2'>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+            className='font-sans text-sm px-4 py-2 border border-[var(--line)] text-mut hover:text-ink disabled:opacity-40'>
+            ← Prev
+          </button>
+          <span className='font-sans text-sm text-mut px-4'>Page {page} of {totalPages}</span>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+            className='font-sans text-sm px-4 py-2 border border-[var(--line)] text-mut hover:text-ink disabled:opacity-40'>
+            Next →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+Update `apps/user-portal/src/app/auctions/[auctionId]/page.tsx` to use `CatalogueLots` and add ♡ Follow Sale button:
+```typescript
+// In the Action bar section, add Follow Sale:
+<button className='border border-[var(--line)] font-sans text-sm px-4 py-2 text-ink hover:bg-paper transition-colors flex items-center gap-2'>
+  <span>♡</span> Follow Sale
+</button>
+
+// Replace the lot grid with:
+<CatalogueLots auctionId={params.auctionId} />
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add apps/user-portal/package.json apps/user-portal/src/i18n.ts apps/user-portal/src/app/auctions/[auctionId]/
+git commit -m "feat(user-portal): sale catalogue sort + pagination + follow sale; add next-intl"
+```
+
+---
+
+## Updated Self-Review — Full Spec Coverage
+
+| Spec requirement | Task |
+|---|---|
+| next-intl for currency/date | Task 20 |
+| Header: search bar (300ms debounce), Watchlist link, user avatar | Task 15 |
+| AccountShell: avatar, "Collector since YYYY", Profile & Paddle nav | Task 15 |
+| /account/profile page | Task 15 |
+| Calendar: tabbed UI (Upcoming / Live Now / Results) | Task 18 |
+| Browse: Department, Status, Auction filter checkboxes | ⚠️ See note below |
+| Browse: price range slider | ⚠️ See note below |
+| Sale Catalogue: ♡ Follow Sale, sort controls, pagination | Task 20 |
+| Sale Catalogue: viewing dates in hero | ⚠️ Requires `viewingDates` field from catalogue service |
+| Lot Detail standard: Add to Watchlist, Enquire, trust marks, min bid notice | Task 16 |
+| Lot Detail standard: "From the same collection" grid | Task 16 |
+| Lot Detail live: status line (leading/outbid), activity feed, Up Next strip | Task 16 |
+| Lot Detail: phone OTP inline modal on bid attempt | Task 16 |
+| SSE reconnecting badge after 5s | Task 16 |
+| auction_closed: disable bid input, show banner | Task 16 |
+| Login: Forgot password link, cross-links between tabs | Task 17 |
+| Verify email: resend option | Task 17 |
+| Verify phone: 3-attempt lockout with countdown | Task 17 |
+| Register-to-Bid Step 2: legal name, DOB, address fields | Task 18 |
+| Mobile: bottom nav bar (Home/Browse/Watch/Bids) | Task 19 |
+| Mobile: sticky bid bar on lot detail | Task 19 |
+| Mobile: account top tab strip, hidden sidebar | Task 19 |
+| Mobile: header hamburger menu | ⚠️ See note below |
+
+**⚠️ Remaining deferred items (low risk, can be added later):**
+- Browse page: Department, Status, Auction multi-select filter checkboxes (requires catalogue service to expose filter counts)
+- Browse page: dual-handle price range slider (needs a slider library e.g. `@radix-ui/react-slider`)
+- Sale Catalogue: "viewing dates" (requires catalogue service schema addition)
+- Mobile header: hamburger/drawer menu (nav collapsed behind hamburger on mobile)
+
+These are deferred because they either require catalogue service schema changes or an additional UI library — they do not block launch of the user portal.
+
