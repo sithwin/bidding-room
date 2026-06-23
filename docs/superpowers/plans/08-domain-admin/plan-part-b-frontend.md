@@ -1,8 +1,8 @@
-# Admin Portal Frontend Implementation Plan
+﻿# Admin Portal Frontend Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Build the Admin Portal — a Next.js (App Router) application for staff to manage lots, auctions, users, invoices, fulfilments, categories, and reports via the Admin Service API.
+**Goal:** Build the Admin Portal â€” a Next.js (App Router) application for staff to manage lots, auctions, users, invoices, fulfilments, categories, and reports via the Admin Service API.
 
 **Architecture:** Next.js App Router with Server Components for initial data fetching, Server Actions for mutations, and SWR for the one live-polling screen (auction detail). Auth uses a `admin_token` httpOnly cookie containing the Admin JWT; Next.js middleware protects all `/admin/*` routes. A Route Handler at `app/api/admin/[...path]/route.ts` reads the cookie and proxies client-side SWR requests to the Admin Service with the JWT in `Authorization` header.
 
@@ -11,17 +11,17 @@
 ## Global Constraints
 
 - Node.js 20, TypeScript 5.4, strict mode
-- Named exports only — no `export default` (exception: Next.js page/layout/error files which Next.js requires as default exports, and `vitest.config.ts`)
-- Single quotes for strings; `const`/`let` only — no `var`
+- Named exports only â€” no `export default` (exception: Next.js page/layout/error files which Next.js requires as default exports, and `vitest.config.ts`)
+- Single quotes for strings; `const`/`let` only â€” no `var`
 - App lives at `apps/admin-portal/`
 - All data flows through the Admin Service; env var `ADMIN_SERVICE_URL=http://admin-service:3005` (Docker internal hostname); never call downstream services directly
 - Login is the one exception: Next.js Route Handler calls `USER_SERVICE_URL=http://user-service:3002` at `/api/auth/login`, validates `role === 'ADMIN'`, then sets the cookie
 - Auth: httpOnly cookie named `admin_token`; maxAge 28800 (8 hours); Secure + SameSite=Lax
-- No SSE in admin portal — polling only where live data is needed (auction detail: 5-second SWR refresh)
+- No SSE in admin portal â€” polling only where live data is needed (auction detail: 5-second SWR refresh)
 - All mutations use Next.js Server Actions with `revalidatePath` after success
 - Confirmation dialogs required for all destructive actions (cancel auction, suspend user, delete lot, cancel invoice)
-- Tailwind CSS v3 (not v4) — Shadcn/ui compatibility
-- Shadcn/ui components installed via `pnpm dlx shadcn@latest add <name>` — never manually copied
+- Tailwind CSS v3 (not v4) â€” Shadcn/ui compatibility
+- Shadcn/ui components installed via `pnpm dlx shadcn@latest add <name>` â€” never manually copied
 - Admin Service API paths are all prefixed `/admin/api/` (e.g. `GET /admin/api/lots`)
 
 ---
@@ -32,86 +32,86 @@
 apps/admin-portal/
   package.json
   tsconfig.json
-  next.config.ts                         — sets ADMIN_SERVICE_URL and USER_SERVICE_URL
+  next.config.ts                         â€” sets ADMIN_SERVICE_URL and USER_SERVICE_URL
   tailwind.config.ts
   postcss.config.mjs
-  middleware.ts                          — redirect unauthenticated /admin/* to /admin/login
-  components.json                        — Shadcn/ui config
+  middleware.ts                          â€” redirect unauthenticated /admin/* to /admin/login
+  components.json                        â€” Shadcn/ui config
   vitest.config.ts
-  vitest.setup.ts                        — @testing-library/jest-dom matchers
+  vitest.setup.ts                        â€” @testing-library/jest-dom matchers
   src/
     app/
       globals.css
-      layout.tsx                         — root html/body shell, Inter font
+      layout.tsx                         â€” root html/body shell, Inter font
       api/
         auth/
-          route.ts                       — POST: login → User Service + set cookie; DELETE: logout + clear cookie
+          route.ts                       â€” POST: login â†’ User Service + set cookie; DELETE: logout + clear cookie
         admin/
           [...path]/
-            route.ts                     — GET/POST/PATCH/DELETE proxy → Admin Service (reads cookie, sets Authorization)
+            route.ts                     â€” GET/POST/PATCH/DELETE proxy â†’ Admin Service (reads cookie, sets Authorization)
       admin/
-        layout.tsx                       — AdminShell wrapper
+        layout.tsx                       â€” AdminShell wrapper
         login/
-          page.tsx                       — login form (client component with React Hook Form)
+          page.tsx                       â€” login form (client component with React Hook Form)
         dashboard/
-          page.tsx                       — stats cards + activity feed (server component)
+          page.tsx                       â€” stats cards + activity feed (server component)
         lots/
-          page.tsx                       — lots data table (server component)
-          _actions.ts                    — createLot, updateLot, deleteLot
+          page.tsx                       â€” lots data table (server component)
+          _actions.ts                    â€” createLot, updateLot, deleteLot
           new/
-            page.tsx                     — create lot form
+            page.tsx                     â€” create lot form
           [id]/
-            page.tsx                     — edit lot form + image manager
-            _actions.ts                  — getUploadUrl, deleteImage, reorderImages
+            page.tsx                     â€” edit lot form + image manager
+            _actions.ts                  â€” getUploadUrl, deleteImage, reorderImages
         categories/
-          page.tsx                       — category tree (server component initial load)
-          _actions.ts                    — createCategory, renameCategory, deleteCategory
+          page.tsx                       â€” category tree (server component initial load)
+          _actions.ts                    â€” createCategory, renameCategory, deleteCategory
         auctions/
-          page.tsx                       — auctions data table (server component)
-          _actions.ts                    — scheduleAuction, rescheduleAuction, cancelAuction
+          page.tsx                       â€” auctions data table (server component)
+          _actions.ts                    â€” scheduleAuction, rescheduleAuction, cancelAuction
           new/
-            page.tsx                     — schedule auction form
+            page.tsx                     â€” schedule auction form
           [lotId]/
-            page.tsx                     — auction detail shell (server component)
+            page.tsx                     â€” auction detail shell (server component)
         users/
-          page.tsx                       — users data table (server component)
+          page.tsx                       â€” users data table (server component)
           [id]/
-            page.tsx                     — user detail
-            _actions.ts                  — suspendUser, reinstateUser, manuallyApproveUser
+            page.tsx                     â€” user detail
+            _actions.ts                  â€” suspendUser, reinstateUser, manuallyApproveUser
         invoices/
-          page.tsx                       — invoices data table (server component)
+          page.tsx                       â€” invoices data table (server component)
           [id]/
-            page.tsx                     — invoice detail
-            _actions.ts                  — extendDueDate, cancelInvoice
+            page.tsx                     â€” invoice detail
+            _actions.ts                  â€” extendDueDate, cancelInvoice
         fulfilments/
-          page.tsx                       — fulfilments data table (server component)
+          page.tsx                       â€” fulfilments data table (server component)
           [id]/
-            page.tsx                     — fulfilment detail
-            _actions.ts                  — markDispatched, markCollected
+            page.tsx                     â€” fulfilment detail
+            _actions.ts                  â€” markDispatched, markCollected
         reports/
-          page.tsx                       — reports with three tabs (client component tabs)
+          page.tsx                       â€” reports with three tabs (client component tabs)
     lib/
-      admin-api.ts                       — server-side typed fetch to Admin Service; reads cookie via next/headers
-      auth.ts                            — getAdminToken() from next/headers cookies
+      admin-api.ts                       â€” server-side typed fetch to Admin Service; reads cookie via next/headers
+      auth.ts                            â€” getAdminToken() from next/headers cookies
       schemas/
-        lot.schema.ts                    — Zod: LotFormSchema
-        auction.schema.ts               — Zod: ScheduleAuctionSchema, RescheduleAuctionSchema
-        category.schema.ts              — Zod: CategoryFormSchema
-        invoice.schema.ts               — Zod: ExtendDueDateSchema, CancelInvoiceSchema
-        fulfilment.schema.ts            — Zod: MarkDispatchedSchema
-        user.schema.ts                  — Zod: SuspendUserSchema
+        lot.schema.ts                    â€” Zod: LotFormSchema
+        auction.schema.ts               â€” Zod: ScheduleAuctionSchema, RescheduleAuctionSchema
+        category.schema.ts              â€” Zod: CategoryFormSchema
+        invoice.schema.ts               â€” Zod: ExtendDueDateSchema, CancelInvoiceSchema
+        fulfilment.schema.ts            â€” Zod: MarkDispatchedSchema
+        user.schema.ts                  â€” Zod: SuspendUserSchema
     components/
-      ui/                               — Shadcn/ui installed components (never edit manually)
+      ui/                               â€” Shadcn/ui installed components (never edit manually)
       layout/
-        sidebar.tsx                     — nav links with active state (client component)
-        breadcrumbs.tsx                 — pathname-derived breadcrumb (client component)
-        admin-shell.tsx                 — sidebar + top bar + main content wrapper
-      data-table.tsx                    — generic TanStack Table wrapper (client component)
-      status-badge.tsx                  — colour-coded status pill
-      confirm-dialog.tsx               — AlertDialog wrapper for destructive actions
-      image-uploader.tsx               — R2 direct upload + reorder + delete (client component)
-      category-tree.tsx               — recursive tree + inline rename + add child (client component)
-      auction-live-stats.tsx          — SWR polling for current bid / time remaining
+        sidebar.tsx                     â€” nav links with active state (client component)
+        breadcrumbs.tsx                 â€” pathname-derived breadcrumb (client component)
+        admin-shell.tsx                 â€” sidebar + top bar + main content wrapper
+      data-table.tsx                    â€” generic TanStack Table wrapper (client component)
+      status-badge.tsx                  â€” colour-coded status pill
+      confirm-dialog.tsx               â€” AlertDialog wrapper for destructive actions
+      image-uploader.tsx               â€” R2 direct upload + reorder + delete (client component)
+      category-tree.tsx               â€” recursive tree + inline rename + add child (client component)
+      auction-live-stats.tsx          â€” SWR polling for current bid / time remaining
 ```
 
 ---
@@ -133,7 +133,7 @@ apps/admin-portal/
 **Interfaces:**
 - Produces: runnable Next.js app scaffold with Shadcn/ui initialised and all required UI components installed
 
-- [ ] **Step 1: Create `apps/admin-portal/package.json`**
+- [x] **Step 1: Create `apps/admin-portal/package.json`**
 
 ```json
 {
@@ -192,7 +192,7 @@ apps/admin-portal/
 }
 ```
 
-- [ ] **Step 2: Create `apps/admin-portal/tsconfig.json`**
+- [x] **Step 2: Create `apps/admin-portal/tsconfig.json`**
 
 ```json
 {
@@ -206,7 +206,7 @@ apps/admin-portal/
 }
 ```
 
-- [ ] **Step 3: Create `apps/admin-portal/next.config.ts`**
+- [x] **Step 3: Create `apps/admin-portal/next.config.ts`**
 
 ```typescript
 import type { NextConfig } from 'next';
@@ -221,7 +221,7 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-- [ ] **Step 4: Create `apps/admin-portal/tailwind.config.ts`**
+- [x] **Step 4: Create `apps/admin-portal/tailwind.config.ts`**
 
 ```typescript
 import type { Config } from 'tailwindcss';
@@ -283,7 +283,7 @@ const config: Config = {
 export default config;
 ```
 
-- [ ] **Step 5: Create `apps/admin-portal/postcss.config.mjs`**
+- [x] **Step 5: Create `apps/admin-portal/postcss.config.mjs`**
 
 ```javascript
 export default {
@@ -294,7 +294,7 @@ export default {
 };
 ```
 
-- [ ] **Step 6: Create `apps/admin-portal/vitest.config.ts`**
+- [x] **Step 6: Create `apps/admin-portal/vitest.config.ts`**
 
 ```typescript
 import { defineConfig } from 'vitest/config';
@@ -314,13 +314,13 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 7: Create `apps/admin-portal/vitest.setup.ts`**
+- [x] **Step 7: Create `apps/admin-portal/vitest.setup.ts`**
 
 ```typescript
 import '@testing-library/jest-dom';
 ```
 
-- [ ] **Step 8: Install dependencies**
+- [x] **Step 8: Install dependencies**
 
 ```bash
 cd apps/admin-portal
@@ -329,7 +329,7 @@ pnpm install
 
 Expected: packages installed with no errors.
 
-- [ ] **Step 9: Initialise Shadcn/ui**
+- [x] **Step 9: Initialise Shadcn/ui**
 
 ```bash
 cd apps/admin-portal
@@ -346,7 +346,7 @@ pnpm dlx shadcn@latest add button input label form textarea select dialog alert-
 
 Expected: components appear in `src/components/ui/`.
 
-- [ ] **Step 10: Create `apps/admin-portal/src/app/layout.tsx`**
+- [x] **Step 10: Create `apps/admin-portal/src/app/layout.tsx`**
 
 ```tsx
 import type { Metadata } from 'next';
@@ -356,7 +356,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'The Carat Room — Admin',
+  title: 'The Carat Room â€” Admin',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -368,7 +368,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-- [ ] **Step 11: Verify Next.js starts**
+- [x] **Step 11: Verify Next.js starts**
 
 ```bash
 cd apps/admin-portal
@@ -377,7 +377,7 @@ pnpm dev
 
 Expected: `ready on http://localhost:3006` with no TypeScript errors.
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/admin-portal/
@@ -386,7 +386,7 @@ git commit -m "feat(admin-portal): scaffold Next.js app with Shadcn/ui"
 
 ---
 
-### Task 2: Auth — cookie helpers, login route handler, middleware, login page
+### Task 2: Auth â€” cookie helpers, login route handler, middleware, login page
 
 **Files:**
 - Create: `apps/admin-portal/src/lib/auth.ts`
@@ -398,13 +398,13 @@ git commit -m "feat(admin-portal): scaffold Next.js app with Shadcn/ui"
 
 **Interfaces:**
 - Produces:
-  - `getAdminToken(): string | undefined` — reads `admin_token` cookie via `next/headers`; usable in Server Components and Server Actions
-  - `POST /api/auth` — accepts `{ email, password }`, returns `{ ok: true }` on success (cookie set) or `{ error }` on failure
-  - `DELETE /api/auth` — clears cookie, returns `{ ok: true }`
+  - `getAdminToken(): string | undefined` â€” reads `admin_token` cookie via `next/headers`; usable in Server Components and Server Actions
+  - `POST /api/auth` â€” accepts `{ email, password }`, returns `{ ok: true }` on success (cookie set) or `{ error }` on failure
+  - `DELETE /api/auth` â€” clears cookie, returns `{ ok: true }`
   - Middleware: unauthenticated requests to `/admin/*` (except `/admin/login`) redirect to `/admin/login`
   - Login page at `/admin/login` with email + password form
 
-- [ ] **Step 1: Write failing tests for `auth.ts`**
+- [x] **Step 1: Write failing tests for `auth.ts`**
 
 Create `apps/admin-portal/src/lib/auth.test.ts`:
 
@@ -443,16 +443,16 @@ describe('getAdminToken', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/auth.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './auth'`
+Expected: FAIL â€” `Cannot find module './auth'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/auth.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/auth.ts`**
 
 ```typescript
 import { cookies } from 'next/headers';
@@ -462,7 +462,7 @@ export function getAdminToken(): string | undefined {
 }
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/lib/auth.test.ts
@@ -470,7 +470,7 @@ npx vitest run src/lib/auth.test.ts
 
 Expected: 2 passed
 
-- [ ] **Step 5: Write failing tests for the login route handler**
+- [x] **Step 5: Write failing tests for the login route handler**
 
 Create `apps/admin-portal/src/app/api/auth/route.test.ts`:
 
@@ -558,15 +558,15 @@ describe('DELETE /api/auth', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 ```bash
 npx vitest run src/app/api/auth/route.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './route'`
+Expected: FAIL â€” `Cannot find module './route'`
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/api/auth/route.ts`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/api/auth/route.ts`**
 
 ```typescript
 import { NextResponse } from 'next/server';
@@ -609,7 +609,7 @@ export async function DELETE(): Promise<NextResponse> {
 }
 ```
 
-- [ ] **Step 8: Run to verify pass**
+- [x] **Step 8: Run to verify pass**
 
 ```bash
 npx vitest run src/app/api/auth/route.test.ts
@@ -617,7 +617,7 @@ npx vitest run src/app/api/auth/route.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 9: Create `apps/admin-portal/middleware.ts`**
+- [x] **Step 9: Create `apps/admin-portal/middleware.ts`**
 
 ```typescript
 import { type NextRequest, NextResponse } from 'next/server';
@@ -642,7 +642,7 @@ export const config = {
 };
 ```
 
-- [ ] **Step 10: Create `apps/admin-portal/src/app/admin/login/page.tsx`**
+- [x] **Step 10: Create `apps/admin-portal/src/app/admin/login/page.tsx`**
 
 ```tsx
 'use client';
@@ -691,7 +691,7 @@ export default function LoginPage() {
     <div className='flex min-h-screen items-center justify-center bg-muted/40'>
       <Card className='w-full max-w-sm'>
         <CardHeader>
-          <CardTitle>The Carat Room — Admin</CardTitle>
+          <CardTitle>The Carat Room â€” Admin</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
@@ -707,7 +707,7 @@ export default function LoginPage() {
             </div>
             {serverError && <p className='text-sm text-destructive'>{serverError}</p>}
             <Button type='submit' className='w-full' disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in…' : 'Sign in'}
+              {isSubmitting ? 'Signing inâ€¦' : 'Sign in'}
             </Button>
           </form>
         </CardContent>
@@ -717,7 +717,7 @@ export default function LoginPage() {
 }
 ```
 
-- [ ] **Step 11: Run all auth tests**
+- [x] **Step 11: Run all auth tests**
 
 ```bash
 npx vitest run src/lib/auth.test.ts src/app/api/auth/route.test.ts
@@ -725,13 +725,13 @@ npx vitest run src/lib/auth.test.ts src/app/api/auth/route.test.ts
 
 Expected: 6 passed
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/auth.ts apps/admin-portal/src/lib/auth.test.ts \
   apps/admin-portal/src/app/api/auth/ apps/admin-portal/middleware.ts \
   apps/admin-portal/src/app/admin/login/
-git commit -m "feat(admin-portal): auth — cookie helper, login route handler, middleware, login page"
+git commit -m "feat(admin-portal): auth â€” cookie helper, login route handler, middleware, login page"
 ```
 
 ---
@@ -745,14 +745,14 @@ git commit -m "feat(admin-portal): auth — cookie helper, login route handler, 
 
 **Interfaces:**
 - Produces:
-  - `adminApi.get<T>(path): Promise<T>` — reads `admin_token` cookie, calls Admin Service
+  - `adminApi.get<T>(path): Promise<T>` â€” reads `admin_token` cookie, calls Admin Service
   - `adminApi.post<T>(path, body): Promise<T>`
   - `adminApi.patch<T>(path, body): Promise<T>`
   - `adminApi.delete<T>(path): Promise<T>`
   - All throw `AdminApiError` with `.status` and `.body` on non-2xx responses
   - Client-side proxy at `/api/admin/[...path]` forwards browser SWR requests to Admin Service with cookie JWT
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/admin-portal/src/lib/admin-api.test.ts`:
 
@@ -823,16 +823,16 @@ describe('adminApi', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/admin-api.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './admin-api'`
+Expected: FAIL â€” `Cannot find module './admin-api'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/admin-api.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/admin-api.ts`**
 
 ```typescript
 import { cookies } from 'next/headers';
@@ -870,7 +870,7 @@ export const adminApi = {
 };
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/lib/admin-api.test.ts
@@ -878,7 +878,7 @@ npx vitest run src/lib/admin-api.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 5: Create `apps/admin-portal/src/app/api/admin/[...path]/route.ts`**
+- [x] **Step 5: Create `apps/admin-portal/src/app/api/admin/[...path]/route.ts`**
 
 This is the client-side proxy used by SWR. Browser cannot call Admin Service directly (different port, no CORS). This Route Handler reads the cookie, adds the Authorization header, and forwards the request.
 
@@ -921,7 +921,7 @@ export const PATCH = (req: NextRequest, ctx: RouteContext) => proxyToAdminServic
 export const DELETE = (req: NextRequest, ctx: RouteContext) => proxyToAdminService(req, ctx);
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/admin-api.ts apps/admin-portal/src/lib/admin-api.test.ts \
@@ -946,12 +946,12 @@ git commit -m "feat(admin-portal): admin API client and client-side proxy route 
 
 **Interfaces:**
 - Produces:
-  - `<StatusBadge status={string} />` — maps status strings to colour variants
-  - `<ConfirmDialog trigger onConfirm title description />` — wraps Shadcn AlertDialog
-  - `<DataTable columns data />` — generic TanStack Table wrapper with pagination
+  - `<StatusBadge status={string} />` â€” maps status strings to colour variants
+  - `<ConfirmDialog trigger onConfirm title description />` â€” wraps Shadcn AlertDialog
+  - `<DataTable columns data />` â€” generic TanStack Table wrapper with pagination
   - Protected admin layout shell (sidebar + top bar)
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `apps/admin-portal/src/components/status-badge.test.tsx`:
 
@@ -1007,16 +1007,16 @@ describe('ConfirmDialog', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/components/status-badge.test.tsx src/components/confirm-dialog.test.tsx
 ```
 
-Expected: FAIL — `Cannot find module './status-badge'`
+Expected: FAIL â€” `Cannot find module './status-badge'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/components/status-badge.tsx`**
+- [x] **Step 3: Create `apps/admin-portal/src/components/status-badge.tsx`**
 
 ```tsx
 import { Badge } from '@/components/ui/badge';
@@ -1044,7 +1044,7 @@ export function StatusBadge({ status }: { status: string }) {
 }
 ```
 
-- [ ] **Step 4: Create `apps/admin-portal/src/components/confirm-dialog.tsx`**
+- [x] **Step 4: Create `apps/admin-portal/src/components/confirm-dialog.tsx`**
 
 ```tsx
 import {
@@ -1087,7 +1087,7 @@ export function ConfirmDialog({ trigger, title, description, onConfirm, confirmL
 }
 ```
 
-- [ ] **Step 5: Create `apps/admin-portal/src/components/data-table.tsx`**
+- [x] **Step 5: Create `apps/admin-portal/src/components/data-table.tsx`**
 
 ```tsx
 'use client';
@@ -1165,7 +1165,7 @@ export function DataTable<TData>({ columns, data, pageSize = 20 }: DataTableProp
 }
 ```
 
-- [ ] **Step 6: Create sidebar, breadcrumbs, admin-shell**
+- [x] **Step 6: Create sidebar, breadcrumbs, admin-shell**
 
 Create `apps/admin-portal/src/components/layout/sidebar.tsx`:
 
@@ -1286,7 +1286,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/admin/layout.tsx`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/admin/layout.tsx`**
 
 ```tsx
 import { redirect } from 'next/navigation';
@@ -1301,7 +1301,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 }
 ```
 
-- [ ] **Step 8: Run component tests**
+- [x] **Step 8: Run component tests**
 
 ```bash
 npx vitest run src/components/status-badge.test.tsx src/components/confirm-dialog.test.tsx
@@ -1309,7 +1309,7 @@ npx vitest run src/components/status-badge.test.tsx src/components/confirm-dialo
 
 Expected: 4 passed
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/admin-portal/src/components/ apps/admin-portal/src/app/admin/layout.tsx
@@ -1338,16 +1338,16 @@ git commit -m "feat(admin-portal): layout shell, sidebar, breadcrumbs, DataTable
 **Lot form fields:** `title` (string, min 1), `description` (string, min 1), `categoryId` (UUID string), `condition` (`'EXCELLENT' | 'VERY_GOOD' | 'GOOD' | 'FAIR'`), `estimatedValue` (positive number)
 
 **Admin Service endpoints used:**
-- `GET /admin/api/lots` → `{ data: Lot[] }`
-- `POST /admin/api/lots` → `{ data: Lot }`
-- `GET /admin/api/lots/:id` → `{ data: Lot }`
-- `PATCH /admin/api/lots/:id` → `{ data: Lot }`
-- `DELETE /admin/api/lots/:id` → `{ data: { id: string } }`
-- `POST /admin/api/lots/:id/images/upload-url` with `{ filename: string, contentType: string }` → `{ data: { uploadUrl: string, imageId: string, publicUrl: string } }`
-- `PATCH /admin/api/lots/:id/images/reorder` with `{ imageIds: string[] }` → `{ data: Lot }`
-- `DELETE /admin/api/lots/:id/images/:imageId` → `{ data: { id: string } }`
+- `GET /admin/api/lots` â†’ `{ data: Lot[] }`
+- `POST /admin/api/lots` â†’ `{ data: Lot }`
+- `GET /admin/api/lots/:id` â†’ `{ data: Lot }`
+- `PATCH /admin/api/lots/:id` â†’ `{ data: Lot }`
+- `DELETE /admin/api/lots/:id` â†’ `{ data: { id: string } }`
+- `POST /admin/api/lots/:id/images/upload-url` with `{ filename: string, contentType: string }` â†’ `{ data: { uploadUrl: string, imageId: string, publicUrl: string } }`
+- `PATCH /admin/api/lots/:id/images/reorder` with `{ imageIds: string[] }` â†’ `{ data: Lot }`
+- `DELETE /admin/api/lots/:id/images/:imageId` â†’ `{ data: { id: string } }`
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Create `apps/admin-portal/src/lib/schemas/lot.schema.test.ts`:
 
@@ -1382,16 +1382,16 @@ describe('LotFormSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/schemas/lot.schema.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './lot.schema'`
+Expected: FAIL â€” `Cannot find module './lot.schema'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/schemas/lot.schema.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/schemas/lot.schema.ts`**
 
 ```typescript
 import { z } from 'zod';
@@ -1409,7 +1409,7 @@ export const LotFormSchema = z.object({
 export type LotFormValues = z.infer<typeof LotFormSchema>;
 ```
 
-- [ ] **Step 4: Run schema tests to verify pass**
+- [x] **Step 4: Run schema tests to verify pass**
 
 ```bash
 npx vitest run src/lib/schemas/lot.schema.test.ts
@@ -1417,7 +1417,7 @@ npx vitest run src/lib/schemas/lot.schema.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 5: Write failing action tests**
+- [x] **Step 5: Write failing action tests**
 
 Create `apps/admin-portal/src/app/admin/lots/_actions.test.ts`:
 
@@ -1477,15 +1477,15 @@ describe('deleteLot', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 ```bash
 npx vitest run src/app/admin/lots/_actions.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './_actions'`
+Expected: FAIL â€” `Cannot find module './_actions'`
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/admin/lots/_actions.ts`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/admin/lots/_actions.ts`**
 
 ```typescript
 'use server';
@@ -1547,7 +1547,7 @@ export async function deleteLot(id: string): Promise<void> {
 }
 ```
 
-- [ ] **Step 8: Run action tests to verify pass**
+- [x] **Step 8: Run action tests to verify pass**
 
 ```bash
 npx vitest run src/app/admin/lots/_actions.test.ts
@@ -1555,7 +1555,7 @@ npx vitest run src/app/admin/lots/_actions.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 9: Create image actions `apps/admin-portal/src/app/admin/lots/[id]/_actions.ts`**
+- [x] **Step 9: Create image actions `apps/admin-portal/src/app/admin/lots/[id]/_actions.ts`**
 
 ```typescript
 'use server';
@@ -1586,7 +1586,7 @@ export async function reorderImages(lotId: string, imageIds: string[]): Promise<
 }
 ```
 
-- [ ] **Step 10: Create `apps/admin-portal/src/components/image-uploader.tsx`**
+- [x] **Step 10: Create `apps/admin-portal/src/components/image-uploader.tsx`**
 
 ```tsx
 'use client';
@@ -1658,7 +1658,7 @@ export function ImageUploader({ lotId, initialImages }: ImageUploaderProps) {
             <GripVertical className='h-4 w-4 cursor-grab text-muted-foreground' />
             <img src={img.publicUrl} alt='' className='h-12 w-12 rounded object-cover' />
             {img.isPrimary && <Star className='h-4 w-4 text-yellow-500' />}
-            <Button variant='ghost' size='icon' onClick={() => moveUp(idx)} disabled={idx === 0}>↑</Button>
+            <Button variant='ghost' size='icon' onClick={() => moveUp(idx)} disabled={idx === 0}>â†‘</Button>
             <Button variant='ghost' size='icon' onClick={() => handleDelete(img.id)}>
               <Trash2 className='h-4 w-4 text-destructive' />
             </Button>
@@ -1669,7 +1669,7 @@ export function ImageUploader({ lotId, initialImages }: ImageUploaderProps) {
       <div>
         <label htmlFor='image-upload' className='cursor-pointer'>
           <Button variant='outline' asChild>
-            <span>{uploading ? 'Uploading…' : 'Upload image'}</span>
+            <span>{uploading ? 'Uploadingâ€¦' : 'Upload image'}</span>
           </Button>
           <input
             id='image-upload'
@@ -1686,7 +1686,7 @@ export function ImageUploader({ lotId, initialImages }: ImageUploaderProps) {
 }
 ```
 
-- [ ] **Step 11: Create lots list page `apps/admin-portal/src/app/admin/lots/page.tsx`**
+- [x] **Step 11: Create lots list page `apps/admin-portal/src/app/admin/lots/page.tsx`**
 
 ```tsx
 import Link from 'next/link';
@@ -1758,7 +1758,7 @@ export default async function LotsPage() {
 }
 ```
 
-- [ ] **Step 12: Create new lot page `apps/admin-portal/src/app/admin/lots/new/page.tsx`**
+- [x] **Step 12: Create new lot page `apps/admin-portal/src/app/admin/lots/new/page.tsx`**
 
 ```tsx
 'use client';
@@ -1814,7 +1814,7 @@ export default function NewLotPage() {
           <Input id='estimatedValue' name='estimatedValue' type='number' min={0} step={0.01} />
         </div>
         <Button type='submit' disabled={isPending}>
-          {isPending ? 'Creating…' : 'Create Lot'}
+          {isPending ? 'Creatingâ€¦' : 'Create Lot'}
         </Button>
       </form>
     </div>
@@ -1822,7 +1822,7 @@ export default function NewLotPage() {
 }
 ```
 
-- [ ] **Step 13: Create edit lot page `apps/admin-portal/src/app/admin/lots/[id]/page.tsx`**
+- [x] **Step 13: Create edit lot page `apps/admin-portal/src/app/admin/lots/[id]/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -1864,7 +1864,7 @@ export default async function EditLotPage({ params }: { params: { id: string } }
 
 Note: `_edit-form.tsx` is a client component in the same directory that uses `useActionState` with `updateLot`. Create it with the same pattern as `NewLotPage` but pre-populated with `lot` data and calling `updateLot.bind(null, lot.id)`.
 
-- [ ] **Step 14: Run all lot tests**
+- [x] **Step 14: Run all lot tests**
 
 ```bash
 npx vitest run src/lib/schemas/lot.schema.test.ts src/app/admin/lots/_actions.test.ts
@@ -1872,12 +1872,12 @@ npx vitest run src/lib/schemas/lot.schema.test.ts src/app/admin/lots/_actions.te
 
 Expected: 7 passed
 
-- [ ] **Step 15: Commit**
+- [x] **Step 15: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/schemas/lot.schema.ts apps/admin-portal/src/lib/schemas/lot.schema.test.ts \
   apps/admin-portal/src/app/admin/lots/ apps/admin-portal/src/components/image-uploader.tsx
-git commit -m "feat(admin-portal): lots pages — list, create, edit, image uploader"
+git commit -m "feat(admin-portal): lots pages â€” list, create, edit, image uploader"
 ```
 
 ---
@@ -1894,15 +1894,15 @@ git commit -m "feat(admin-portal): lots pages — list, create, edit, image uplo
 
 **Interfaces:**
 - Consumes: `adminApi` from Task 3
-- Produces: `<CategoryTree categories onRename onCreate onDelete />` — recursive expandable tree
+- Produces: `<CategoryTree categories onRename onCreate onDelete />` â€” recursive expandable tree
 
 **Admin Service endpoints used:**
-- `GET /admin/api/categories` → `{ data: Category[] }` where `Category = { id, name, slug, parentId: string | null, children: Category[] }`
-- `POST /admin/api/categories` with `{ name, slug, parentId?: string }` → `{ data: Category }`
-- `PATCH /admin/api/categories/:id` with `{ name }` → `{ data: Category }`
-- `DELETE /admin/api/categories/:id` → `{ data: { id: string } }` (fails 409 if lots assigned)
+- `GET /admin/api/categories` â†’ `{ data: Category[] }` where `Category = { id, name, slug, parentId: string | null, children: Category[] }`
+- `POST /admin/api/categories` with `{ name, slug, parentId?: string }` â†’ `{ data: Category }`
+- `PATCH /admin/api/categories/:id` with `{ name }` â†’ `{ data: Category }`
+- `DELETE /admin/api/categories/:id` â†’ `{ data: { id: string } }` (fails 409 if lots assigned)
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Create `apps/admin-portal/src/lib/schemas/category.schema.test.ts`:
 
@@ -1933,16 +1933,16 @@ describe('CategoryFormSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/schemas/category.schema.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './category.schema'`
+Expected: FAIL â€” `Cannot find module './category.schema'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/schemas/category.schema.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/schemas/category.schema.ts`**
 
 ```typescript
 import { z } from 'zod';
@@ -1956,7 +1956,7 @@ export const CategoryFormSchema = z.object({
 export type CategoryFormValues = z.infer<typeof CategoryFormSchema>;
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/lib/schemas/category.schema.test.ts
@@ -1964,7 +1964,7 @@ npx vitest run src/lib/schemas/category.schema.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 5: Write failing action tests**
+- [x] **Step 5: Write failing action tests**
 
 Create `apps/admin-portal/src/app/admin/categories/_actions.test.ts`:
 
@@ -2017,15 +2017,15 @@ describe('deleteCategory', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 ```bash
 npx vitest run src/app/admin/categories/_actions.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './_actions'`
+Expected: FAIL â€” `Cannot find module './_actions'`
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/admin/categories/_actions.ts`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/admin/categories/_actions.ts`**
 
 ```typescript
 'use server';
@@ -2065,7 +2065,7 @@ export async function deleteCategory(id: string): Promise<{ ok: boolean; error?:
 }
 ```
 
-- [ ] **Step 8: Run action tests to verify pass**
+- [x] **Step 8: Run action tests to verify pass**
 
 ```bash
 npx vitest run src/app/admin/categories/_actions.test.ts
@@ -2073,7 +2073,7 @@ npx vitest run src/app/admin/categories/_actions.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 9: Create `apps/admin-portal/src/components/category-tree.tsx`**
+- [x] **Step 9: Create `apps/admin-portal/src/components/category-tree.tsx`**
 
 ```tsx
 'use client';
@@ -2190,7 +2190,7 @@ export function CategoryTree({ categories }: { categories: Category[] }) {
 }
 ```
 
-- [ ] **Step 10: Create `apps/admin-portal/src/app/admin/categories/page.tsx`**
+- [x] **Step 10: Create `apps/admin-portal/src/app/admin/categories/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -2216,7 +2216,7 @@ export default async function CategoriesPage() {
 }
 ```
 
-- [ ] **Step 11: Run all category tests**
+- [x] **Step 11: Run all category tests**
 
 ```bash
 npx vitest run src/lib/schemas/category.schema.test.ts src/app/admin/categories/_actions.test.ts
@@ -2224,7 +2224,7 @@ npx vitest run src/lib/schemas/category.schema.test.ts src/app/admin/categories/
 
 Expected: 7 passed
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/schemas/category.schema.ts apps/admin-portal/src/lib/schemas/category.schema.test.ts \
@@ -2248,16 +2248,16 @@ git commit -m "feat(admin-portal): categories page with recursive tree, inline r
 
 **Interfaces:**
 - Consumes: `adminApi` from Task 3; `DataTable`, `StatusBadge`, `ConfirmDialog` from Task 4
-- Produces: `<AuctionLiveStats lotId />` — SWR polling component refreshing every 5 seconds
+- Produces: `<AuctionLiveStats lotId />` â€” SWR polling component refreshing every 5 seconds
 
 **Admin Service endpoints used:**
-- `GET /admin/api/auctions` → `{ data: AuctionSummary[] }` where `AuctionSummary = { lotId, lotTitle, status, currentBid, endAt }`
-- `GET /admin/api/auctions/:lotId` → `{ data: AuctionDetail }` where `AuctionDetail = { lotId, lotTitle, status, currentBid, bidCount, endAt, bids: Bid[], autoExtendWindowMinutes, autoExtendDurationMinutes }`
-- `POST /admin/api/auctions` with `{ lotId, startAt, endAt, reservePrice, minBidIncrement, autoExtendWindowMinutes, autoExtendDurationMinutes }` → `{ data: AuctionSummary }`
-- `PATCH /admin/api/auctions/:lotId/reschedule` with `{ startAt, endAt }` → `{ data: AuctionSummary }`
-- `DELETE /admin/api/auctions/:lotId` → `{ data: { lotId: string } }`
+- `GET /admin/api/auctions` â†’ `{ data: AuctionSummary[] }` where `AuctionSummary = { lotId, lotTitle, status, currentBid, endAt }`
+- `GET /admin/api/auctions/:lotId` â†’ `{ data: AuctionDetail }` where `AuctionDetail = { lotId, lotTitle, status, currentBid, bidCount, endAt, bids: Bid[], autoExtendWindowMinutes, autoExtendDurationMinutes }`
+- `POST /admin/api/auctions` with `{ lotId, startAt, endAt, reservePrice, minBidIncrement, autoExtendWindowMinutes, autoExtendDurationMinutes }` â†’ `{ data: AuctionSummary }`
+- `PATCH /admin/api/auctions/:lotId/reschedule` with `{ startAt, endAt }` â†’ `{ data: AuctionSummary }`
+- `DELETE /admin/api/auctions/:lotId` â†’ `{ data: { lotId: string } }`
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Create `apps/admin-portal/src/lib/schemas/auction.schema.test.ts`:
 
@@ -2307,16 +2307,16 @@ describe('RescheduleAuctionSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/schemas/auction.schema.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './auction.schema'`
+Expected: FAIL â€” `Cannot find module './auction.schema'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/schemas/auction.schema.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/schemas/auction.schema.ts`**
 
 ```typescript
 import { z } from 'zod';
@@ -2350,7 +2350,7 @@ export type ScheduleAuctionValues = z.infer<typeof ScheduleAuctionSchema>;
 export type RescheduleAuctionValues = z.infer<typeof RescheduleAuctionSchema>;
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/lib/schemas/auction.schema.test.ts
@@ -2358,7 +2358,7 @@ npx vitest run src/lib/schemas/auction.schema.test.ts
 
 Expected: 6 passed
 
-- [ ] **Step 5: Write failing action tests**
+- [x] **Step 5: Write failing action tests**
 
 Create `apps/admin-portal/src/app/admin/auctions/_actions.test.ts`:
 
@@ -2428,15 +2428,15 @@ describe('cancelAuction', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 ```bash
 npx vitest run src/app/admin/auctions/_actions.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './_actions'`
+Expected: FAIL â€” `Cannot find module './_actions'`
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/admin/auctions/_actions.ts`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/admin/auctions/_actions.ts`**
 
 ```typescript
 'use server';
@@ -2497,7 +2497,7 @@ export async function cancelAuction(lotId: string): Promise<void> {
 }
 ```
 
-- [ ] **Step 8: Run action tests to verify pass**
+- [x] **Step 8: Run action tests to verify pass**
 
 ```bash
 npx vitest run src/app/admin/auctions/_actions.test.ts
@@ -2505,7 +2505,7 @@ npx vitest run src/app/admin/auctions/_actions.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 9: Create `apps/admin-portal/src/components/auction-live-stats.tsx`**
+- [x] **Step 9: Create `apps/admin-portal/src/components/auction-live-stats.tsx`**
 
 SWR polls the client-side proxy (Task 3) every 5 seconds for current bid and time remaining. No SSE.
 
@@ -2539,7 +2539,7 @@ export function AuctionLiveStats({ lotId }: { lotId: string }) {
   });
 
   if (error) return <p className='text-sm text-destructive'>Failed to load live stats.</p>;
-  if (!data) return <p className='text-sm text-muted-foreground'>Loading…</p>;
+  if (!data) return <p className='text-sm text-muted-foreground'>Loadingâ€¦</p>;
 
   const { currentBid, bidCount, endAt, status } = data.data;
 
@@ -2564,7 +2564,7 @@ export function AuctionLiveStats({ lotId }: { lotId: string }) {
 }
 ```
 
-- [ ] **Step 10: Create auctions list page `apps/admin-portal/src/app/admin/auctions/page.tsx`**
+- [x] **Step 10: Create auctions list page `apps/admin-portal/src/app/admin/auctions/page.tsx`**
 
 ```tsx
 import Link from 'next/link';
@@ -2612,7 +2612,7 @@ export default async function AuctionsPage() {
 }
 ```
 
-- [ ] **Step 11: Create schedule auction form `apps/admin-portal/src/app/admin/auctions/new/page.tsx`**
+- [x] **Step 11: Create schedule auction form `apps/admin-portal/src/app/admin/auctions/new/page.tsx`**
 
 ```tsx
 'use client';
@@ -2672,14 +2672,14 @@ export default function NewAuctionPage() {
             <Input id='autoExtendDurationMinutes' name='autoExtendDurationMinutes' type='number' min={1} defaultValue={3} />
           </div>
         </div>
-        <Button type='submit' disabled={isPending}>{isPending ? 'Scheduling…' : 'Schedule Auction'}</Button>
+        <Button type='submit' disabled={isPending}>{isPending ? 'Schedulingâ€¦' : 'Schedule Auction'}</Button>
       </form>
     </div>
   );
 }
 ```
 
-- [ ] **Step 12: Create auction detail page `apps/admin-portal/src/app/admin/auctions/[lotId]/page.tsx`**
+- [x] **Step 12: Create auction detail page `apps/admin-portal/src/app/admin/auctions/[lotId]/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -2754,7 +2754,7 @@ export default async function AuctionDetailPage({ params }: { params: { lotId: s
 }
 ```
 
-- [ ] **Step 13: Run all auction tests**
+- [x] **Step 13: Run all auction tests**
 
 ```bash
 npx vitest run src/lib/schemas/auction.schema.test.ts src/app/admin/auctions/_actions.test.ts
@@ -2762,12 +2762,12 @@ npx vitest run src/lib/schemas/auction.schema.test.ts src/app/admin/auctions/_ac
 
 Expected: 9 passed
 
-- [ ] **Step 14: Commit**
+- [x] **Step 14: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/schemas/auction.schema.ts apps/admin-portal/src/lib/schemas/auction.schema.test.ts \
   apps/admin-portal/src/app/admin/auctions/ apps/admin-portal/src/components/auction-live-stats.tsx
-git commit -m "feat(admin-portal): auctions pages — list, schedule, detail + live stats polling"
+git commit -m "feat(admin-portal): auctions pages â€” list, schedule, detail + live stats polling"
 ```
 
 ---
@@ -2787,13 +2787,13 @@ git commit -m "feat(admin-portal): auctions pages — list, schedule, detail + l
 - Consumes: `adminApi` from Task 3; `DataTable`, `StatusBadge`, `ConfirmDialog` from Task 4
 
 **Admin Service endpoints used:**
-- `GET /admin/api/users?status=&search=` → `{ data: UserSummary[] }` where `UserSummary = { id, email, status, country, registeredAt, bidCount }`
-- `GET /admin/api/users/:id` → `{ data: UserDetail }` where `UserDetail = { id, email, status, country, phoneVerified, emailVerified, registeredAt, bids: Bid[], invoices: Invoice[] }`
-- `PATCH /admin/api/users/:id/suspend` with `{ reason: string }` → `{ data: UserSummary }`
-- `PATCH /admin/api/users/:id/reinstate` → `{ data: UserSummary }`
-- `PATCH /admin/api/users/:id/approve` → `{ data: UserSummary }`
+- `GET /admin/api/users?status=&search=` â†’ `{ data: UserSummary[] }` where `UserSummary = { id, email, status, country, registeredAt, bidCount }`
+- `GET /admin/api/users/:id` â†’ `{ data: UserDetail }` where `UserDetail = { id, email, status, country, phoneVerified, emailVerified, registeredAt, bids: Bid[], invoices: Invoice[] }`
+- `PATCH /admin/api/users/:id/suspend` with `{ reason: string }` â†’ `{ data: UserSummary }`
+- `PATCH /admin/api/users/:id/reinstate` â†’ `{ data: UserSummary }`
+- `PATCH /admin/api/users/:id/approve` â†’ `{ data: UserSummary }`
 
-- [ ] **Step 1: Write failing schema test**
+- [x] **Step 1: Write failing schema test**
 
 Create `apps/admin-portal/src/lib/schemas/user.schema.test.ts`:
 
@@ -2812,16 +2812,16 @@ describe('SuspendUserSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/schemas/user.schema.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './user.schema'`
+Expected: FAIL â€” `Cannot find module './user.schema'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/schemas/user.schema.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/schemas/user.schema.ts`**
 
 ```typescript
 import { z } from 'zod';
@@ -2833,7 +2833,7 @@ export const SuspendUserSchema = z.object({
 export type SuspendUserValues = z.infer<typeof SuspendUserSchema>;
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/lib/schemas/user.schema.test.ts
@@ -2841,7 +2841,7 @@ npx vitest run src/lib/schemas/user.schema.test.ts
 
 Expected: 2 passed
 
-- [ ] **Step 5: Write failing action tests**
+- [x] **Step 5: Write failing action tests**
 
 Create `apps/admin-portal/src/app/admin/users/[id]/_actions.test.ts`:
 
@@ -2891,15 +2891,15 @@ describe('reinstateUser', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 ```bash
 npx vitest run src/app/admin/users/[id]/_actions.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './_actions'`
+Expected: FAIL â€” `Cannot find module './_actions'`
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/admin/users/[id]/_actions.ts`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/admin/users/[id]/_actions.ts`**
 
 ```typescript
 'use server';
@@ -2936,7 +2936,7 @@ export async function manuallyApproveUser(id: string): Promise<void> {
 }
 ```
 
-- [ ] **Step 8: Run action tests to verify pass**
+- [x] **Step 8: Run action tests to verify pass**
 
 ```bash
 npx vitest run src/app/admin/users/[id]/_actions.test.ts
@@ -2944,7 +2944,7 @@ npx vitest run src/app/admin/users/[id]/_actions.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 9: Create users list page `apps/admin-portal/src/app/admin/users/page.tsx`**
+- [x] **Step 9: Create users list page `apps/admin-portal/src/app/admin/users/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -2995,7 +2995,7 @@ export default async function UsersPage({ searchParams }: { searchParams: { stat
 }
 ```
 
-- [ ] **Step 10: Create user detail page `apps/admin-portal/src/app/admin/users/[id]/page.tsx`**
+- [x] **Step 10: Create user detail page `apps/admin-portal/src/app/admin/users/[id]/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -3058,7 +3058,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
 }
 ```
 
-- [ ] **Step 11: Run all user tests**
+- [x] **Step 11: Run all user tests**
 
 ```bash
 npx vitest run src/lib/schemas/user.schema.test.ts src/app/admin/users/\[id\]/_actions.test.ts
@@ -3066,12 +3066,12 @@ npx vitest run src/lib/schemas/user.schema.test.ts src/app/admin/users/\[id\]/_a
 
 Expected: 5 passed
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/schemas/user.schema.ts apps/admin-portal/src/lib/schemas/user.schema.test.ts \
   apps/admin-portal/src/app/admin/users/
-git commit -m "feat(admin-portal): users pages — list and detail with suspend/reinstate/approve"
+git commit -m "feat(admin-portal): users pages â€” list and detail with suspend/reinstate/approve"
 ```
 
 ---
@@ -3090,12 +3090,12 @@ git commit -m "feat(admin-portal): users pages — list and detail with suspend/
 - Consumes: `adminApi` from Task 3; `DataTable`, `StatusBadge`, `ConfirmDialog` from Task 4
 
 **Admin Service endpoints used:**
-- `GET /admin/api/invoices?status=` → `{ data: InvoiceSummary[] }` where `InvoiceSummary = { id, lotTitle, winnerEmail, amount, currency, status, dueAt }`
-- `GET /admin/api/invoices/:id` → `{ data: InvoiceDetail }` where `InvoiceDetail = { id, lotTitle, winnerEmail, amount, currency, status, dueAt, stripePaymentIntentId }`
-- `PATCH /admin/api/invoices/:id/extend` with `{ dueAt: string }` → `{ data: InvoiceDetail }`
-- `PATCH /admin/api/invoices/:id/cancel` with `{ reason: string }` → `{ data: InvoiceDetail }`
+- `GET /admin/api/invoices?status=` â†’ `{ data: InvoiceSummary[] }` where `InvoiceSummary = { id, lotTitle, winnerEmail, amount, currency, status, dueAt }`
+- `GET /admin/api/invoices/:id` â†’ `{ data: InvoiceDetail }` where `InvoiceDetail = { id, lotTitle, winnerEmail, amount, currency, status, dueAt, stripePaymentIntentId }`
+- `PATCH /admin/api/invoices/:id/extend` with `{ dueAt: string }` â†’ `{ data: InvoiceDetail }`
+- `PATCH /admin/api/invoices/:id/cancel` with `{ reason: string }` â†’ `{ data: InvoiceDetail }`
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Create `apps/admin-portal/src/lib/schemas/invoice.schema.test.ts`:
 
@@ -3125,16 +3125,16 @@ describe('CancelInvoiceSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/schemas/invoice.schema.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './invoice.schema'`
+Expected: FAIL â€” `Cannot find module './invoice.schema'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/schemas/invoice.schema.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/schemas/invoice.schema.ts`**
 
 ```typescript
 import { z } from 'zod';
@@ -3151,7 +3151,7 @@ export type ExtendDueDateValues = z.infer<typeof ExtendDueDateSchema>;
 export type CancelInvoiceValues = z.infer<typeof CancelInvoiceSchema>;
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/lib/schemas/invoice.schema.test.ts
@@ -3159,7 +3159,7 @@ npx vitest run src/lib/schemas/invoice.schema.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 5: Write failing action tests**
+- [x] **Step 5: Write failing action tests**
 
 Create `apps/admin-portal/src/app/admin/invoices/[id]/_actions.test.ts`:
 
@@ -3211,15 +3211,15 @@ describe('cancelInvoice', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 ```bash
 npx vitest run src/app/admin/invoices/\[id\]/_actions.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './_actions'`
+Expected: FAIL â€” `Cannot find module './_actions'`
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/admin/invoices/[id]/_actions.ts`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/admin/invoices/[id]/_actions.ts`**
 
 ```typescript
 'use server';
@@ -3258,7 +3258,7 @@ export async function cancelInvoice(id: string, reason: string): Promise<{ ok: b
 }
 ```
 
-- [ ] **Step 8: Run to verify pass**
+- [x] **Step 8: Run to verify pass**
 
 ```bash
 npx vitest run src/app/admin/invoices/\[id\]/_actions.test.ts
@@ -3266,7 +3266,7 @@ npx vitest run src/app/admin/invoices/\[id\]/_actions.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 9: Create invoices list page `apps/admin-portal/src/app/admin/invoices/page.tsx`**
+- [x] **Step 9: Create invoices list page `apps/admin-portal/src/app/admin/invoices/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -3315,7 +3315,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: { s
 }
 ```
 
-- [ ] **Step 10: Create invoice detail page `apps/admin-portal/src/app/admin/invoices/[id]/page.tsx`**
+- [x] **Step 10: Create invoice detail page `apps/admin-portal/src/app/admin/invoices/[id]/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -3379,7 +3379,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
 }
 ```
 
-- [ ] **Step 11: Run all invoice tests**
+- [x] **Step 11: Run all invoice tests**
 
 ```bash
 npx vitest run src/lib/schemas/invoice.schema.test.ts src/app/admin/invoices/\[id\]/_actions.test.ts
@@ -3387,12 +3387,12 @@ npx vitest run src/lib/schemas/invoice.schema.test.ts src/app/admin/invoices/\[i
 
 Expected: 7 passed
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/schemas/invoice.schema.ts apps/admin-portal/src/lib/schemas/invoice.schema.test.ts \
   apps/admin-portal/src/app/admin/invoices/
-git commit -m "feat(admin-portal): invoices pages — list, detail, extend due date, cancel"
+git commit -m "feat(admin-portal): invoices pages â€” list, detail, extend due date, cancel"
 ```
 
 ---
@@ -3411,12 +3411,12 @@ git commit -m "feat(admin-portal): invoices pages — list, detail, extend due d
 - Consumes: `adminApi` from Task 3; `DataTable`, `StatusBadge` from Task 4
 
 **Admin Service endpoints used:**
-- `GET /admin/api/fulfilments?status=` → `{ data: FulfilmentSummary[] }` where `FulfilmentSummary = { id, lotTitle, buyerEmail, method: 'SHIP' | 'COLLECT' | 'PENDING', status }`
-- `GET /admin/api/fulfilments/:id` → `{ data: FulfilmentDetail }` where `FulfilmentDetail = { id, lotTitle, buyerEmail, method, status, address?: ShippingAddress, collectionSlot?: string }`
-- `PATCH /admin/api/fulfilments/:id/dispatch` with `{ trackingNumber: string, carrier: string }` → `{ data: FulfilmentDetail }`
-- `PATCH /admin/api/fulfilments/:id/collect` → `{ data: FulfilmentDetail }`
+- `GET /admin/api/fulfilments?status=` â†’ `{ data: FulfilmentSummary[] }` where `FulfilmentSummary = { id, lotTitle, buyerEmail, method: 'SHIP' | 'COLLECT' | 'PENDING', status }`
+- `GET /admin/api/fulfilments/:id` â†’ `{ data: FulfilmentDetail }` where `FulfilmentDetail = { id, lotTitle, buyerEmail, method, status, address?: ShippingAddress, collectionSlot?: string }`
+- `PATCH /admin/api/fulfilments/:id/dispatch` with `{ trackingNumber: string, carrier: string }` â†’ `{ data: FulfilmentDetail }`
+- `PATCH /admin/api/fulfilments/:id/collect` â†’ `{ data: FulfilmentDetail }`
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Create `apps/admin-portal/src/lib/schemas/fulfilment.schema.test.ts`:
 
@@ -3439,16 +3439,16 @@ describe('MarkDispatchedSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin-portal
 npx vitest run src/lib/schemas/fulfilment.schema.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './fulfilment.schema'`
+Expected: FAIL â€” `Cannot find module './fulfilment.schema'`
 
-- [ ] **Step 3: Create `apps/admin-portal/src/lib/schemas/fulfilment.schema.ts`**
+- [x] **Step 3: Create `apps/admin-portal/src/lib/schemas/fulfilment.schema.ts`**
 
 ```typescript
 import { z } from 'zod';
@@ -3461,7 +3461,7 @@ export const MarkDispatchedSchema = z.object({
 export type MarkDispatchedValues = z.infer<typeof MarkDispatchedSchema>;
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/lib/schemas/fulfilment.schema.test.ts
@@ -3469,7 +3469,7 @@ npx vitest run src/lib/schemas/fulfilment.schema.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 5: Write failing action tests**
+- [x] **Step 5: Write failing action tests**
 
 Create `apps/admin-portal/src/app/admin/fulfilments/[id]/_actions.test.ts`:
 
@@ -3519,15 +3519,15 @@ describe('markCollected', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 ```bash
 npx vitest run src/app/admin/fulfilments/\[id\]/_actions.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './_actions'`
+Expected: FAIL â€” `Cannot find module './_actions'`
 
-- [ ] **Step 7: Create `apps/admin-portal/src/app/admin/fulfilments/[id]/_actions.ts`**
+- [x] **Step 7: Create `apps/admin-portal/src/app/admin/fulfilments/[id]/_actions.ts`**
 
 ```typescript
 'use server';
@@ -3558,7 +3558,7 @@ export async function markCollected(id: string): Promise<void> {
 }
 ```
 
-- [ ] **Step 8: Run to verify pass**
+- [x] **Step 8: Run to verify pass**
 
 ```bash
 npx vitest run src/app/admin/fulfilments/\[id\]/_actions.test.ts
@@ -3566,7 +3566,7 @@ npx vitest run src/app/admin/fulfilments/\[id\]/_actions.test.ts
 
 Expected: 3 passed
 
-- [ ] **Step 9: Create fulfilments list page `apps/admin-portal/src/app/admin/fulfilments/page.tsx`**
+- [x] **Step 9: Create fulfilments list page `apps/admin-portal/src/app/admin/fulfilments/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -3612,7 +3612,7 @@ export default async function FulfilmentsPage({ searchParams }: { searchParams: 
 }
 ```
 
-- [ ] **Step 10: Create fulfilment detail page `apps/admin-portal/src/app/admin/fulfilments/[id]/page.tsx`**
+- [x] **Step 10: Create fulfilment detail page `apps/admin-portal/src/app/admin/fulfilments/[id]/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -3698,7 +3698,7 @@ export default async function FulfilmentDetailPage({ params }: { params: { id: s
 }
 ```
 
-- [ ] **Step 11: Run all fulfilment tests**
+- [x] **Step 11: Run all fulfilment tests**
 
 ```bash
 npx vitest run src/lib/schemas/fulfilment.schema.test.ts src/app/admin/fulfilments/\[id\]/_actions.test.ts
@@ -3706,12 +3706,12 @@ npx vitest run src/lib/schemas/fulfilment.schema.test.ts src/app/admin/fulfilmen
 
 Expected: 6 passed
 
-- [ ] **Step 12: Commit**
+- [x] **Step 12: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/schemas/fulfilment.schema.ts apps/admin-portal/src/lib/schemas/fulfilment.schema.test.ts \
   apps/admin-portal/src/app/admin/fulfilments/
-git commit -m "feat(admin-portal): fulfilments pages — list, detail, mark dispatched, mark collected"
+git commit -m "feat(admin-portal): fulfilments pages â€” list, detail, mark dispatched, mark collected"
 ```
 
 ---
@@ -3726,14 +3726,14 @@ git commit -m "feat(admin-portal): fulfilments pages — list, detail, mark disp
 - Consumes: `adminApi` from Task 3; `DataTable` from Task 4
 
 **Admin Service endpoints used:**
-- `GET /admin/api/reports/dashboard` → `{ data: { activeAuctions, endingSoon, pendingInvoices, pendingFulfilments } }`
-- `GET /admin/api/reports/auction-results?from=&to=` → `{ data: { rows: AuctionResult[], summary: { totalLots, soldPercent, totalValue } } }`
-- `GET /admin/api/reports/revenue?groupBy=week|month` → `{ data: { byCurrency: Record<string, number>, weekly: RevenuePoint[] } }`
-- `GET /admin/api/reports/unsold` → `{ data: UnsoldLot[] }`
+- `GET /admin/api/reports/dashboard` â†’ `{ data: { activeAuctions, endingSoon, pendingInvoices, pendingFulfilments } }`
+- `GET /admin/api/reports/auction-results?from=&to=` â†’ `{ data: { rows: AuctionResult[], summary: { totalLots, soldPercent, totalValue } } }`
+- `GET /admin/api/reports/revenue?groupBy=week|month` â†’ `{ data: { byCurrency: Record<string, number>, weekly: RevenuePoint[] } }`
+- `GET /admin/api/reports/unsold` â†’ `{ data: UnsoldLot[] }`
 
-No tests for this task — all data fetching is in Server Components with no branch logic.
+No tests for this task â€” all data fetching is in Server Components with no branch logic.
 
-- [ ] **Step 1: Create `apps/admin-portal/src/app/admin/dashboard/page.tsx`**
+- [x] **Step 1: Create `apps/admin-portal/src/app/admin/dashboard/page.tsx`**
 
 ```tsx
 import { adminApi } from '@/lib/admin-api';
@@ -3779,7 +3779,7 @@ export default async function DashboardPage() {
 }
 ```
 
-- [ ] **Step 2: Create `apps/admin-portal/src/app/admin/reports/page.tsx`**
+- [x] **Step 2: Create `apps/admin-portal/src/app/admin/reports/page.tsx`**
 
 ```tsx
 'use client';
@@ -3817,7 +3817,7 @@ const auctionResultColumns: ColumnDef<AuctionResult>[] = [
   { accessorKey: 'lotTitle', header: 'Lot' },
   { accessorKey: 'categoryName', header: 'Category' },
   { accessorKey: 'finalBid', header: 'Final Bid', cell: ({ row }) => row.original.finalBid.toLocaleString() },
-  { accessorKey: 'reserveMet', header: 'Reserve Met', cell: ({ row }) => row.original.reserveMet ? '✓' : '✗' },
+  { accessorKey: 'reserveMet', header: 'Reserve Met', cell: ({ row }) => row.original.reserveMet ? 'âœ“' : 'âœ—' },
   { accessorKey: 'winnerEmail', header: 'Winner' },
 ];
 
@@ -3875,7 +3875,7 @@ function RevenueTab() {
   const { data } = useSWR('/api/admin/reports/revenue', fetcher) as
     { data: { data: { byCurrency: Record<string, number> } } | undefined };
 
-  if (!data) return <p className='text-muted-foreground'>Loading…</p>;
+  if (!data) return <p className='text-muted-foreground'>Loadingâ€¦</p>;
 
   return (
     <div className='space-y-4'>
@@ -3918,7 +3918,7 @@ export default function ReportsPage() {
 }
 ```
 
-- [ ] **Step 3: Add root redirect from `/admin` → `/admin/dashboard`**
+- [x] **Step 3: Add root redirect from `/admin` â†’ `/admin/dashboard`**
 
 Create `apps/admin-portal/src/app/admin/page.tsx`:
 
@@ -3930,7 +3930,7 @@ export default function AdminRootPage() {
 }
 ```
 
-- [ ] **Step 4: Add root redirect from `/` → `/admin/login`**
+- [x] **Step 4: Add root redirect from `/` â†’ `/admin/login`**
 
 Create `apps/admin-portal/src/app/page.tsx`:
 
@@ -3942,7 +3942,7 @@ export default function RootPage() {
 }
 ```
 
-- [ ] **Step 5: Run full test suite**
+- [x] **Step 5: Run full test suite**
 
 ```bash
 cd apps/admin-portal
@@ -3951,7 +3951,7 @@ npx vitest run
 
 Expected: all tests pass (no failures). Record the count.
 
-- [ ] **Step 6: Verify the app loads end-to-end**
+- [x] **Step 6: Verify the app loads end-to-end**
 
 ```bash
 pnpm dev
@@ -3964,7 +3964,7 @@ Then manually verify:
 4. Sidebar navigation links are visible and active state changes on click
 5. `http://localhost:3006/admin/lots` loads without crashing (may show empty table)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/admin-portal/src/app/admin/dashboard/ apps/admin-portal/src/app/admin/reports/ \
@@ -3988,13 +3988,13 @@ git commit -m "feat(admin-portal): dashboard stats cards and reports page with t
 | Data tables with Shadcn/ui | Task 4 (`DataTable`) |
 | Status badges | Task 4 (`StatusBadge`) |
 | Confirmation dialogs | Task 4 (`ConfirmDialog`) |
-| Lots list — title, category, status, date + Edit/Delete/Schedule | Task 5 |
-| Lot create/edit form — all fields | Task 5 |
-| Image uploader — R2 pre-signed URL, reorder, set-primary, delete | Task 5 |
-| Categories — nested tree + inline rename + add child + delete | Task 6 |
+| Lots list â€” title, category, status, date + Edit/Delete/Schedule | Task 5 |
+| Lot create/edit form â€” all fields | Task 5 |
+| Image uploader â€” R2 pre-signed URL, reorder, set-primary, delete | Task 5 |
+| Categories â€” nested tree + inline rename + add child + delete | Task 6 |
 | Auctions list | Task 7 |
-| Schedule auction form — all fields including auto-extend | Task 7 |
-| Auction detail — live stats polling + bid history | Task 7 |
+| Schedule auction form â€” all fields including auto-extend | Task 7 |
+| Auction detail â€” live stats polling + bid history | Task 7 |
 | Reschedule / Cancel actions | Task 7 |
 | Users list + filter by status | Task 8 |
 | User detail + Suspend/Reinstate/Approve | Task 8 |
@@ -4003,7 +4003,7 @@ git commit -m "feat(admin-portal): dashboard stats cards and reports page with t
 | Fulfilments list | Task 10 |
 | Fulfilment detail + Mark Dispatched + Mark Collected | Task 10 |
 | Dashboard stats cards | Task 11 |
-| Reports — Auction Results + Revenue + Unsold Lots + Relist action | Task 11 |
+| Reports â€” Auction Results + Revenue + Unsold Lots + Relist action | Task 11 |
 | No SSE in admin portal | No SSE used anywhere; polling via SWR in Task 7 and Task 11 |
 | All calls via Admin Service (port 3005) | `adminApi` in Task 3, all pages use it |
 | Role check `role: ADMIN` | Task 2 route handler validates `role === 'ADMIN'` |
@@ -4013,13 +4013,14 @@ git commit -m "feat(admin-portal): dashboard stats cards and reports page with t
 **Placeholder scan:** No TBD, TODO, or vague steps found. Every step includes exact file paths and complete code.
 
 **Type consistency check:**
-- `adminApi` defined in Task 3, used in Tasks 5–11 ✓
-- `AdminApiError` defined in Task 3, caught in Tasks 5–10 ✓
-- `getAdminToken` defined in Task 2, used in `admin-api.ts` Task 3 ✓
-- `DataTable<TData>` generic defined in Task 4, used with concrete types in Tasks 5–11 ✓
-- `StatusBadge` defined in Task 4, used in Tasks 5–11 ✓
-- `ConfirmDialog` defined in Task 4, used in Tasks 5, 7, 8, 9 ✓
-- `cancelAuction` defined and used within Task 7 ✓
-- All schema types match their action parameter types ✓
+- `adminApi` defined in Task 3, used in Tasks 5â€“11 âœ“
+- `AdminApiError` defined in Task 3, caught in Tasks 5â€“10 âœ“
+- `getAdminToken` defined in Task 2, used in `admin-api.ts` Task 3 âœ“
+- `DataTable<TData>` generic defined in Task 4, used with concrete types in Tasks 5â€“11 âœ“
+- `StatusBadge` defined in Task 4, used in Tasks 5â€“11 âœ“
+- `ConfirmDialog` defined in Task 4, used in Tasks 5, 7, 8, 9 âœ“
+- `cancelAuction` defined and used within Task 7 âœ“
+- All schema types match their action parameter types âœ“
 
 ---
+

@@ -118,6 +118,19 @@ shipping.item.collected
 
 ---
 
-## Remaining Plans to Write
+## Implementation Status
 
-1. `09-integration-testing/plan.md` — requires all domains complete, prefer fresh session
+All plans implemented:
+
+| Plan | Status |
+|---|---|
+| 00-infrastructure | ✅ complete |
+| 01-shared-packages | ✅ complete |
+| 02-domain-user-auth | ✅ complete |
+| 03-domain-catalogue | ✅ complete |
+| 04-domain-auction-engine (A+B) | ✅ complete |
+| 05-domain-payment | ✅ complete |
+| 06-domain-shipping | ✅ complete |
+| 07-domain-notification | ✅ complete |
+| 08-domain-admin (A+B) | ✅ complete |
+| 09-integration-testing | ✅ complete |

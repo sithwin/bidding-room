@@ -1,8 +1,8 @@
-# Admin Service — Part A: Backend Implementation Plan
+﻿# Admin Service â€” Part A: Backend Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Build the Admin Service — a Hono proxy that forwards all admin operations to downstream services (Catalogue, Auction, User, Payment, Shipping) with no database of its own.
+**Goal:** Build the Admin Service â€” a Hono proxy that forwards all admin operations to downstream services (Catalogue, Auction, User, Payment, Shipping) with no database of its own.
 
 **Architecture:** No domain layer, no database. A `ServiceClient` abstraction wraps `fetch` and forwards the admin JWT. Each router group handles one domain. Errors from downstream services propagate directly to the Admin Portal.
 
@@ -11,14 +11,14 @@
 ## Global Constraints
 
 - Node.js 20, TypeScript 5.4, strict mode
-- Hono only — no Express, no database, no ORM
-- Named exports only — no `export default` (exception: `vitest.config.ts`)
+- Hono only â€” no Express, no database, no ORM
+- Named exports only â€” no `export default` (exception: `vitest.config.ts`)
 - Single quotes; `const`/`let` only
 - Service port: **3005**
 - All requests require `role: ADMIN` JWT (enforced by `authMiddleware` on every route)
 - Admin JWT forwarded as-is to all downstream service calls
 - Downstream URLs from env vars (e.g. `CATALOGUE_SERVICE_URL=http://catalogue-service:3001`)
-- All responses pass through unchanged — no re-wrapping
+- All responses pass through unchanged â€” no re-wrapping
 - Frontend plan (Admin Portal Next.js app) is a separate session
 
 ---
@@ -33,17 +33,17 @@ apps/admin/
   Dockerfile
   src/
     infrastructure/
-      service-client.ts         — typed fetch wrapper, forwards JWT, propagates status codes
-      service-client.test.ts    — 4 tests
+      service-client.ts         â€” typed fetch wrapper, forwards JWT, propagates status codes
+      service-client.test.ts    â€” 4 tests
     presentation/
-      lots-router.ts            — 6 lot + image routes
-      categories-router.ts      — 4 category routes
-      auctions-router.ts        — 5 auction routes
-      users-router.ts           — 5 user routes
-      invoices-router.ts        — 4 invoice routes
-      fulfilments-router.ts     — 4 fulfilment routes
-      reports-router.ts         — 3 report routes
-      routers.test.ts           — 12 route tests (2 per router group)
+      lots-router.ts            â€” 6 lot + image routes
+      categories-router.ts      â€” 4 category routes
+      auctions-router.ts        â€” 5 auction routes
+      users-router.ts           â€” 5 user routes
+      invoices-router.ts        â€” 4 invoice routes
+      fulfilments-router.ts     â€” 4 fulfilment routes
+      reports-router.ts         â€” 3 report routes
+      routers.test.ts           â€” 12 route tests (2 per router group)
     main.ts
 ```
 
@@ -60,9 +60,9 @@ apps/admin/
 - Create: `apps/admin/Dockerfile`
 
 **Interfaces:**
-- Produces: runnable TypeScript scaffold — no migration, Admin Service has no database
+- Produces: runnable TypeScript scaffold â€” no migration, Admin Service has no database
 
-- [ ] **Step 1: Create `apps/admin/package.json`**
+- [x] **Step 1: Create `apps/admin/package.json`**
 
 ```json
 {
@@ -90,7 +90,7 @@ apps/admin/
 }
 ```
 
-- [ ] **Step 2: Create `apps/admin/tsconfig.json`**
+- [x] **Step 2: Create `apps/admin/tsconfig.json`**
 
 ```json
 {
@@ -100,13 +100,13 @@ apps/admin/
 }
 ```
 
-- [ ] **Step 3: Create `apps/admin/vitest.config.ts`**
+- [x] **Step 3: Create `apps/admin/vitest.config.ts`**
 
 ```typescript
 export default { test: { environment: 'node' } };
 ```
 
-- [ ] **Step 4: Create `apps/admin/Dockerfile`**
+- [x] **Step 4: Create `apps/admin/Dockerfile`**
 
 ```dockerfile
 FROM node:20-alpine AS builder
@@ -125,7 +125,7 @@ EXPOSE 3005
 CMD ["node", "dist/main.js"]
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/admin/
@@ -143,10 +143,10 @@ git commit -m "feat(admin): scaffold package and config"
 **Interfaces:**
 - Produces:
   - `ServiceError` class with `.status: number` and `.body: unknown`
-  - `ServiceClient` class — `new ServiceClient(baseUrl: string)` with `.get<T>(path, token)`, `.post<T>(path, token, body?)`, `.patch<T>(path, token, body?)`, `.delete<T>(path, token)` all returning `Promise<T>` or throwing `ServiceError`
-  - All routers in Tasks 3–4 use `ServiceClient` instances injected via constructor
+  - `ServiceClient` class â€” `new ServiceClient(baseUrl: string)` with `.get<T>(path, token)`, `.post<T>(path, token, body?)`, `.patch<T>(path, token, body?)`, `.delete<T>(path, token)` all returning `Promise<T>` or throwing `ServiceError`
+  - All routers in Tasks 3â€“4 use `ServiceClient` instances injected via constructor
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/admin/src/infrastructure/service-client.test.ts`:
 
@@ -214,16 +214,16 @@ describe('ServiceClient', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 cd apps/admin
 npx vitest run src/infrastructure/service-client.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './service-client'`
+Expected: FAIL â€” `Cannot find module './service-client'`
 
-- [ ] **Step 3: Create `apps/admin/src/infrastructure/service-client.ts`**
+- [x] **Step 3: Create `apps/admin/src/infrastructure/service-client.ts`**
 
 ```typescript
 export class ServiceError extends Error {
@@ -269,7 +269,7 @@ export class ServiceClient {
 }
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 ```bash
 npx vitest run src/infrastructure/service-client.test.ts
@@ -277,7 +277,7 @@ npx vitest run src/infrastructure/service-client.test.ts
 
 Expected: 4 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/admin/src/infrastructure/
@@ -296,7 +296,7 @@ git commit -m "feat(admin): ServiceClient with JWT forwarding and ServiceError p
 
 **Interfaces:**
 - Consumes: `ServiceClient`, `ServiceError` from Task 2; `authMiddleware` from `@carat-room/shared-auth`
-- Produces: `buildLotsRouter`, `buildCategoriesRouter`, `buildAuctionsRouter` — each `(client: ServiceClient): Hono`
+- Produces: `buildLotsRouter`, `buildCategoriesRouter`, `buildAuctionsRouter` â€” each `(client: ServiceClient): Hono`
 
 **Handler pattern used everywhere:**
 ```typescript
@@ -306,7 +306,7 @@ const t = c.req.header('Authorization')?.replace('Bearer ', '') ?? '';
 return proxy(() => client.method('/api/path', t, body), c);
 ```
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `apps/admin/src/presentation/routers.test.ts`:
 
@@ -419,15 +419,15 @@ describe('Auctions router', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 npx vitest run src/presentation/routers.test.ts
 ```
 
-Expected: FAIL — `Cannot find module './lots-router'`
+Expected: FAIL â€” `Cannot find module './lots-router'`
 
-- [ ] **Step 3: Create `apps/admin/src/presentation/lots-router.ts`**
+- [x] **Step 3: Create `apps/admin/src/presentation/lots-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -474,7 +474,7 @@ export function buildLotsRouter(client: ServiceClient): Hono {
 }
 ```
 
-- [ ] **Step 4: Create `apps/admin/src/presentation/categories-router.ts`**
+- [x] **Step 4: Create `apps/admin/src/presentation/categories-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -515,7 +515,7 @@ export function buildCategoriesRouter(client: ServiceClient): Hono {
 }
 ```
 
-- [ ] **Step 5: Create `apps/admin/src/presentation/auctions-router.ts`**
+- [x] **Step 5: Create `apps/admin/src/presentation/auctions-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -559,7 +559,7 @@ export function buildAuctionsRouter(client: ServiceClient): Hono {
 }
 ```
 
-- [ ] **Step 6: Run to verify pass**
+- [x] **Step 6: Run to verify pass**
 
 ```bash
 npx vitest run src/presentation/routers.test.ts
@@ -567,7 +567,7 @@ npx vitest run src/presentation/routers.test.ts
 
 Expected: 6 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/admin/src/presentation/lots-router.ts apps/admin/src/presentation/categories-router.ts apps/admin/src/presentation/auctions-router.ts apps/admin/src/presentation/routers.test.ts
@@ -583,14 +583,14 @@ git commit -m "feat(admin): lots, categories, auctions proxy routers"
 - Create: `apps/admin/src/presentation/invoices-router.ts`
 - Create: `apps/admin/src/presentation/fulfilments-router.ts`
 - Create: `apps/admin/src/presentation/reports-router.ts`
-- Modify: `apps/admin/src/presentation/routers.test.ts` — append 6 more tests
+- Modify: `apps/admin/src/presentation/routers.test.ts` â€” append 6 more tests
 - Create: `apps/admin/src/main.ts`
 
 **Interfaces:**
 - Consumes: `ServiceClient`, `ServiceError` from Task 2; `authMiddleware` from `@carat-room/shared-auth`
 - Produces: remaining 4 routers + wired `main.ts`
 
-- [ ] **Step 1: Append failing tests to `apps/admin/src/presentation/routers.test.ts`**
+- [x] **Step 1: Append failing tests to `apps/admin/src/presentation/routers.test.ts`**
 
 Add these imports at the top of the file (after existing imports):
 
@@ -678,15 +678,15 @@ describe('Fulfilments + Reports routers', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 ```bash
 npx vitest run src/presentation/routers.test.ts
 ```
 
-Expected: 6 new tests FAIL — `Cannot find module './users-router'`
+Expected: 6 new tests FAIL â€” `Cannot find module './users-router'`
 
-- [ ] **Step 3: Create `apps/admin/src/presentation/users-router.ts`**
+- [x] **Step 3: Create `apps/admin/src/presentation/users-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -727,7 +727,7 @@ export function buildUsersRouter(client: ServiceClient): Hono {
 }
 ```
 
-- [ ] **Step 4: Create `apps/admin/src/presentation/invoices-router.ts`**
+- [x] **Step 4: Create `apps/admin/src/presentation/invoices-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -765,7 +765,7 @@ export function buildInvoicesRouter(client: ServiceClient): Hono {
 }
 ```
 
-- [ ] **Step 5: Create `apps/admin/src/presentation/fulfilments-router.ts`**
+- [x] **Step 5: Create `apps/admin/src/presentation/fulfilments-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -803,7 +803,7 @@ export function buildFulfilmentsRouter(client: ServiceClient): Hono {
 }
 ```
 
-- [ ] **Step 6: Create `apps/admin/src/presentation/reports-router.ts`**
+- [x] **Step 6: Create `apps/admin/src/presentation/reports-router.ts`**
 
 ```typescript
 import { Hono } from 'hono';
@@ -838,7 +838,7 @@ export function buildReportsRouter(client: ServiceClient): Hono {
 }
 ```
 
-- [ ] **Step 7: Run all tests to verify pass**
+- [x] **Step 7: Run all tests to verify pass**
 
 ```bash
 npx vitest run
@@ -846,7 +846,7 @@ npx vitest run
 
 Expected: 16 passed
 
-- [ ] **Step 8: Create `apps/admin/src/main.ts`**
+- [x] **Step 8: Create `apps/admin/src/main.ts`**
 
 ```typescript
 import { serve } from '@hono/node-server';
@@ -882,7 +882,7 @@ serve({ fetch: app.fetch, port: PORT }, () => {
 });
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/admin/src/
@@ -904,7 +904,8 @@ git commit -m "feat(admin): users, invoices, fulfilments, reports routers + main
 | Reports: auction-results, revenue, unsold-lots (3 routes) | Task 4 |
 | Admin JWT forwarded on every downstream call | Tasks 3, 4 |
 | Downstream error status codes propagated unchanged | Tasks 2, 3, 4 |
-| No database — pure proxy | All tasks |
+| No database â€” pure proxy | All tasks |
 | `role: ADMIN` enforced on every route | Tasks 3, 4 |
 
-**31 endpoints, 16 tests, 4 tasks.** Lean by design — no business logic means no deep test coverage needed beyond the proxy contract verified in Task 2.
+**31 endpoints, 16 tests, 4 tasks.** Lean by design â€” no business logic means no deep test coverage needed beyond the proxy contract verified in Task 2.
+
