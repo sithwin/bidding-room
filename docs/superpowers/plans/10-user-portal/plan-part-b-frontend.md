@@ -4564,9 +4564,431 @@ git commit -m "feat(user-portal): fix remaining spec gaps — thumbnails, bid fl
 | Mobile: account top tab strip, hidden sidebar | Task 19 |
 | Mobile: header hamburger menu | ⚠️ Deferred |
 
-**⚠️ Remaining deferred items (require external changes or libraries — do not block launch):**
-- Browse: Department, Status, Auction multi-select checkboxes (requires catalogue service to expose filter counts)
-- Browse: dual-handle price range slider (requires `@radix-ui/react-slider`)
-- Sale Catalogue: viewing dates (requires `viewingDates` field in catalogue service)
-- Mobile header: hamburger/drawer menu
+All spec requirements are now covered in Tasks 1–21 plus Task 22 below.
+
+---
+
+### Task 22: Browse filters, price slider, viewing dates, mobile hamburger
+
+**Spec lines covered:**
+- Browse: "Filter sidebar (240px): Department (multi-select checkboxes with counts), Price range (dual-handle slider + min/max inputs), Status (Open for bidding / Ending today / No reserve), Auction (multi-select checkboxes)"
+- Sale Catalogue hero: "title, date, location, **viewing dates**"
+- Mobile: "Header collapses to wordmark + hamburger"
+
+**Depends on:** Plan A Task 9 (catalogue service `viewingDates` + `GET /api/lots/facets`)
+
+**Files:**
+- Modify: `apps/user-portal/package.json` — add `@radix-ui/react-slider`
+- Modify: `apps/user-portal/src/app/auctions/page.tsx` — full filter sidebar
+- Modify: `apps/user-portal/src/app/auctions/[auctionId]/page.tsx` — viewing dates in hero
+- Modify: `apps/user-portal/src/components/layout/header.tsx` — hamburger on mobile
+- Create: `apps/user-portal/src/components/layout/mobile-nav-drawer.tsx` — slide-in nav drawer
+
+---
+
+- [ ] **Step 1: Add `@radix-ui/react-slider` to `apps/user-portal/package.json`**
+
+In dependencies:
+```json
+"@radix-ui/react-slider": "^1.2.0"
+```
+
+Run `pnpm install`.
+
+---
+
+- [ ] **Step 2: Update Browse page with full filter sidebar**
+
+Replace the sidebar section of `apps/user-portal/src/app/auctions/page.tsx` (currently only has sort radio + price min/max inputs) with the full spec sidebar.
+
+Update the SWR key to include all filter params:
+
+```typescript
+'use client';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+import useSWR from 'swr';
+import * as Slider from '@radix-ui/react-slider';
+import { Header } from '@/components/layout/header';
+import { LotCard } from '@/components/primitives/lot-card';
+
+type Lot = { id: string; auctionId: string; lotNumber: string; title: string; imageUrl: string; currentBid: number; currency: string; endAt: string };
+type Facets = { departments: Array<{ name: string; count: number }>; auctions: Array<{ id: string; title: string }> };
+
+const fetcher = (url: string) => fetch(url).then(r => r.json());
+
+const STATUS_OPTIONS = [
+  { value: 'open',    label: 'Open for bidding' },
+  { value: 'closing', label: 'Ending today' },
+  { value: 'reserve', label: 'No reserve' },
+];
+
+export default function BrowsePage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const q          = searchParams.get('q') ?? '';
+  const sort       = searchParams.get('sort') ?? 'endAt';
+  const minPrice   = searchParams.get('min') ?? '0';
+  const maxPrice   = searchParams.get('max') ?? '100000';
+  const departments = searchParams.getAll('dept');
+  const statuses    = searchParams.getAll('status');
+  const auctions    = searchParams.getAll('auction');
+
+  const lotsParams = new URLSearchParams({ sort, ...(q && { q }), ...(minPrice !== '0' && { minPrice }), ...(maxPrice !== '100000' && { maxPrice }) });
+  departments.forEach(d => lotsParams.append('department', d));
+  statuses.forEach(s => lotsParams.append('status', s));
+  auctions.forEach(a => lotsParams.append('auctionId', a));
+
+  const { data, isLoading } = useSWR<{ lots: Lot[]; total: number }>(
+    `/api/catalogue/lots?${lotsParams}`,
+    fetcher,
+    { refreshInterval: 15000 },
+  );
+
+  const facetsParams = new URLSearchParams({ ...(q && { q }) });
+  const { data: facets } = useSWR<Facets>(`/api/catalogue/facets?${facetsParams}`, fetcher, { revalidateOnFocus: false });
+
+  function setParam(key: string, value: string) {
+    const next = new URLSearchParams(searchParams.toString());
+    if (value) next.set(key, value); else next.delete(key);
+    router.push(`/auctions?${next.toString()}`);
+  }
+
+  function toggleMulti(key: string, value: string) {
+    const next = new URLSearchParams(searchParams.toString());
+    const existing = next.getAll(key);
+    if (existing.includes(value)) {
+      next.delete(key);
+      existing.filter(v => v !== value).forEach(v => next.append(key, v));
+    } else {
+      next.append(key, value);
+    }
+    router.push(`/auctions?${next.toString()}`);
+  }
+
+  const handlePriceChange = useCallback((values: number[]) => {
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('min', String(values[0]));
+    next.set('max', String(values[1]));
+    router.push(`/auctions?${next.toString()}`);
+  }, [searchParams, router]);
+
+  return (
+    <>
+      <Header />
+      <div className='max-w-7xl mx-auto px-6 py-10 flex gap-8'>
+
+        {/* ── Filter Sidebar ── */}
+        <aside className='w-60 shrink-0 hidden md:block space-y-8'>
+
+          {/* Sort */}
+          <div>
+            <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Sort</h3>
+            {[['endAt','Ending Soonest'],['lotNumber','Lot Number'],['priceAsc','Price Low→High'],['priceDesc','Price High→Low']].map(([val, label]) => (
+              <label key={val} className='flex items-center gap-2 font-sans text-sm text-ink mb-2 cursor-pointer'>
+                <input type='radio' name='sort' value={val} checked={sort === val} onChange={() => setParam('sort', val)} />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          {/* Department */}
+          <div>
+            <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Department</h3>
+            {(facets?.departments ?? []).map(({ name, count }) => (
+              <label key={name} className='flex items-center justify-between gap-2 font-sans text-sm text-ink mb-2 cursor-pointer'>
+                <span className='flex items-center gap-2'>
+                  <input type='checkbox' checked={departments.includes(name)} onChange={() => toggleMulti('dept', name)} />
+                  {name}
+                </span>
+                <span className='text-mut text-xs'>{count}</span>
+              </label>
+            ))}
+          </div>
+
+          {/* Price range */}
+          <div>
+            <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Price range</h3>
+            <Slider.Root
+              className='relative flex items-center select-none touch-none w-full h-5 mb-3'
+              min={0} max={100000} step={500}
+              value={[Number(minPrice), Number(maxPrice)]}
+              onValueCommit={handlePriceChange}
+            >
+              <Slider.Track className='bg-cream relative grow rounded-full h-1 border border-[var(--line)]'>
+                <Slider.Range className='absolute bg-ink rounded-full h-full' />
+              </Slider.Track>
+              <Slider.Thumb className='block w-4 h-4 bg-ink rounded-full cursor-pointer focus:outline-none' />
+              <Slider.Thumb className='block w-4 h-4 bg-ink rounded-full cursor-pointer focus:outline-none' />
+            </Slider.Root>
+            <div className='flex gap-2'>
+              <input type='number' value={minPrice} onChange={e => setParam('min', e.target.value)}
+                className='w-full border border-[var(--line)] px-2 py-1 font-sans text-xs' placeholder='Min' />
+              <input type='number' value={maxPrice} onChange={e => setParam('max', e.target.value)}
+                className='w-full border border-[var(--line)] px-2 py-1 font-sans text-xs' placeholder='Max' />
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Status</h3>
+            {STATUS_OPTIONS.map(({ value, label }) => (
+              <label key={value} className='flex items-center gap-2 font-sans text-sm text-ink mb-2 cursor-pointer'>
+                <input type='checkbox' checked={statuses.includes(value)} onChange={() => toggleMulti('status', value)} />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          {/* Auction */}
+          <div>
+            <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Auction</h3>
+            {(facets?.auctions ?? []).map(({ id, title }) => (
+              <label key={id} className='flex items-center gap-2 font-sans text-sm text-ink mb-2 cursor-pointer'>
+                <input type='checkbox' checked={auctions.includes(id)} onChange={() => toggleMulti('auction', id)} />
+                <span className='line-clamp-1'>{title}</span>
+              </label>
+            ))}
+          </div>
+
+        </aside>
+
+        {/* ── Results area ── */}
+        <div className='flex-1 min-w-0'>
+          <div className='flex items-center justify-between mb-6'>
+            <p className='font-sans text-sm text-mut'>{data?.total ?? '—'} lots found</p>
+          </div>
+          {isLoading ? (
+            <p className='font-sans text-sm text-mut'>Loading…</p>
+          ) : data?.lots.length === 0 ? (
+            <p className='font-sans text-sm text-mut'>No lots match your filters.</p>
+          ) : (
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              {data?.lots.map(lot => <LotCard key={lot.id} {...lot} />)}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+```
+
+Add the facets proxy route:
+```typescript
+// apps/user-portal/src/app/api/catalogue/facets/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+const CATALOGUE_URL = process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002';
+export async function GET(request: NextRequest) {
+  const res = await fetch(`${CATALOGUE_URL}/api/lots/facets${request.nextUrl.search}`, { cache: 'no-store' });
+  return NextResponse.json(await res.json(), { status: res.status });
+}
+```
+
+---
+
+- [ ] **Step 3: Add viewing dates to Sale Catalogue hero**
+
+In `apps/user-portal/src/app/auctions/[auctionId]/page.tsx`, update the `Auction` type:
+```typescript
+type Auction = { id: string; title: string; saleDate: string; location: string; description: string; viewingDates: string | null };
+```
+
+In the hero JSX, add viewing dates below the location line:
+```typescript
+<p className='font-sans text-mut text-sm'>{auction.location}</p>
+{auction.viewingDates && (
+  <p className='font-sans text-sm text-mut/80 mt-1'>Viewing: {auction.viewingDates}</p>
+)}
+```
+
+---
+
+- [ ] **Step 4: Mobile hamburger + nav drawer on Header**
+
+Create `apps/user-portal/src/components/layout/mobile-nav-drawer.tsx`:
+
+```typescript
+'use client';
+import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const NAV = [
+  { href: '/auctions',  label: 'Auctions' },
+  { href: '/calendar',  label: 'Calendar' },
+  { href: '/sell',      label: 'Sell' },
+  { href: '/account/watchlist', label: 'Watchlist' },
+];
+
+export function MobileNavDrawer({ isOpen, onClose }: Props) {
+  const { user, logout } = useAuth();
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className='fixed inset-0 bg-ink/40 z-40' onClick={onClose} />
+
+      {/* Drawer */}
+      <div className='fixed top-0 right-0 h-full w-72 bg-paper z-50 shadow-xl flex flex-col'>
+        <div className='flex items-center justify-between px-6 py-5 border-b border-[var(--line)]'>
+          <p className='font-serif text-base font-semibold text-ink'>Menu</p>
+          <button onClick={onClose} className='font-sans text-2xl text-mut hover:text-ink leading-none'>×</button>
+        </div>
+
+        <nav className='flex-1 px-6 py-6 flex flex-col gap-4'>
+          {NAV.map(({ href, label }) => (
+            <Link key={href} href={href} onClick={onClose}
+              className='font-sans text-base font-medium text-ink hover:text-mut'>
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className='px-6 py-6 border-t border-[var(--line)]'>
+          {user ? (
+            <div className='space-y-3'>
+              <Link href='/account/dashboard' onClick={onClose}
+                className='block font-sans text-sm font-medium text-ink'>My Account</Link>
+              <button onClick={() => { logout(); onClose(); }}
+                className='font-sans text-sm text-mut hover:text-ink'>Sign out</button>
+            </div>
+          ) : (
+            <Link href='/account/login' onClick={onClose}
+              className='block w-full text-center bg-ink text-paper font-sans text-sm font-medium py-3'>
+              Sign In
+            </Link>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+```
+
+Update `apps/user-portal/src/components/layout/header.tsx` to add the hamburger button and wire the drawer:
+
+```typescript
+'use client';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useRef, useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { MobileNavDrawer } from './mobile-nav-drawer';
+
+export function Header() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const q = e.target.value;
+    timerRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (q) params.set('q', q); else params.delete('q');
+      router.push(`/auctions?${params.toString()}`);
+    }, 300);
+  }, [router, searchParams]);
+
+  return (
+    <>
+      <header className='bg-paper border-b border-[var(--line)] px-6 py-4'>
+        <div className='max-w-7xl mx-auto flex items-center gap-6'>
+          <Link href='/' className='font-serif text-xl font-semibold tracking-wide text-ink shrink-0'>
+            The Carat Room
+          </Link>
+
+          {/* Search bar — hidden on mobile */}
+          <div className='hidden md:block flex-1 max-w-sm'>
+            <input
+              type='search'
+              defaultValue={searchParams.get('q') ?? ''}
+              onChange={handleSearch}
+              placeholder='Search lots…'
+              className='w-full border border-[var(--line)] bg-cream px-3 py-1.5 font-sans text-sm text-ink placeholder-mut focus:outline-none focus:border-ink'
+            />
+          </div>
+
+          {/* Desktop nav */}
+          <nav className='hidden md:flex items-center gap-6 font-sans text-sm font-medium text-mut'>
+            <Link href='/auctions' className='hover:text-ink transition-colors'>Auctions</Link>
+            <Link href='/calendar' className='hover:text-ink transition-colors'>Calendar</Link>
+            <Link href='/sell' className='hover:text-ink transition-colors'>Sell</Link>
+            <Link href='/account/watchlist' className='hover:text-ink transition-colors'>Watchlist</Link>
+          </nav>
+
+          <div className='flex items-center gap-3 ml-auto'>
+            {/* Desktop: avatar / sign in */}
+            <div className='hidden md:flex items-center gap-3'>
+              {user ? (
+                <>
+                  <Link href='/account/dashboard'>
+                    <div className='w-8 h-8 rounded-full bg-ink text-paper flex items-center justify-center font-sans text-xs font-semibold'>
+                      {user.email[0].toUpperCase()}
+                    </div>
+                  </Link>
+                  <button onClick={logout} className='font-sans text-xs text-mut hover:text-ink'>Sign out</button>
+                </>
+              ) : (
+                <Link href='/account/login' className='font-sans text-sm font-medium text-ink border border-[var(--line)] px-4 py-2 hover:bg-cream transition-colors'>
+                  Sign In
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile: hamburger */}
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className='md:hidden flex flex-col gap-1.5 p-2'
+              aria-label='Open menu'
+            >
+              <span className='block w-5 h-0.5 bg-ink' />
+              <span className='block w-5 h-0.5 bg-ink' />
+              <span className='block w-5 h-0.5 bg-ink' />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <MobileNavDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </>
+  );
+}
+```
+
+---
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/user-portal/src/app/auctions/ \
+        apps/user-portal/src/app/api/catalogue/facets/ \
+        apps/user-portal/src/components/layout/header.tsx \
+        apps/user-portal/src/components/layout/mobile-nav-drawer.tsx \
+        apps/user-portal/package.json
+git commit -m "feat(user-portal): browse filters (dept/status/auction/price slider), viewing dates, mobile hamburger"
+```
+
+---
+
+## Final Spec Coverage — All Items Covered
+
+| Spec requirement | Task |
+|---|---|
+| Browse: Department multi-select checkboxes with counts | Task 22 |
+| Browse: dual-handle price range slider + min/max inputs | Task 22 |
+| Browse: Status filter (Open / Ending today / No reserve) | Task 22 |
+| Browse: Auction multi-select checkboxes | Task 22 |
+| Sale Catalogue: viewing dates in hero | Task 22 (requires Plan A Task 9) |
+| Mobile: header hamburger + nav drawer | Task 22 |
 

@@ -1794,6 +1794,199 @@ git commit -m "feat(admin): valuation enquiry upload and submission endpoints"
 
 ---
 
+---
+
+### Task 9: catalogue service — viewing dates + browse facets endpoint
+
+**Why this task exists:** The frontend (Plan B Tasks 22) requires two things from the catalogue service that were not in the original Plan 03:
+1. `viewingDates` field on auctions — displayed in the sale catalogue hero banner
+2. `GET /api/lots/facets` endpoint — returns Department counts and Auction list for the Browse filter sidebar
+
+**Files:**
+- Modify: `apps/catalogue/src/infrastructure/db/migrations/` — add `viewing_dates` column to `auctions` table
+- Modify: `apps/catalogue/src/domain/auction.ts` — add `viewingDates` field
+- Modify: `apps/catalogue/src/infrastructure/db/postgres-auction-repository.ts` — persist + retrieve `viewing_dates`
+- Modify: `apps/catalogue/src/presentation/auction-router.ts` — return `viewingDates` in `GET /api/auctions/:id`
+- Create: `apps/catalogue/src/presentation/facets-router.ts`
+- Create: `apps/catalogue/src/presentation/facets-router.test.ts`
+- Modify: `apps/catalogue/src/main.ts` — mount facets router
+
+**Interfaces:**
+- `GET /api/auctions/:id` — adds `viewingDates: string | null` to response
+- `GET /api/lots/facets?q=&auctionId=&minPrice=&maxPrice=` → `{ departments: Array<{name: string; count: number}>; auctions: Array<{id: string; title: string}> }`
+
+---
+
+**Migration SQL** (run against catalogue DB):
+
+```sql
+ALTER TABLE auctions
+  ADD COLUMN IF NOT EXISTS viewing_dates TEXT;
+```
+
+---
+
+- [ ] **Step 1: Add `viewingDates` to catalogue domain**
+
+In `apps/catalogue/src/domain/auction.ts`, add to `AuctionProps`:
+```typescript
+viewingDates: string | null;
+```
+
+Add getter:
+```typescript
+get viewingDates(): string | null { return this.props.viewingDates; }
+```
+
+Update `Auction.create()` default: `viewingDates: params.viewingDates ?? null`
+
+Update `Auction.reconstitute()` to accept the field.
+
+- [ ] **Step 2: Update `PostgresAuctionRepository`**
+
+In `apps/catalogue/src/infrastructure/db/postgres-auction-repository.ts`, add `viewing_dates` to the row interface and the `toEntity` mapper:
+```typescript
+interface AuctionRow {
+  // ... existing fields
+  viewing_dates: string | null;
+}
+
+// In toEntity():
+viewingDates: row.viewing_dates,
+```
+
+Update `save()` upsert to include `viewing_dates = EXCLUDED.viewing_dates`.
+
+Update `INSERT` to include `viewing_dates` column.
+
+- [ ] **Step 3: Return `viewingDates` from auction router**
+
+In the `GET /api/auctions/:id` route handler, add `viewingDates: auction.viewingDates` to the JSON response object.
+
+- [ ] **Step 4: Write failing facets test**
+
+```typescript
+// apps/catalogue/src/presentation/facets-router.test.ts
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Hono } from 'hono';
+import { buildFacetsRouter } from './facets-router';
+
+const mockDb = vi.fn();
+
+describe('facets-router', () => {
+  let app: Hono;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    app = new Hono();
+    app.route('/', buildFacetsRouter(mockDb as any));
+  });
+
+  it('GET /api/lots/facets returns departments and auctions', async () => {
+    mockDb
+      .mockReturnValueOnce([
+        { department: 'Jewellery', count: '12' },
+        { department: 'Watches', count: '5' },
+      ])
+      .mockReturnValueOnce([
+        { id: 'auction-1', title: 'June Sale' },
+      ]);
+
+    const res = await app.request('/api/lots/facets');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.departments).toEqual([
+      { name: 'Jewellery', count: 12 },
+      { name: 'Watches', count: 5 },
+    ]);
+    expect(body.auctions).toEqual([{ id: 'auction-1', title: 'June Sale' }]);
+  });
+});
+```
+
+- [ ] **Step 5: Run test to confirm it fails**
+
+```bash
+pnpm turbo test --filter=catalogue
+```
+
+Expected: FAIL — `buildFacetsRouter` not found.
+
+- [ ] **Step 6: Implement `apps/catalogue/src/presentation/facets-router.ts`**
+
+```typescript
+import { Hono } from 'hono';
+import { Db } from '../infrastructure/db/db';
+
+export function buildFacetsRouter(db: Db): Hono {
+  const router = new Hono();
+
+  router.get('/api/lots/facets', async (c) => {
+    const { q, auctionId, minPrice, maxPrice } = c.req.query();
+
+    // Department counts — filtered by same criteria as lot search
+    const departmentRows = await db<{ department: string; count: string }[]>`
+      SELECT department, COUNT(*) AS count
+      FROM lots
+      WHERE TRUE
+        ${q ? db`AND search_vector @@ plainto_tsquery('english', ${q})` : db``}
+        ${auctionId ? db`AND auction_id = ${auctionId}` : db``}
+        ${minPrice ? db`AND starting_price >= ${Number(minPrice)}` : db``}
+        ${maxPrice ? db`AND starting_price <= ${Number(maxPrice)}` : db``}
+      GROUP BY department
+      ORDER BY department ASC
+    `;
+
+    // All open auctions (for the Auction filter)
+    const auctionRows = await db<{ id: string; title: string }[]>`
+      SELECT id, title FROM auctions
+      WHERE status = 'open'
+      ORDER BY sale_date ASC
+    `;
+
+    return c.json({
+      departments: departmentRows.map(r => ({ name: r.department, count: Number(r.count) })),
+      auctions: auctionRows.map(r => ({ id: r.id, title: r.title })),
+    });
+  });
+
+  return router;
+}
+```
+
+- [ ] **Step 7: Run test to confirm it passes**
+
+```bash
+pnpm turbo test --filter=catalogue
+```
+
+Expected: all tests PASS.
+
+- [ ] **Step 8: Mount in `apps/catalogue/src/main.ts`**
+
+```typescript
+import { buildFacetsRouter } from './presentation/facets-router';
+// inside main():
+app.route('/', buildFacetsRouter(db));
+```
+
+- [ ] **Step 9: Run all catalogue tests**
+
+```bash
+pnpm turbo test --filter=catalogue
+```
+
+Expected: all tests PASS.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add apps/catalogue/src/
+git commit -m "feat(catalogue): add viewingDates to auctions + facets endpoint for browse filters"
+```
+
+---
+
 ## Self-Review
 
 **Spec coverage check:**
@@ -1805,5 +1998,8 @@ git commit -m "feat(admin): valuation enquiry upload and submission endpoints"
 - ✅ `POST /enquiries/valuation` — Task 8
 - ✅ PENDING_REVIEW status — Task 1
 - ✅ identityDocumentKey on user record — Tasks 1–3
+- ✅ `viewingDates` on auction — Task 9
+- ✅ `GET /api/lots/facets` — Task 9
+- ✅ `GET /api/payments/profile` — Task 21 (plan-part-b, wired in payment router)
 
 **Breaking change note:** `verifyPhone()` now sets `PHONE_VERIFIED` instead of `APPROVED_BIDDER`. Any existing test that asserts `APPROVED_BIDDER` after phone verification must be updated to `PHONE_VERIFIED`. The existing admin portal user-management routes that show/filter by status will still work — they pass status as a string.
