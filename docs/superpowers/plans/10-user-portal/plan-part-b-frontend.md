@@ -4081,3 +4081,492 @@ git commit -m "feat(user-portal): sale catalogue sort + pagination + follow sale
 
 These are deferred because they either require catalogue service schema changes or an additional UI library — they do not block launch of the user portal.
 
+---
+
+### Task 21: Remaining spec gaps — thumbnails, bid flow step 4, dynamic greeting, fulfilment collect
+
+**Spec lines covered:**
+- Calendar: "Each sale row: date column … **thumbnail**, sale title, lot count + location, CTA"
+- Bid flow step 4: "`APPROVED_BIDDER` but no saved payment method → redirect to `/account/register-to-bid`"
+- Dashboard: "Greeting line + **context** ('You are leading on N lots. One watched lot closes within the hour.')"
+- Dashboard active bids preview: "lot **thumbnail** (46px), title, your bid, Leading/Outbid badge, countdown"
+- My Bids: "Full table: **thumbnail**, title, your bid, current highest bid, status badge, closes countdown"
+- My Bids: "Outbid rows: **'Bid again' link** → lot detail page"
+- Won Lots: "Table columns: lot **thumbnail** + title + won date | Hammer price | Status pill | Action"
+- Won Lots: "Actions: **'Pay now'** → invoice page | **'Track'** → fulfilment page | 'Invoice' → invoice page"
+- Invoice: "Lot summary (**thumbnail**, title, won date)"
+- Fulfilment Collect: "**location selector dropdown + date picker + time slot picker**. Submit → `POST /fulfilments/:id/collection-slot`"
+
+**Files:**
+- Modify: `apps/user-portal/src/app/calendar/page.tsx` — add thumbnail to AuctionRow
+- Modify: `apps/user-portal/src/app/auctions/[auctionId]/lots/[lotId]/lot-detail-client.tsx` — add bid flow step 4
+- Modify: `apps/user-portal/src/app/account/dashboard/page.tsx` — dynamic context line + thumbnail in preview
+- Modify: `apps/user-portal/src/app/account/bids/page.tsx` — thumbnail + "Bid again" link
+- Modify: `apps/user-portal/src/app/account/won/page.tsx` — thumbnail + "Pay now"/"Track" actions
+- Modify: `apps/user-portal/src/app/account/invoices/[id]/page.tsx` — thumbnail in lot summary
+- Modify: `apps/user-portal/src/app/account/fulfilments/[id]/page.tsx` — real collect form
+
+---
+
+- [ ] **Step 1: Add thumbnail to Calendar `AuctionRow`**
+
+The `Auction` type in `apps/user-portal/src/app/calendar/page.tsx` already comes from `GET /api/catalogue/auctions`. Add `imageUrl: string` to the type and render a 64×64 thumbnail in the row.
+
+Update the `Auction` type:
+```typescript
+type Auction = {
+  id: string; title: string; saleDate: string; lotCount: number;
+  status: 'upcoming' | 'open' | 'closed'; location: string; imageUrl: string;
+};
+```
+
+Update `AuctionRow` to include the thumbnail between the date column and the text block:
+```typescript
+import Image from 'next/image';
+
+function AuctionRow({ auction }: { auction: Auction }) {
+  const date = new Date(auction.saleDate);
+  return (
+    <div className='flex items-center gap-6 bg-paper border border-[var(--line)] p-5'>
+      {/* Date column */}
+      <div className='w-16 text-center shrink-0'>
+        <p className='font-serif text-2xl font-semibold text-ink'>{date.getDate()}</p>
+        <p className='font-sans text-xs text-mut uppercase'>{date.toLocaleString('en-AU', { month: 'short' })}</p>
+      </div>
+
+      {/* Thumbnail */}
+      <div className='relative w-16 h-16 shrink-0 border border-[var(--line)] overflow-hidden'>
+        {auction.imageUrl
+          ? <Image src={auction.imageUrl} alt={auction.title} fill className='object-cover' />
+          : <div className='w-full h-full bg-cream' />}
+      </div>
+
+      {/* Text */}
+      <div className='flex-1 min-w-0'>
+        <p className='font-serif text-base font-semibold text-ink truncate'>{auction.title}</p>
+        <p className='font-sans text-sm text-mut'>{auction.lotCount} lots · {auction.location}</p>
+      </div>
+
+      {/* CTA */}
+      {auction.status === 'open'
+        ? <a href={`/auctions/${auction.id}`} className='shrink-0 bg-ink text-paper font-sans text-sm px-5 py-2 hover:bg-ink/90 transition-colors'>View Catalogue</a>
+        : <button className='shrink-0 border border-[var(--line)] font-sans text-sm px-5 py-2 text-mut hover:text-ink transition-colors'>Register Interest</button>}
+    </div>
+  );
+}
+```
+
+The same `AuctionRow` is used by both the RSC version (Task 9) and the client tab version (Task 18). Whichever version of `calendar/page.tsx` the implementer writes, it must use this updated `AuctionRow`.
+
+---
+
+- [ ] **Step 2: Add bid flow step 4 to `lot-detail-client.tsx`**
+
+In the `placeBid` function, after the `EMAIL_VERIFIED` phone modal check and before the valid bid block, add:
+
+```typescript
+// APPROVED_BIDDER but no saved payment method on file
+if (user.verificationStatus === 'APPROVED_BIDDER') {
+  // check if user has a saved payment method by calling /api/payments/profile
+  try {
+    const profileRes = await fetch('/api/payments/profile', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const profile = await profileRes.json() as { stripePaymentMethodId: string | null };
+    if (!profile.stripePaymentMethodId) {
+      window.location.href = '/account/register-to-bid?step=3';
+      return;
+    }
+  } catch {
+    // if check fails, allow the bid attempt — backend will reject if needed
+  }
+}
+```
+
+Add the proxy route that fetches the user's payment profile:
+```typescript
+// apps/user-portal/src/app/api/payments/profile/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL ?? 'http://localhost:3004';
+export async function GET(request: NextRequest) {
+  const auth = request.headers.get('authorization') ?? '';
+  const res = await fetch(`${PAYMENT_SERVICE_URL}/api/payments/profile`, {
+    headers: { Authorization: auth }, cache: 'no-store',
+  });
+  return NextResponse.json(await res.json(), { status: res.status });
+}
+```
+
+Note: this requires the payment service to expose `GET /api/payments/profile` returning `{ stripePaymentMethodId: string | null }`. Add this endpoint to the payment router:
+```typescript
+// In apps/payment/src/presentation/payment-router.ts — add:
+router.get('/profile', async (c) => {
+  const payload = c.get('jwtPayload');
+  const profile = await deps.profiles.findByUserId(payload.userId);
+  return c.json({ stripePaymentMethodId: profile?.stripePaymentMethodId ?? null });
+});
+```
+Auth middleware: `app.use('/api/payments/profile', authMiddleware(JWT_PUBLIC_KEY));`
+
+---
+
+- [ ] **Step 3: Dynamic context line + thumbnail on Dashboard**
+
+Add `imageUrl` to the `Bid` type in `apps/user-portal/src/app/account/dashboard/page.tsx`:
+```typescript
+type Bid = {
+  lotId: string; auctionId: string; title: string; imageUrl: string;
+  yourBid: number; currentBid: number; status: 'leading' | 'outbid'; endAt: string;
+};
+```
+
+Replace the static context line with a dynamic one derived from `stats`:
+```typescript
+// Replace:
+// <p className='font-sans text-sm text-mut mb-8'>Here&apos;s your bidding overview.</p>
+// With:
+<p className='font-sans text-sm text-mut mb-8'>
+  {stats
+    ? `You are leading on ${stats.leading} lot${stats.leading !== 1 ? 's' : ''}${stats.activeBids > 0 ? `. ${stats.activeBids} bid${stats.activeBids !== 1 ? 's' : ''} active.` : '.'}`
+    : 'Here\'s your bidding overview.'}
+</p>
+```
+
+Add thumbnail (46px) to the Active Bids preview table rows:
+```typescript
+// In the bids.map() render, replace the existing row with:
+<div key={bid.lotId} className='py-4 flex items-center gap-4'>
+  {/* Thumbnail 46px */}
+  <div className='relative w-[46px] h-[46px] shrink-0 border border-[var(--line)] overflow-hidden'>
+    {bid.imageUrl
+      ? <Image src={bid.imageUrl} alt={bid.title} fill className='object-cover' />
+      : <div className='w-full h-full bg-cream' />}
+  </div>
+  <div className='flex-1 min-w-0'>
+    <Link href={`/auctions/${bid.auctionId}/lots/${bid.lotId}`}
+      className='font-sans text-sm font-medium text-ink hover:underline truncate block'>{bid.title}</Link>
+    <p className='font-sans text-xs text-mut mt-0.5'>Your bid: {bid.yourBid.toLocaleString()}</p>
+  </div>
+  <BidStatusBadge status={bid.status} />
+  <CountdownTimer endAt={bid.endAt} />
+</div>
+```
+
+Add `import Image from 'next/image';` at the top.
+
+---
+
+- [ ] **Step 4: Thumbnail + "Bid again" link on My Bids page**
+
+In `apps/user-portal/src/app/account/bids/page.tsx`, update the `Bid` type:
+```typescript
+type Bid = {
+  lotId: string; auctionId: string; title: string; imageUrl: string;
+  yourBid: number; currentBid: number; status: 'leading' | 'outbid';
+  endAt: string; currency: string;
+};
+```
+
+Update the table to add a thumbnail column and "Bid again" link:
+```typescript
+<thead>
+  <tr className='bg-cream'>
+    {['', 'Lot', 'Your Bid', 'Current Bid', 'Status', 'Closes', ''].map((h, i) => (
+      <th key={i} className='px-4 py-3 text-left text-xs font-semibold text-mut uppercase tracking-wider'>{h}</th>
+    ))}
+  </tr>
+</thead>
+<tbody className='divide-y divide-[var(--line)]'>
+  {data.bids.map(bid => (
+    <tr key={bid.lotId}>
+      {/* Thumbnail */}
+      <td className='px-4 py-3'>
+        <div className='relative w-10 h-10 border border-[var(--line)] overflow-hidden shrink-0'>
+          {bid.imageUrl
+            ? <Image src={bid.imageUrl} alt={bid.title} fill className='object-cover' />
+            : <div className='w-full h-full bg-cream' />}
+        </div>
+      </td>
+      <td className='px-4 py-3'>
+        <Link href={`/auctions/${bid.auctionId}/lots/${bid.lotId}`}
+          className='text-ink font-medium hover:underline line-clamp-2'>{bid.title}</Link>
+      </td>
+      <td className='px-4 py-3 text-ink'>{bid.currency.toUpperCase()} {bid.yourBid.toLocaleString()}</td>
+      <td className='px-4 py-3 text-ink'>{bid.currency.toUpperCase()} {bid.currentBid.toLocaleString()}</td>
+      <td className='px-4 py-3'><BidStatusBadge status={bid.status} /></td>
+      <td className='px-4 py-3'><CountdownTimer endAt={bid.endAt} /></td>
+      {/* Bid again — only for outbid rows */}
+      <td className='px-4 py-3'>
+        {bid.status === 'outbid' && (
+          <Link href={`/auctions/${bid.auctionId}/lots/${bid.lotId}`}
+            className='font-sans text-xs text-ink border border-[var(--line)] px-3 py-1.5 hover:bg-cream transition-colors whitespace-nowrap'>
+            Bid again
+          </Link>
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
+```
+
+Add `import Image from 'next/image';` at the top.
+
+---
+
+- [ ] **Step 5: Thumbnail + context-sensitive actions on Won Lots page**
+
+In `apps/user-portal/src/app/account/won/page.tsx`, update `WonLot` type:
+```typescript
+type WonLot = {
+  lotId: string; auctionId: string; title: string; imageUrl: string;
+  wonDate: string; hammerPrice: number; currency: string;
+  invoiceId: string; fulfilmentId?: string; paymentStatus: string;
+};
+```
+
+Update the table row to include thumbnail and context-sensitive actions:
+```typescript
+{data.lots.map(lot => (
+  <tr key={lot.lotId}>
+    {/* Lot: thumbnail + title + won date */}
+    <td className='px-4 py-3'>
+      <div className='flex items-center gap-3'>
+        <div className='relative w-10 h-10 border border-[var(--line)] overflow-hidden shrink-0'>
+          {lot.imageUrl
+            ? <Image src={lot.imageUrl} alt={lot.title} fill className='object-cover' />
+            : <div className='w-full h-full bg-cream' />}
+        </div>
+        <div>
+          <Link href={`/auctions/${lot.auctionId}/lots/${lot.lotId}`}
+            className='text-ink font-medium hover:underline line-clamp-1'>{lot.title}</Link>
+          <p className='text-xs text-mut mt-0.5'>{new Date(lot.wonDate).toLocaleDateString('en-AU')}</p>
+        </div>
+      </div>
+    </td>
+    <td className='px-4 py-3'>{lot.currency.toUpperCase()} {lot.hammerPrice.toLocaleString()}</td>
+    <td className='px-4 py-3'><StatusPill status={lot.paymentStatus} /></td>
+    {/* Context-sensitive actions */}
+    <td className='px-4 py-3 flex gap-3 flex-wrap'>
+      {lot.paymentStatus === 'Payment due' && (
+        <Link href={`/account/invoices/${lot.invoiceId}`}
+          className='font-sans text-xs text-ink border border-[var(--line)] px-3 py-1.5 hover:bg-cream'>
+          Pay now
+        </Link>
+      )}
+      {lot.fulfilmentId && ['Shipped', 'Delivered'].includes(lot.paymentStatus) && (
+        <Link href={`/account/fulfilments/${lot.fulfilmentId}`}
+          className='font-sans text-xs text-ink hover:underline'>
+          Track
+        </Link>
+      )}
+      <Link href={`/account/invoices/${lot.invoiceId}`}
+        className='font-sans text-xs text-mut hover:text-ink hover:underline'>
+        Invoice
+      </Link>
+    </td>
+  </tr>
+))}
+```
+
+Add `import Image from 'next/image';` at the top.
+
+---
+
+- [ ] **Step 6: Add lot thumbnail to Invoice page**
+
+In `apps/user-portal/src/app/account/invoices/[id]/page.tsx`, the `Invoice` type already has `lotImageUrl`. Render it in the lot summary:
+
+```typescript
+{/* Lot summary */}
+<div className='flex gap-4 mb-8 pb-8 border-b border-[var(--line)]'>
+  {/* Thumbnail */}
+  <div className='relative w-20 h-20 shrink-0 border border-[var(--line)] overflow-hidden'>
+    {invoice.lotImageUrl
+      ? <Image src={invoice.lotImageUrl} alt={invoice.lotTitle} fill className='object-cover' />
+      : <div className='w-full h-full bg-cream' />}
+  </div>
+  <div className='flex-1'>
+    <p className='font-serif text-base font-semibold text-ink'>{invoice.lotTitle}</p>
+    <p className='font-sans text-xs text-mut mt-1'>Won {new Date(invoice.wonDate).toLocaleDateString('en-AU')}</p>
+  </div>
+</div>
+```
+
+Add `import Image from 'next/image';` at the top.
+
+---
+
+- [ ] **Step 7: Real Collect form on Fulfilment page**
+
+Replace the "Collection slot booking coming soon" placeholder in `apps/user-portal/src/app/account/fulfilments/[id]/page.tsx` with a real form.
+
+Add a Zod schema for the collect form:
+```typescript
+const collectSchema = z.object({
+  locationId: z.string().min(1, 'Select a location'),
+  date:       z.string().min(1, 'Select a date'),
+  timeSlot:   z.string().min(1, 'Select a time slot'),
+});
+type CollectForm = z.infer<typeof collectSchema>;
+```
+
+Add a second form for collect:
+```typescript
+const collectForm = useForm<CollectForm>({ resolver: zodResolver(collectSchema) });
+```
+
+Add `submitCollect` handler:
+```typescript
+async function submitCollect(data: CollectForm) {
+  const res = await fetch(`/api/shipping/fulfilments/${params.id}/collection-slot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(data),
+  });
+  if (res.ok) setToast({ message: 'Collection slot booked. We\'ll confirm by email.', type: 'success' });
+  else setToast({ message: 'Failed to book slot. Please try again.', type: 'error' });
+}
+```
+
+Replace the "coming soon" block with:
+```typescript
+{option === 'collect' && (
+  <form onSubmit={collectForm.handleSubmit(submitCollect)} className='space-y-4'>
+    <div>
+      <label className='block font-sans text-sm font-medium text-ink mb-1'>Collection location</label>
+      <select {...collectForm.register('locationId')}
+        className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm bg-white'>
+        <option value=''>Select location…</option>
+        <option value='sydney-cbd'>Sydney CBD</option>
+        <option value='sydney-east'>Eastern Suburbs</option>
+        <option value='melbourne-cbd'>Melbourne CBD</option>
+      </select>
+      {collectForm.formState.errors.locationId && (
+        <p className='font-sans text-xs text-red-600 mt-1'>{collectForm.formState.errors.locationId.message}</p>
+      )}
+    </div>
+
+    <div>
+      <label className='block font-sans text-sm font-medium text-ink mb-1'>Date</label>
+      <input {...collectForm.register('date')} type='date'
+        min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+        className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+      {collectForm.formState.errors.date && (
+        <p className='font-sans text-xs text-red-600 mt-1'>{collectForm.formState.errors.date.message}</p>
+      )}
+    </div>
+
+    <div>
+      <label className='block font-sans text-sm font-medium text-ink mb-1'>Time slot</label>
+      <select {...collectForm.register('timeSlot')}
+        className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm bg-white'>
+        <option value=''>Select time…</option>
+        <option value='09:00-11:00'>9:00 am – 11:00 am</option>
+        <option value='11:00-13:00'>11:00 am – 1:00 pm</option>
+        <option value='13:00-15:00'>1:00 pm – 3:00 pm</option>
+        <option value='15:00-17:00'>3:00 pm – 5:00 pm</option>
+      </select>
+      {collectForm.formState.errors.timeSlot && (
+        <p className='font-sans text-xs text-red-600 mt-1'>{collectForm.formState.errors.timeSlot.message}</p>
+      )}
+    </div>
+
+    <button type='submit' disabled={collectForm.formState.isSubmitting}
+      className='w-full bg-ink text-paper font-sans text-sm font-medium py-3 hover:bg-ink/90 disabled:opacity-60'>
+      {collectForm.formState.isSubmitting ? 'Booking…' : 'Confirm Collection Slot'}
+    </button>
+  </form>
+)}
+```
+
+Add the shipping proxy route for collection slot:
+```typescript
+// apps/user-portal/src/app/api/shipping/fulfilments/[id]/collection-slot/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+const SHIPPING_SERVICE_URL = process.env.SHIPPING_SERVICE_URL ?? 'http://localhost:3006';
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+  const auth = request.headers.get('authorization') ?? '';
+  const body = await request.json();
+  const res = await fetch(`${SHIPPING_SERVICE_URL}/api/shipping/fulfilments/${params.id}/collection-slot`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: auth },
+    body: JSON.stringify(body),
+  });
+  return NextResponse.json(await res.json(), { status: res.status });
+}
+```
+
+---
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add apps/user-portal/src/app/calendar/ \
+        apps/user-portal/src/app/auctions/ \
+        apps/user-portal/src/app/account/dashboard/ \
+        apps/user-portal/src/app/account/bids/ \
+        apps/user-portal/src/app/account/won/ \
+        apps/user-portal/src/app/account/invoices/ \
+        apps/user-portal/src/app/account/fulfilments/ \
+        apps/user-portal/src/app/api/payments/profile/ \
+        apps/user-portal/src/app/api/shipping/
+git commit -m "feat(user-portal): fix remaining spec gaps — thumbnails, bid flow step 4, dynamic greeting, collect form"
+```
+
+---
+
+## Final Spec Coverage — Complete
+
+| Spec requirement | Task |
+|---|---|
+| next-intl for currency/date | Task 20 |
+| Header: search bar (300ms debounce), Watchlist link, user avatar | Task 15 |
+| AccountShell: avatar, "Collector since YYYY", Profile & Paddle nav | Task 15 |
+| /account/profile page | Task 15 |
+| Calendar: tabbed UI (Upcoming / Live Now / Results) | Task 18 |
+| Calendar: thumbnail in auction rows | Task 21 |
+| Browse: sort controls (Ending Soonest / Lot Number / Price) | Task 9 |
+| Browse: price min/max inputs | Task 9 |
+| Browse: Department, Status, Auction filter checkboxes | ⚠️ Deferred |
+| Browse: dual-handle price range slider | ⚠️ Deferred |
+| Sale Catalogue: ♡ Follow Sale, sort controls, pagination | Task 20 |
+| Sale Catalogue: viewing dates in hero | ⚠️ Deferred (requires catalogue schema) |
+| Lot Detail standard: Add to Watchlist, Enquire, trust marks, min bid notice | Task 16 |
+| Lot Detail standard: "From the same collection" grid | Task 16 |
+| Lot Detail live: status line (leading/outbid), activity feed, Up Next strip | Task 16 |
+| Lot Detail live: quick-bid buttons (+$2k / +$4k / Custom) | Task 10 |
+| Lot Detail: phone OTP inline modal on bid attempt (EMAIL_VERIFIED) | Task 16 |
+| Lot Detail: APPROVED_BIDDER + no saved PM → redirect to register-to-bid | Task 21 |
+| SSE reconnecting badge after 5s | Task 16 |
+| auction_closed: disable bid input, show banner | Task 16 |
+| Login: Forgot password link, cross-links between tabs | Task 17 |
+| Verify email: resend option | Task 17 |
+| Verify phone: 3-attempt lockout with countdown | Task 17 |
+| Register-to-Bid Step 2: legal name, DOB, address fields | Task 18 |
+| Register-to-Bid Step 2: Government ID upload, "encrypted at rest" notice | Task 12 |
+| Register-to-Bid Step 3: Stripe Elements card form | Task 12 |
+| Register-to-Bid Step 4: SWR poll /auth/me every 10s | Task 12 |
+| Dashboard: dynamic greeting context line | Task 21 |
+| Dashboard: 4 stat cards (Active Bids / Leading / Watching / Won This Year) | Task 13 |
+| Dashboard: active bids preview with thumbnail (46px) | Task 21 |
+| My Bids: full table with thumbnail | Task 21 |
+| My Bids: "Bid again" link on outbid rows | Task 21 |
+| Watchlist: 3-col grid, heart overlay, optimistic remove | Task 13 |
+| Won Lots: thumbnail + title + won date | Task 21 |
+| Won Lots: "Pay now" / "Track" / "Invoice" context-sensitive actions | Task 21 |
+| Invoice: thumbnail in lot summary | Task 21 |
+| Invoice: price breakdown (hammer, premium 22%, GST, shipping, total) | Task 14 |
+| Invoice: pay with saved card + pay via Stripe Checkout | Task 14 |
+| Fulfilment Ship: full address form, POST /fulfilments/:id/address | Task 14 |
+| Fulfilment Collect: location selector, date picker, time slot, POST collection-slot | Task 21 |
+| Mobile: bottom nav bar (Home/Browse/Watch/Bids) | Task 19 |
+| Mobile: sticky bid bar on lot detail | Task 19 |
+| Mobile: account top tab strip, hidden sidebar | Task 19 |
+| Mobile: header hamburger menu | ⚠️ Deferred |
+
+**⚠️ Remaining deferred items (require external changes or libraries — do not block launch):**
+- Browse: Department, Status, Auction multi-select checkboxes (requires catalogue service to expose filter counts)
+- Browse: dual-handle price range slider (requires `@radix-ui/react-slider`)
+- Sale Catalogue: viewing dates (requires `viewingDates` field in catalogue service)
+- Mobile header: hamburger/drawer menu
+
