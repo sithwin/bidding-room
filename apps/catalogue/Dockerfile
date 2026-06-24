@@ -1,12 +1,12 @@
-FROM node:20-alpine AS builder
+﻿FROM node:22-alpine AS builder
 WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/ ./packages/
 COPY apps/catalogue/ ./apps/catalogue/
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN npm install -g pnpm@9 && pnpm install --no-frozen-lockfile
 RUN pnpm --filter @carat-room/catalogue build
 
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY --from=builder /app/apps/catalogue/dist ./dist
 COPY --from=builder /app/apps/catalogue/package.json ./

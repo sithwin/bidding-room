@@ -72,7 +72,7 @@ async function main(): Promise<void> {
     sseBroadcaster,
   );
 
-  const jwtPublicKey = process.env['JWT_PUBLIC_KEY'] ?? '';
+  const jwtPublicKey = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n');
 
   // HTTP server
   const app = createAuctionRouter({

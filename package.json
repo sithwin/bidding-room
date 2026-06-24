@@ -4,13 +4,15 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
-    "dev": "turbo dev",
+    "dev": "concurrently --kill-others-on-fail --names \"user-auth,catalogue,auction,payment,notification,shipping,admin,admin-portal\" \"cd apps/user-auth && npx tsx watch --env-file .env src/main.ts\" \"cd apps/catalogue && npx tsx watch --env-file .env src/main.ts\" \"cd apps/auction-engine && npx tsx watch --env-file .env src/main.ts\" \"cd apps/payment && npx tsx watch --env-file .env src/main.ts\" \"cd apps/notification-service && npx tsx watch --env-file .env src/main.ts\" \"cd apps/shipping && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin-portal && npx next dev -p 3008\"",
     "lint": "turbo lint",
-    "test:integration": "vitest run --config tests/vitest.integration.config.ts"
+    "test:integration": "vitest run --config tests/vitest.integration.config.ts",
+    "start": "docker compose up --build"
   },
   "devDependencies": {
-    "pg": "^8.13.0",
     "@types/pg": "^8.11.0",
+    "concurrently": "^10.0.3",
+    "pg": "^8.13.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
   },

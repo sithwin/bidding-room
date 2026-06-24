@@ -24,8 +24,8 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   const amqpUrl = process.env.AMQP_URL;
-  const jwtPrivateKey = process.env.JWT_PRIVATE_KEY;
-  const jwtPublicKey = process.env.JWT_PUBLIC_KEY;
+  const jwtPrivateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const port = Number(process.env.PORT ?? 3001);
 
   if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey) {

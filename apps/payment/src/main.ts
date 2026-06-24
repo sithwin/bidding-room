@@ -24,7 +24,7 @@ const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY']!;
 const STRIPE_WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET']!;
 const FRONTEND_URL = process.env['FRONTEND_URL']!;
 const PAYMENT_WINDOW_HOURS = Number(process.env['PAYMENT_WINDOW_HOURS'] ?? 72);
-const JWT_PUBLIC_KEY = process.env['JWT_PUBLIC_KEY']!;
+const JWT_PUBLIC_KEY = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n');
 
 async function main(): Promise<void> {
   const db = createDb(DATABASE_URL);

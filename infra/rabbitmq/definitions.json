@@ -1,4 +1,15 @@
 {
+  "users": [
+    {
+      "name": "carat",
+      "password_hash": "q83vARVcEOPfQQLLGqnIb8q37zHOCffobfqEiLgP/vQoQjn/",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "permissions": [
+    { "user": "carat", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*" }
+  ],
   "vhosts": [{ "name": "/" }],
   "exchanges": [
     {

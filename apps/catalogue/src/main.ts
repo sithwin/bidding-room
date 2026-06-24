@@ -19,7 +19,7 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 const PORT = Number(process.env.PORT ?? 3002);
 const databaseUrl = process.env.DATABASE_URL ?? 'postgres://localhost/catalogue';
-const jwtPublicKey = process.env.JWT_PUBLIC_KEY ?? '';
+const jwtPublicKey = (process.env.JWT_PUBLIC_KEY ?? '').replace(/\\n/g, '\n');
 
 const db = createDb(databaseUrl);
 

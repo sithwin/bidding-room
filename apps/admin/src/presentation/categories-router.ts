@@ -4,7 +4,7 @@ import { ServiceClient, ServiceError } from '../infrastructure/service-client';
 
 type Ctx = Context;
 
-const jwtPublicKey = process.env['JWT_PUBLIC_KEY'] ?? '';
+const jwtPublicKey = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n');
 
 function tok(c: Ctx): string {
   return c.req.header('Authorization')?.replace('Bearer ', '') ?? '';
