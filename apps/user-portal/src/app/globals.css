@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --paper:  #FFFFFF;
+    --cream:  #F5F5F4;
+    --ink:    #111111;
+    --gold:   #8a8a8a;
+    --line:   rgba(0, 0, 0, 0.13);
+    --mut:    #777777;
+    --canvas: #e7e5df;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-mulish), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-bodoni), Georgia, serif;
+  }
+}
+
+/* Dark variant applied to the lot detail page during a live auction countdown */
+.theme-live {
+  --paper:  #111111;
+  --cream:  #1a1a1a;
+  --ink:    #FFFFFF;
+  --gold:   #c9a84c;
+  --line:   rgba(255, 255, 255, 0.13);
+  --mut:    #999999;
+  background-color: var(--paper);
+  color: var(--ink);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
