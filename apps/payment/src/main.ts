@@ -28,6 +28,18 @@ const JWT_PUBLIC_KEY = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n
 
 async function main(): Promise<void> {
   const db = createDb(DATABASE_URL);
+
+  // Ensure the payment_profiles table exists (idempotent).
+  await db.unsafe(`
+    CREATE TABLE IF NOT EXISTS payment_profiles (
+      user_id                  UUID PRIMARY KEY,
+      stripe_customer_id       TEXT NOT NULL,
+      stripe_payment_method_id TEXT,
+      created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
   const invoiceRepository = new PostgresInvoiceRepository(db);
   const stripeAdapter = new StripeAdapter(STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET);
   const redis = { host: REDIS_HOST, port: REDIS_PORT };
