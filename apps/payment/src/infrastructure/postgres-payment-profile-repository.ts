@@ -1,4 +1,4 @@
-import { PaymentProfile, PaymentProfileRepository } from '../domain/payment-profile-repository';
+import { PaymentProfile, PaymentProfileRepository } from '../application/payment-profile-repository';
 import { Db } from './db';
 
 interface ProfileRow {

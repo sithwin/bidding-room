@@ -405,6 +405,9 @@ importers:
 
   apps/user-auth:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.600.0
+        version: 3.1073.0
       '@carat-room/shared-auth':
         specifier: workspace:*
         version: link:../../packages/shared-auth

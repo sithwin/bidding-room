@@ -1,39 +1,59 @@
-## Status
-DONE
+# Task 3 Implementation Report — Identity Document Upload Endpoint
+
+## Status: DONE_WITH_CONCERNS
+
+## Files Created
+- `apps/user-auth/src/application/upload-identity-document.use-case.ts` — use case with MIME type validation, 10 MB size check, R2 upload, domain method call, and repository save
+- `apps/user-auth/src/application/upload-identity-document.use-case.test.ts` — 5 unit tests (all mocked)
+
+## Files Modified
+- `apps/user-auth/src/presentation/user-router.ts` — added `uploadIdentityDocument` to `UseCases` interface and `POST /identity-document` route with multipart parsing
+- `apps/user-auth/src/presentation/user-router.test.ts` — added `uploadIdentityDocument` to `makeUseCases()` mock object to fix TypeScript build error
+- `apps/user-auth/src/main.ts` — added R2 env var reads, `R2UploadClient` instantiation, auth middleware for `/api/users/identity-document`, and wired `UploadIdentityDocumentUseCase` into `buildUserRouter`
 
 ## Commit
-`75d827b` feat(catalogue): add Postgres repository implementations (lot, category, search)
+- `a1e3318` feat(user-auth): identity document upload endpoint with R2 storage
 
-## Tests
-9/9 passing.
+## Test Summary
+6 test files pass, 35 tests pass. New use case suite: 5/5 pass.
+2 pre-existing test files fail (PostgresUserRepository, PostgresTokenRepository) — these require a live PostgreSQL connection and were failing before this task.
 
-- `postgres-lot-repository.test.ts`: 4/4
-- `postgres-category-repository.test.ts`: 3/3
-- `postgres-search-repository.test.ts`: 2/2
+## Concern
+A pre-existing TypeScript build error exists in `apps/user-auth/src/application/register.use-case.ts` line 52:
 
-## Deviation from Brief
+  error TS2353: Object literal may only specify known properties,
+  and 'emailVerificationCode' does not exist in type 'UserRegisteredPayload'.
 
-The brief showed `db` and `repo` created at describe-block level (once, shared across tests). This caused `CONNECTION_ENDED` failures on tests 2–4 in each file because `afterEach` called `db.end()` after the first test, killing the shared connection for remaining tests. Fix: moved `createDb()` and repository instantiation into `beforeEach` so each test gets a fresh connection. `afterEach` still calls `db.end()` as specified.
+This error was present before Task 3 started (git diff confirms the file was not modified). The build fails due to this pre-existing issue. All Task 3 code is correct TypeScript — no errors in any newly created or modified files.
 
-## Infrastructure Notes
-
-- PostgreSQL running in Docker (`carat-room-test-pg`, port 5432, credentials `postgres`/`postgres`).
-- `TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/catalogue_test` required — no local `psql` binary available; Docker exec used to run the migration.
-- `db.unsafe()` used for dynamic WHERE clauses in `findAll` and `search` — acceptable per plan design.
-- The `search_vector` column is populated automatically by the `lots_search_vector_trigger` on INSERT/UPDATE, so full-text search works without any application-side logic.
-
-## Concerns
-
-None blocking. The linter (SonarLint S4325) flags `!` non-null assertions on `found!.title` etc. as unnecessary — this is because after `expect(found).not.toBeNull()` the linter considers the type already narrowed, but TypeScript's type system does not cross that Vitest assertion boundary. The assertions are correct at runtime and match the brief's test code exactly.
+## Key Decisions Applied
+- Key format: `identity-docs/{userId}/{Date.now()}.{ext}` (ext derived from `originalFilename.split('.').pop()`)
+- Allowed MIME types: `image/jpeg`, `image/png`, `application/pdf`
+- Max file size: 10 * 1024 * 1024 bytes (10 MB)
+- File type check happens before user lookup (fail-fast ordering)
+- Route returns `{ status: 'pending_review' }` on success, `{ error: message }` with 422 on validation/domain errors
+- Auth middleware registered at `/api/users/identity-document` in main.ts
+- R2 env vars now use `!` non-null assertions (as per brief spec) — fail fast on misconfigured deployments instead of silently passing empty strings to R2 API
 
 ---
 
-## Data-Correctness Bug Fix
+## Code Review Fixes (Post-Implementation)
 
-**Bug:** The `save` method only deleted existing `lot_images` rows when `lot.images.length > 0`. Saving a lot with zero images (e.g. after deleting the last image) left stale image rows in the database.
+**Commit: `1a0aa67` fix(user-auth): use env assertion for R2 vars; clean misleading test mock**
 
-**Fix:** Moved `DELETE FROM lot_images WHERE lot_id = ${lot.id}` outside the conditional block so it always runs, even when the images array is empty.
+### Finding 1: R2 env vars used `?? ''` instead of `!` assertion
+**Status:** FIXED
+- Changed `const R2_ACCOUNT_ID = process.env['R2_ACCOUNT_ID'] ?? '';` → `const R2_ACCOUNT_ID = process.env['R2_ACCOUNT_ID']!;` (and 3 other R2 vars)
+- Aligns with brief specification and existing pattern for `DATABASE_URL` and `JWT_PUBLIC_KEY`
+- Causes early startup failure if R2 vars missing, preventing cryptic R2 auth errors in production
 
-**Commit:** `cf1fa73` fix(catalogue): always delete lot images on save, even when images array is empty
+### Finding 2: Misleading mock setup in unsupported-type test
+**Status:** FIXED
+- Removed `mockRepo.findById.mockResolvedValue(user)` from "rejects unsupported file types" test
+- MIME type validation happens before repository lookup, so mock was never executed
+- Test now correctly verifies only what's needed: bad MIME type → throws "Unsupported file type"
 
-**Tests:** Unable to run tests due to Docker container connectivity issue (port 5432 conflict), but the fix is trivial and correct: unconditional DELETE ensures data consistency when a lot's images are cleared.
+### Test Results After Fixes
+- **All 5 upload-identity-document tests passing:** ✓ uploads file ✓ throws if user not found ✓ rejects unsupported file types ✓ rejects >10MB ✓ accepts jpeg/png
+- Total: 6 test files pass, 35 tests pass
+- Pre-existing DB connection failures remain (PostgresUserRepository, PostgresTokenRepository tests require live DB)
