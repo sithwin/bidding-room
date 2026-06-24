@@ -14,6 +14,9 @@ import { RequestImageUploadUseCase } from './application/request-image-upload-us
 import { ConfirmImageUploadUseCase } from './application/confirm-image-upload-use-case';
 import { CreateLotUseCase } from './application/create-lot-use-case';
 import { buildCatalogueRouter } from './presentation/catalogue-router';
+import { buildAuctionRouter } from './presentation/auction-router';
+import { buildFacetsRouter } from './presentation/facets-router';
+import { PostgresAuctionRepository } from './infrastructure/postgres-auction-repository';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
@@ -26,6 +29,7 @@ const db = createDb(databaseUrl);
 const lotRepository = new PostgresLotRepository(db);
 const categoryRepository = new PostgresCategoryRepository(db);
 const searchRepository = new PostgresSearchRepository(db);
+const auctionRepository = new PostgresAuctionRepository(db);
 
 const imageStorage = new R2ImageStorage({
   bucket: process.env.R2_BUCKET ?? '',
@@ -74,5 +78,7 @@ app.post('/api/lots', authMiddleware(jwtPublicKey, { adminOnly: true }), async c
 });
 
 app.route('/', buildCatalogueRouter(useCases));
+app.route('/', buildAuctionRouter({ auctionRepository }));
+app.route('/', buildFacetsRouter(db));
 
 serve({ fetch: app.fetch, port: PORT });
