@@ -54,7 +54,7 @@ describe('facets-router', () => {
     // First call should include the filter conditions
     const firstCallSql = mockUnsafe.mock.calls[0][0] as string;
     expect(firstCallSql).toContain('plainto_tsquery');
-    expect(firstCallSql).toContain('estimated_value >=');
-    expect(firstCallSql).toContain('estimated_value <=');
+    expect(firstCallSql).toContain('starting_price >=');
+    expect(firstCallSql).toContain('starting_price <=');
   });
 });

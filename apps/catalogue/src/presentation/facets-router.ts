@@ -21,11 +21,11 @@ export function buildFacetsRouter(db: Db): Hono {
       values.push(auctionId);
     }
     if (minPrice) {
-      conditions.push(`estimated_value >= $${i++}`);
+      conditions.push(`starting_price >= $${i++}`);
       values.push(Number(minPrice));
     }
     if (maxPrice) {
-      conditions.push(`estimated_value <= $${i++}`);
+      conditions.push(`starting_price <= $${i++}`);
       values.push(Number(maxPrice));
     }
 
