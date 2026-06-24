@@ -16,8 +16,8 @@ describe('enquiries-router', () => {
     app.route('/', buildEnquiriesRouter({ submitEnquiry: mockSubmit as any, r2: mockR2 as any }));
   });
 
-  it('POST /enquiries/valuation returns ok', async () => {
-    const res = await app.request('/enquiries/valuation', {
+  it('POST /api/admin/enquiries/valuation returns ok', async () => {
+    const res = await app.request('/api/admin/enquiries/valuation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -34,9 +34,9 @@ describe('enquiries-router', () => {
     expect(mockSubmit).toHaveBeenCalledOnce();
   });
 
-  it('POST /enquiries/valuation/upload returns 400 when no file provided', async () => {
+  it('POST /api/admin/enquiries/valuation/upload returns 400 when no file provided', async () => {
     const formData = new FormData();
-    const res = await app.request('/enquiries/valuation/upload', {
+    const res = await app.request('/api/admin/enquiries/valuation/upload', {
       method: 'POST',
       body: formData,
     });
@@ -45,10 +45,10 @@ describe('enquiries-router', () => {
     expect(body).toEqual({ error: 'Missing file' });
   });
 
-  it('POST /enquiries/valuation/upload returns 422 for unsupported file type', async () => {
+  it('POST /api/admin/enquiries/valuation/upload returns 422 for unsupported file type', async () => {
     const formData = new FormData();
     formData.append('file', new File(['data'], 'test.gif', { type: 'image/gif' }));
-    const res = await app.request('/enquiries/valuation/upload', {
+    const res = await app.request('/api/admin/enquiries/valuation/upload', {
       method: 'POST',
       body: formData,
     });
@@ -57,10 +57,10 @@ describe('enquiries-router', () => {
     expect(body).toEqual({ error: 'Unsupported file type' });
   });
 
-  it('POST /enquiries/valuation/upload returns key on success', async () => {
+  it('POST /api/admin/enquiries/valuation/upload returns key on success', async () => {
     const formData = new FormData();
     formData.append('file', new File(['img-data'], 'photo.jpg', { type: 'image/jpeg' }));
-    const res = await app.request('/enquiries/valuation/upload', {
+    const res = await app.request('/api/admin/enquiries/valuation/upload', {
       method: 'POST',
       body: formData,
     });

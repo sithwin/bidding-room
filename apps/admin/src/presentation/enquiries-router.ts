@@ -15,7 +15,7 @@ export function buildEnquiriesRouter(deps: Deps): Hono {
   const router = new Hono();
 
   // Public endpoint — no auth required for valuation image uploads
-  router.post('/enquiries/valuation/upload', async (c) => {
+  router.post('/api/admin/enquiries/valuation/upload', async (c) => {
     const body = await c.req.parseBody();
     const file = body['file'];
     if (!(file instanceof File)) return c.json({ error: 'Missing file' }, 400);
@@ -32,7 +32,7 @@ export function buildEnquiriesRouter(deps: Deps): Hono {
   });
 
   // Public endpoint — no auth required for valuation enquiry submission
-  router.post('/enquiries/valuation', async (c) => {
+  router.post('/api/admin/enquiries/valuation', async (c) => {
     const input = await c.req.json<{
       category: string;
       artistMaker?: string;
