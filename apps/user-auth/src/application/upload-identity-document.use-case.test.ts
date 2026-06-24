@@ -65,8 +65,6 @@ describe('UploadIdentityDocumentUseCase', () => {
   });
 
   it('rejects unsupported file types', async () => {
-    const user = makeUser(UserStatus.PHONE_VERIFIED);
-    mockRepo.findById.mockResolvedValue(user);
     await expect(
       useCase.execute({ userId: 'user-1', fileBuffer: Buffer.from(''), contentType: 'text/plain', originalFilename: 'doc.txt' }),
     ).rejects.toThrow('Unsupported file type');

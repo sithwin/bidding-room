@@ -30,10 +30,10 @@ async function main(): Promise<void> {
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const port = Number(process.env.PORT ?? 3001);
 
-  const R2_ACCOUNT_ID        = process.env['R2_ACCOUNT_ID'] ?? '';
-  const R2_ACCESS_KEY_ID     = process.env['R2_ACCESS_KEY_ID'] ?? '';
-  const R2_SECRET_ACCESS_KEY = process.env['R2_SECRET_ACCESS_KEY'] ?? '';
-  const R2_BUCKET_NAME       = process.env['R2_BUCKET_NAME'] ?? '';
+  const R2_ACCOUNT_ID        = process.env['R2_ACCOUNT_ID']!;
+  const R2_ACCESS_KEY_ID     = process.env['R2_ACCESS_KEY_ID']!;
+  const R2_SECRET_ACCESS_KEY = process.env['R2_SECRET_ACCESS_KEY']!;
+  const R2_BUCKET_NAME       = process.env['R2_BUCKET_NAME']!;
 
   if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey) {
     throw new Error(
