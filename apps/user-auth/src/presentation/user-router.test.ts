@@ -8,15 +8,16 @@ import { User, UserRole, UserStatus } from '../domain/user';
 import { JwtPayload } from '@carat-room/shared-auth';
 
 const makeUseCases = () => ({
-  register:        { execute: vi.fn() } as unknown as RegisterUseCase,
-  verifyEmail:     { execute: vi.fn() } as unknown as any,
-  login:           { execute: vi.fn() } as unknown as LoginUseCase,
-  refresh:         { execute: vi.fn() } as unknown as any,
-  logout:          { execute: vi.fn() } as unknown as any,
-  requestPhoneOtp: { execute: vi.fn() } as unknown as any,
-  verifyPhoneOtp:  { execute: vi.fn() } as unknown as any,
-  getMe:           { execute: vi.fn() } as unknown as GetMeUseCase,
-  updateMe:        { execute: vi.fn() } as unknown as any,
+  register:               { execute: vi.fn() } as unknown as RegisterUseCase,
+  verifyEmail:            { execute: vi.fn() } as unknown as any,
+  login:                  { execute: vi.fn() } as unknown as LoginUseCase,
+  refresh:                { execute: vi.fn() } as unknown as any,
+  logout:                 { execute: vi.fn() } as unknown as any,
+  requestPhoneOtp:        { execute: vi.fn() } as unknown as any,
+  verifyPhoneOtp:         { execute: vi.fn() } as unknown as any,
+  getMe:                  { execute: vi.fn() } as unknown as GetMeUseCase,
+  updateMe:               { execute: vi.fn() } as unknown as any,
+  uploadIdentityDocument: { execute: vi.fn() } as unknown as any,
 });
 
 const jwtMiddleware = (userId = 'user-1') =>

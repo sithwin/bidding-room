@@ -9,6 +9,7 @@ import { RequestPhoneOtpUseCase } from '../application/request-phone-otp.use-cas
 import { VerifyPhoneOtpUseCase } from '../application/verify-phone-otp.use-case';
 import { GetMeUseCase } from '../application/get-me.use-case';
 import { UpdateMeUseCase } from '../application/update-me.use-case';
+import { UploadIdentityDocumentUseCase } from '../application/upload-identity-document.use-case';
 import { JwtPayload } from '@carat-room/shared-auth';
 
 interface UseCases {
@@ -21,6 +22,7 @@ interface UseCases {
   verifyPhoneOtp: VerifyPhoneOtpUseCase;
   getMe: GetMeUseCase;
   updateMe: UpdateMeUseCase;
+  uploadIdentityDocument: UploadIdentityDocumentUseCase;
 }
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
@@ -203,6 +205,30 @@ export function buildUserRouter(useCases: UseCases): Hono<AppEnv> {
     const body = await c.req.json();
     await useCases.updateMe.execute({ userId, country: body.country });
     return c.json({ data: { message: 'Profile updated.' } });
+  });
+
+  router.post('/identity-document', async (c) => {
+    const payload = c.get('jwtPayload');
+    const body = await c.req.parseBody();
+    const file = body['file'];
+
+    if (!(file instanceof File)) {
+      return c.json({ error: 'Missing file field' }, 400);
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    try {
+      const result = await useCases.uploadIdentityDocument.execute({
+        userId: payload.userId,
+        fileBuffer: buffer,
+        contentType: file.type,
+        originalFilename: file.name,
+      });
+      return c.json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Upload failed';
+      return c.json({ error: message }, 422);
+    }
   });
 
   return router;
