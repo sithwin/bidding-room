@@ -84,4 +84,38 @@ describe('User', () => {
       expect(user.country).toBe('AU');
     });
   });
+
+  describe('submitIdentityDocument', () => {
+    it('should_setIdentityDocumentKeyAndStatusToPendingReview_when_emailVerified', () => {
+      const user = makeUser();
+      user.verifyEmail();
+
+      user.submitIdentityDocument('doc-key-123');
+
+      expect(user.identityDocumentKey).toBe('doc-key-123');
+      expect(user.status).toBe(UserStatus.PENDING_REVIEW);
+    });
+
+    it('should_throwError_when_emailNotYetVerified', () => {
+      const user = makeUser();
+
+      expect(() => user.submitIdentityDocument('doc-key-123')).toThrow(
+        'Email must be verified before submitting identity',
+      );
+    });
+  });
+
+  describe('approve', () => {
+    it('should_setStatusToApprovedBidder', () => {
+      const user = makeUser();
+      user.verifyEmail();
+      user.requestPhoneVerification('+61412345678');
+      user.verifyPhone();
+      user.submitIdentityDocument('doc-key-123');
+
+      user.approve();
+
+      expect(user.status).toBe(UserStatus.APPROVED_BIDDER);
+    });
+  });
 });
