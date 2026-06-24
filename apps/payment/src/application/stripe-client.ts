@@ -22,4 +22,12 @@ export interface StripeClient {
   createCustomer(userId: string, email: string): Promise<{ customerId: string }>;
   createSetupIntent(customerId: string): Promise<{ clientSecret: string }>;
   retrieveSetupIntent(setupIntentId: string): Promise<{ status: string; customerId: string; paymentMethodId: string | null }>;
+  chargePaymentMethod(params: {
+    customerId: string;
+    paymentMethodId: string;
+    amount: number;
+    currency: string;
+    description: string;
+  }): Promise<{ status: string; paymentIntentId: string }>;
+  retrievePaymentMethod(paymentMethodId: string): Promise<{ last4: string; brand: string }>;
 }

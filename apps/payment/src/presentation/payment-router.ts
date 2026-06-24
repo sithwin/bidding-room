@@ -6,6 +6,9 @@ import { CreateCheckoutSessionUseCase } from '../application/create-checkout-ses
 import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
 import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
 import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.use-case';
+import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
+import { PaymentProfileRepository } from '../application/payment-profile-repository';
+import { StripeClient } from '../application/stripe-client';
 
 interface RouterDeps {
   getInvoice: Pick<GetInvoiceUseCase, 'execute'>;
@@ -13,6 +16,9 @@ interface RouterDeps {
   handleWebhook: Pick<HandleWebhookUseCase, 'execute'>;
   createSetupIntent: Pick<CreateSetupIntentUseCase, 'execute'>;
   confirmSetupIntent: Pick<ConfirmSetupIntentUseCase, 'execute'>;
+  paySavedCard: Pick<PaySavedCardUseCase, 'execute'>;
+  profileRepo: PaymentProfileRepository;
+  stripe: Pick<StripeClient, 'retrievePaymentMethod'>;
   jwtPublicKey: string;
 }
 
@@ -64,6 +70,25 @@ export function buildPaymentRouter(deps: RouterDeps): Hono {
       const message = err instanceof Error ? err.message : 'Confirm failed';
       return c.json({ error: message }, 422);
     }
+  });
+
+  router.post('/api/payments/invoices/:id/pay-saved-card', authMiddleware(deps.jwtPublicKey), async (c) => {
+    const payload = c.get('jwtPayload') as JwtPayload;
+    const invoiceId = c.req.param('id');
+    const result = await deps.paySavedCard.execute({ invoiceId, userId: payload.userId });
+    if ('error' in result) return c.json({ error: result.error }, 422);
+    return c.json(result);
+  });
+
+  router.get('/api/payments/profile', authMiddleware(deps.jwtPublicKey), async (c) => {
+    const payload = c.get('jwtPayload') as JwtPayload;
+    const profile = await deps.profileRepo.findByUserId(payload.userId);
+    const hasCard = profile?.stripePaymentMethodId != null;
+    if (!hasCard) {
+      return c.json({ hasCard: false });
+    }
+    const { last4, brand } = await deps.stripe.retrievePaymentMethod(profile!.stripePaymentMethodId!);
+    return c.json({ hasCard: true, last4, brand });
   });
 
   router.post('/api/payments/webhooks/stripe', async (c) => {

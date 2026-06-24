@@ -7,6 +7,7 @@ import { CreateCheckoutSessionUseCase } from '../application/create-checkout-ses
 import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
 import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
 import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.use-case';
+import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
 
 vi.mock('@carat-room/shared-auth', () => ({
   authMiddleware: vi.fn().mockReturnValue(
@@ -46,6 +47,9 @@ const mockCreateCheckout = { execute: vi.fn() } as unknown as CreateCheckoutSess
 const mockHandleWebhook = { execute: vi.fn() } as unknown as HandleWebhookUseCase;
 const mockCreateSetupIntent = { execute: vi.fn() } as unknown as CreateSetupIntentUseCase;
 const mockConfirmSetupIntent = { execute: vi.fn() } as unknown as ConfirmSetupIntentUseCase;
+const mockPaySavedCard = { execute: vi.fn() } as unknown as PaySavedCardUseCase;
+const mockProfileRepo = { findByUserId: vi.fn(), save: vi.fn() };
+const mockStripe = { retrievePaymentMethod: vi.fn() };
 
 let app: Hono;
 
@@ -57,6 +61,9 @@ beforeEach(() => {
     handleWebhook: mockHandleWebhook,
     createSetupIntent: mockCreateSetupIntent,
     confirmSetupIntent: mockConfirmSetupIntent,
+    paySavedCard: mockPaySavedCard,
+    profileRepo: mockProfileRepo as never,
+    stripe: mockStripe,
     jwtPublicKey: 'test-public-key',
   }));
 });
@@ -158,6 +165,68 @@ describe('POST /api/payments/setup-intent/confirm', () => {
     expect(res.status).toBe(422);
     const body = await res.json() as { error: string };
     expect(body.error).toBe('SetupIntent has not succeeded');
+  });
+});
+
+describe('POST /api/payments/invoices/:id/pay-saved-card', () => {
+  it('should_return200WithStatusPaid_when_cardCharged', async () => {
+    vi.mocked(mockPaySavedCard.execute).mockResolvedValue({ status: 'paid' });
+
+    const res = await app.request('/api/payments/invoices/inv-1/pay-saved-card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { status: string };
+    expect(body.status).toBe('paid');
+    expect(vi.mocked(mockPaySavedCard.execute)).toHaveBeenCalledWith({
+      invoiceId: 'inv-1',
+      userId: 'user-1',
+    });
+  });
+
+  it('should_return422WithError_when_noSavedPaymentMethod', async () => {
+    vi.mocked(mockPaySavedCard.execute).mockResolvedValue({ error: 'No saved payment method' });
+
+    const res = await app.request('/api/payments/invoices/inv-1/pay-saved-card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    expect(res.status).toBe(422);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('No saved payment method');
+  });
+});
+
+describe('GET /api/payments/profile', () => {
+  it('should_returnHasCardFalse_when_noSavedPaymentMethod', async () => {
+    mockProfileRepo.findByUserId.mockResolvedValue(null);
+
+    const res = await app.request('/api/payments/profile');
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { hasCard: boolean };
+    expect(body.hasCard).toBe(false);
+  });
+
+  it('should_returnHasCardTrueWithLast4AndBrand_when_savedPaymentMethodExists', async () => {
+    mockProfileRepo.findByUserId.mockResolvedValue({
+      userId: 'user-1',
+      stripeCustomerId: 'cus_abc',
+      stripePaymentMethodId: 'pm_xyz',
+    });
+    mockStripe.retrievePaymentMethod.mockResolvedValue({ last4: '4242', brand: 'visa' });
+
+    const res = await app.request('/api/payments/profile');
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { hasCard: boolean; last4: string; brand: string };
+    expect(body.hasCard).toBe(true);
+    expect(body.last4).toBe('4242');
+    expect(body.brand).toBe('visa');
+    expect(mockStripe.retrievePaymentMethod).toHaveBeenCalledWith('pm_xyz');
   });
 });
 

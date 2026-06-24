@@ -37,6 +37,11 @@ const mockRepo: InvoiceRepository = {
 const mockStripe: StripeClient = {
   createCheckoutSession: vi.fn(),
   constructWebhookEvent: vi.fn(),
+  createCustomer: vi.fn(),
+  createSetupIntent: vi.fn(),
+  retrieveSetupIntent: vi.fn(),
+  chargePaymentMethod: vi.fn(),
+  retrievePaymentMethod: vi.fn(),
 };
 
 const mockScheduler: ExpiryScheduler = {

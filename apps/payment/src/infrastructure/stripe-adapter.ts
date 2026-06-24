@@ -74,4 +74,30 @@ export class StripeAdapter implements StripeClient {
       paymentMethodId: typeof intent.payment_method === 'string' ? intent.payment_method : null,
     };
   }
+
+  async chargePaymentMethod(params: {
+    customerId: string;
+    paymentMethodId: string;
+    amount: number;
+    currency: string;
+    description: string;
+  }): Promise<{ status: string; paymentIntentId: string }> {
+    const intent = await this.stripe.paymentIntents.create({
+      amount: Math.round(params.amount * 100),
+      currency: params.currency.toLowerCase(),
+      customer: params.customerId,
+      payment_method: params.paymentMethodId,
+      description: params.description,
+      confirm: true,
+      off_session: true,
+    });
+    return { status: intent.status, paymentIntentId: intent.id };
+  }
+
+  async retrievePaymentMethod(paymentMethodId: string): Promise<{ last4: string; brand: string }> {
+    const pm = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+    const card = pm.card;
+    if (!card) throw new Error('Payment method has no card details');
+    return { last4: card.last4, brand: card.brand };
+  }
 }
