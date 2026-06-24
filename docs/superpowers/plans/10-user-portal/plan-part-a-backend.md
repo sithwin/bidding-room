@@ -1339,9 +1339,10 @@ pnpm turbo test --filter=payment
 Add to `payment-router.ts` deps type:
 ```typescript
 paySavedCard: PaySavedCardUseCase;
+profileRepo: PaymentProfileRepository;
 ```
 
-Add the route:
+Add the routes:
 ```typescript
 router.post('/invoices/:id/pay-saved-card', async (c) => {
   const payload = c.get('jwtPayload');
@@ -1349,6 +1350,12 @@ router.post('/invoices/:id/pay-saved-card', async (c) => {
   const result = await deps.paySavedCard.execute({ invoiceId, userId: payload.userId });
   if ('error' in result) return c.json(result, 422);
   return c.json(result);
+});
+
+router.get('/profile', async (c) => {
+  const payload = c.get('jwtPayload');
+  const profile = await deps.profileRepo.findByUserId(payload.userId);
+  return c.json({ stripePaymentMethodId: profile?.stripePaymentMethodId ?? null });
 });
 ```
 
@@ -1369,11 +1376,13 @@ const paySavedCard = new PaySavedCardUseCase(invoiceRepository, profileRepo, str
 // auth middleware:
 app.use('/api/payments/setup-intent*', authMiddleware(JWT_PUBLIC_KEY));
 app.use('/api/payments/invoices/:id/pay-saved-card', authMiddleware(JWT_PUBLIC_KEY));
+app.use('/api/payments/profile', authMiddleware(JWT_PUBLIC_KEY));
 
 // add to buildPaymentRouter deps:
 createSetupIntent,
 confirmSetupIntent,
 paySavedCard,
+profileRepo,
 ```
 
 The `publish` object in main.ts already has `paymentReceived` if it was built in the prior payment plan. If it doesn't, add to `payment-event-publisher.ts`:
@@ -2000,6 +2009,6 @@ git commit -m "feat(catalogue): add viewingDates to auctions + facets endpoint f
 - ✅ identityDocumentKey on user record — Tasks 1–3
 - ✅ `viewingDates` on auction — Task 9
 - ✅ `GET /api/lots/facets` — Task 9
-- ✅ `GET /api/payments/profile` — Task 21 (plan-part-b, wired in payment router)
+- ✅ `GET /api/payments/profile` — Task 7 (payment router GET /profile route)
 
 **Breaking change note:** `verifyPhone()` now sets `PHONE_VERIFIED` instead of `APPROVED_BIDDER`. Any existing test that asserts `APPROVED_BIDDER` after phone verification must be updated to `PHONE_VERIFIED`. The existing admin portal user-management routes that show/filter by status will still work — they pass status as a string.

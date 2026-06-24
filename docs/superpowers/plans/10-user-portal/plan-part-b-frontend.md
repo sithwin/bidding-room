@@ -4981,6 +4981,260 @@ git commit -m "feat(user-portal): browse filters (dept/status/auction/price slid
 
 ---
 
+---
+
+### Task 23: Remaining spec gaps — CountdownTimer live threshold, tablet filter drawer, drag-and-drop zones
+
+**Spec lines covered:**
+- "Time-to-close countdown (tabular numerals, ticking, turns red at ≤60 seconds)" — live room
+- "Tablet (768–1279px): lot grids reduce to 2-col; sidebar filters collapse to a drawer"
+- Sell page: "Photographs (drag-and-drop zone, up to 6 images, JPG/PNG/PDF)"
+- Register-to-Bid Step 2: "Government ID upload: drag-and-drop zone (JPG or PDF, max 10MB, 'encrypted at rest' notice)"
+
+**Files:**
+- Modify: `apps/user-portal/src/components/primitives/countdown-timer.tsx` — add `urgentAtMs` prop
+- Modify: `apps/user-portal/src/components/lot/lot-detail-client.tsx` — pass `urgentAtMs={60_000}` in live panel
+- Modify: `apps/user-portal/src/app/auctions/page.tsx` — sidebar `xl:block`, add tablet filter button + drawer
+- Create: `apps/user-portal/src/components/primitives/drop-zone.tsx` — reusable drag-and-drop file input
+- Modify: `apps/user-portal/src/app/sell/page.tsx` — replace file `<input>` with `<DropZone>`
+- Modify: `apps/user-portal/src/app/account/register-to-bid/page.tsx` — replace file `<input>` with `<DropZone>`
+
+- [ ] **Step 1: Add `urgentAtMs` prop to `CountdownTimer`**
+
+In `apps/user-portal/src/components/primitives/countdown-timer.tsx`, change:
+```typescript
+export function CountdownTimer({ endAt }: { endAt: string | Date }) {
+```
+to:
+```typescript
+export function CountdownTimer({ endAt, urgentAtMs = 3 * 60 * 1000 }: { endAt: string | Date; urgentAtMs?: number }) {
+```
+
+Change the `isUrgent` line:
+```typescript
+const isUrgent = remaining <= urgentAtMs;
+```
+
+- [ ] **Step 2: Pass `urgentAtMs={60_000}` in the live room countdown**
+
+In `apps/user-portal/src/components/lot/lot-detail-client.tsx`, locate the `CountdownTimer` inside the live-state panel (the one inside the left panel with the "Lot XXX · Now Selling" overlay). Change:
+```typescript
+<CountdownTimer endAt={lot.endAt} />
+```
+to:
+```typescript
+<CountdownTimer endAt={lot.endAt} urgentAtMs={60_000} />
+```
+
+Only the live-state panel's countdown gets this override — the standard-state bid panel's `<CountdownTimer endAt={lot.endAt} />` keeps the default 3-minute threshold.
+
+- [ ] **Step 3: Fix Browse sidebar tablet behaviour**
+
+In `apps/user-portal/src/app/auctions/page.tsx`, change the sidebar `<aside>` class from `hidden md:block` to `hidden xl:block` so it only shows on desktop (≥1280px).
+
+Add a tablet-only filter drawer. First add state at the top of the client component:
+```typescript
+const [filtersOpen, setFiltersOpen] = useState(false);
+```
+
+Add a "Filters" button visible only on tablet (between the `<Header />` and the results area):
+```typescript
+{/* Tablet filter toggle — visible md to xl only */}
+<div className='hidden md:flex xl:hidden justify-end mb-4'>
+  <button onClick={() => setFiltersOpen(true)}
+    className='font-sans text-sm font-medium border border-[var(--line)] px-4 py-2 flex items-center gap-2'>
+    <svg width='16' height='16' fill='none' stroke='currentColor' strokeWidth='1.5' viewBox='0 0 24 24'>
+      <path strokeLinecap='round' strokeLinejoin='round' d='M3 6h18M6 12h12M9 18h6' />
+    </svg>
+    Filters
+  </button>
+</div>
+```
+
+Add the tablet filter drawer (same filter content as the sidebar, rendered in a fixed overlay on tablet):
+```typescript
+{filtersOpen && (
+  <div className='fixed inset-0 z-50 xl:hidden' onClick={() => setFiltersOpen(false)}>
+    <div className='absolute inset-y-0 left-0 w-72 bg-paper shadow-xl p-6 overflow-y-auto' onClick={e => e.stopPropagation()}>
+      <div className='flex items-center justify-between mb-6'>
+        <h2 className='font-sans text-sm font-semibold uppercase tracking-widest text-mut'>Filters</h2>
+        <button onClick={() => setFiltersOpen(false)} className='font-sans text-xl text-mut hover:text-ink'>×</button>
+      </div>
+      {/* Paste exact same filter content as the desktop sidebar here */}
+      {/* Department checkboxes */}
+      {facets?.departments.map(dept => (
+        <label key={dept.name} className='flex items-center gap-2 font-sans text-sm text-ink mb-2 cursor-pointer'>
+          <input type='checkbox' checked={departments.includes(dept.name)}
+            onChange={() => toggle('departments', dept.name)}
+            className='accent-ink' />
+          {dept.name}
+          <span className='text-mut ml-auto'>({dept.count})</span>
+        </label>
+      ))}
+      {/* Status checkboxes */}
+      <div className='mt-6'>
+        <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Status</h3>
+        {(['open','endingToday','noReserve'] as const).map(s => (
+          <label key={s} className='flex items-center gap-2 font-sans text-sm text-ink mb-2 cursor-pointer'>
+            <input type='checkbox' checked={statuses.includes(s)} onChange={() => toggle('statuses', s)} className='accent-ink' />
+            {s === 'open' ? 'Open for bidding' : s === 'endingToday' ? 'Ending today' : 'No reserve'}
+          </label>
+        ))}
+      </div>
+      {/* Auction checkboxes */}
+      <div className='mt-6'>
+        <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Auction</h3>
+        {facets?.auctions.map(a => (
+          <label key={a.id} className='flex items-center gap-2 font-sans text-sm text-ink mb-2 cursor-pointer'>
+            <input type='checkbox' checked={auctionIds.includes(a.id)} onChange={() => toggle('auctionIds', a.id)} className='accent-ink' />
+            {a.title}
+          </label>
+        ))}
+      </div>
+      {/* Price range */}
+      <div className='mt-6'>
+        <h3 className='font-sans text-xs font-semibold uppercase tracking-widest text-mut mb-3'>Price range</h3>
+        <Slider value={priceRange} min={0} max={100000} step={500}
+          onValueChange={(v) => { setPriceRange(v as [number, number]); updateUrl({ priceMin: String(v[0]), priceMax: String(v[1]) }); }}
+          className='mb-3' />
+        <div className='flex gap-2'>
+          <input type='number' value={priceRange[0]} onChange={e => setPriceRange([+e.target.value, priceRange[1]])}
+            className='w-full border border-[var(--line)] px-2 py-1 font-sans text-sm' placeholder='Min' />
+          <input type='number' value={priceRange[1]} onChange={e => setPriceRange([priceRange[0], +e.target.value])}
+            className='w-full border border-[var(--line)] px-2 py-1 font-sans text-sm' placeholder='Max' />
+        </div>
+      </div>
+      <button onClick={() => setFiltersOpen(false)}
+        className='mt-6 w-full bg-ink text-paper font-sans text-sm font-medium py-3 hover:bg-ink/90'>
+        Apply
+      </button>
+    </div>
+  </div>
+)}
+```
+
+- [ ] **Step 4: Create reusable `DropZone` component**
+
+Create `apps/user-portal/src/components/primitives/drop-zone.tsx`:
+
+```typescript
+'use client';
+import { useRef, useState } from 'react';
+
+interface DropZoneProps {
+  accept: string;
+  multiple?: boolean;
+  disabled?: boolean;
+  onFiles: (files: File[]) => void;
+  hint?: string;
+}
+
+export function DropZone({ accept, multiple = false, disabled = false, onFiles, hint }: DropZoneProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    if (disabled) return;
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length) onFiles(files);
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length) onFiles(files);
+    e.target.value = '';
+  }
+
+  return (
+    <div
+      onDragOver={e => { e.preventDefault(); if (!disabled) setIsDragging(true); }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+      onClick={() => !disabled && inputRef.current?.click()}
+      className={`border-2 border-dashed rounded-none px-6 py-8 text-center cursor-pointer transition-colors
+        ${isDragging ? 'border-ink bg-cream' : 'border-[var(--line)] bg-paper hover:border-ink/40'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      <input ref={inputRef} type='file' accept={accept} multiple={multiple} disabled={disabled}
+        onChange={handleChange} className='sr-only' />
+      <svg className='mx-auto mb-3 text-mut' width='24' height='24' fill='none' stroke='currentColor' strokeWidth='1.5' viewBox='0 0 24 24'>
+        <path strokeLinecap='round' strokeLinejoin='round' d='M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5' />
+      </svg>
+      <p className='font-sans text-sm text-mut'>
+        {isDragging ? 'Drop to upload' : 'Drag & drop or click to browse'}
+      </p>
+      {hint && <p className='font-sans text-xs text-mut mt-1'>{hint}</p>}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 5: Use `DropZone` in sell page**
+
+In `apps/user-portal/src/app/sell/page.tsx`, import `DropZone`:
+```typescript
+import { DropZone } from '@/components/primitives/drop-zone';
+```
+
+Replace:
+```typescript
+<input type='file' accept='image/jpeg,image/png,application/pdf' multiple disabled={photoKeys.length >= 6}
+  onChange={e => Array.from(e.target.files ?? []).forEach(uploadPhoto)}
+  className='block w-full font-sans text-sm text-mut file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-ink file:text-paper hover:file:bg-ink/90' />
+{uploadError && <p className='font-sans text-xs text-red-600 mt-1'>{uploadError}</p>}
+{photoKeys.length > 0 && <p className='font-sans text-xs text-mut mt-1'>{photoKeys.length} photo(s) uploaded</p>}
+```
+with:
+```typescript
+<DropZone
+  accept='image/jpeg,image/png,application/pdf'
+  multiple
+  disabled={photoKeys.length >= 6}
+  onFiles={files => files.forEach(uploadPhoto)}
+  hint={`JPG, PNG or PDF · up to 6 images · ${photoKeys.length}/6 uploaded`}
+/>
+{uploadError && <p className='font-sans text-xs text-red-600 mt-1'>{uploadError}</p>}
+```
+
+- [ ] **Step 6: Use `DropZone` in register-to-bid Step 2**
+
+In `apps/user-portal/src/app/account/register-to-bid/page.tsx`, import `DropZone`:
+```typescript
+import { DropZone } from '@/components/primitives/drop-zone';
+```
+
+In `Step2Identity`, replace:
+```typescript
+<input type='file' accept='image/jpeg,image/png,application/pdf' onChange={e => setFile(e.target.files?.[0] ?? null)}
+  className='block w-full font-sans text-sm text-mut file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-ink file:text-paper file:font-sans file:text-sm hover:file:bg-ink/90' />
+<p className='font-sans text-xs text-mut mt-1'>JPG, PNG or PDF · max 10 MB · encrypted at rest</p>
+```
+with:
+```typescript
+<DropZone
+  accept='image/jpeg,application/pdf'
+  onFiles={files => setFile(files[0] ?? null)}
+  hint='JPG or PDF · max 10 MB · encrypted at rest'
+/>
+{file && <p className='font-sans text-xs text-mut mt-1'>Selected: {file.name}</p>}
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add apps/user-portal/src/components/primitives/countdown-timer.tsx \
+        apps/user-portal/src/components/lot/lot-detail-client.tsx \
+        apps/user-portal/src/app/auctions/page.tsx \
+        apps/user-portal/src/components/primitives/drop-zone.tsx \
+        apps/user-portal/src/app/sell/page.tsx \
+        apps/user-portal/src/app/account/register-to-bid/page.tsx
+git commit -m "feat(user-portal): live countdown 60s threshold, tablet filter drawer, drag-and-drop zones"
+```
+
+---
+
 ## Final Spec Coverage — All Items Covered
 
 | Spec requirement | Task |
@@ -4991,4 +5245,8 @@ git commit -m "feat(user-portal): browse filters (dept/status/auction/price slid
 | Browse: Auction multi-select checkboxes | Task 22 |
 | Sale Catalogue: viewing dates in hero | Task 22 (requires Plan A Task 9) |
 | Mobile: header hamburger + nav drawer | Task 22 |
+| Live room countdown turns red at ≤60 seconds | Task 23 |
+| Tablet (768–1279px): Browse sidebar collapses to drawer | Task 23 |
+| Sell page: drag-and-drop zone (up to 6 photos) | Task 23 |
+| Register-to-Bid Step 2: drag-and-drop zone for Gov ID | Task 23 |
 
