@@ -65,4 +65,13 @@ export class StripeAdapter implements StripeClient {
     if (!intent.client_secret) throw new Error('Stripe did not return a client_secret');
     return { clientSecret: intent.client_secret };
   }
+
+  async retrieveSetupIntent(setupIntentId: string): Promise<{ status: string; customerId: string; paymentMethodId: string | null }> {
+    const intent = await this.stripe.setupIntents.retrieve(setupIntentId);
+    return {
+      status: intent.status ?? 'unknown',
+      customerId: typeof intent.customer === 'string' ? intent.customer : intent.customer?.id ?? '',
+      paymentMethodId: typeof intent.payment_method === 'string' ? intent.payment_method : null,
+    };
+  }
 }

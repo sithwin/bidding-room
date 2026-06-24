@@ -14,6 +14,7 @@ import { HandleWebhookUseCase } from './application/handle-webhook-use-case';
 import { CreateInvoiceUseCase } from './application/create-invoice-use-case';
 import { ExpireInvoiceUseCase } from './application/expire-invoice-use-case';
 import { CreateSetupIntentUseCase } from './application/create-setup-intent.use-case';
+import { ConfirmSetupIntentUseCase } from './application/confirm-setup-intent.use-case';
 import { PostgresPaymentProfileRepository } from './infrastructure/postgres-payment-profile-repository';
 import { buildPaymentRouter } from './presentation/payment-router';
 
@@ -66,6 +67,9 @@ async function main(): Promise<void> {
   const createSetupIntentUseCase = new CreateSetupIntentUseCase(
     paymentProfileRepository, stripeAdapter,
   );
+  const confirmSetupIntentUseCase = new ConfirmSetupIntentUseCase(
+    paymentProfileRepository, stripeAdapter,
+  );
 
   const eventSubscriber = new EventSubscriber(amqp);
   await startAuctionClosedConsumer(eventSubscriber, createInvoiceUseCase);
@@ -86,6 +90,7 @@ async function main(): Promise<void> {
     createCheckoutSession: createCheckoutSessionUseCase,
     handleWebhook: handleWebhookUseCase,
     createSetupIntent: createSetupIntentUseCase,
+    confirmSetupIntent: confirmSetupIntentUseCase,
     jwtPublicKey: JWT_PUBLIC_KEY,
   }));
 

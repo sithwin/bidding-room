@@ -6,6 +6,7 @@ import { GetInvoiceUseCase } from '../application/get-invoice-use-case';
 import { CreateCheckoutSessionUseCase } from '../application/create-checkout-session-use-case';
 import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
 import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
+import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.use-case';
 
 vi.mock('@carat-room/shared-auth', () => ({
   authMiddleware: vi.fn().mockReturnValue(
@@ -44,6 +45,7 @@ const mockGetInvoice = { execute: vi.fn() } as unknown as GetInvoiceUseCase;
 const mockCreateCheckout = { execute: vi.fn() } as unknown as CreateCheckoutSessionUseCase;
 const mockHandleWebhook = { execute: vi.fn() } as unknown as HandleWebhookUseCase;
 const mockCreateSetupIntent = { execute: vi.fn() } as unknown as CreateSetupIntentUseCase;
+const mockConfirmSetupIntent = { execute: vi.fn() } as unknown as ConfirmSetupIntentUseCase;
 
 let app: Hono;
 
@@ -54,6 +56,7 @@ beforeEach(() => {
     createCheckoutSession: mockCreateCheckout,
     handleWebhook: mockHandleWebhook,
     createSetupIntent: mockCreateSetupIntent,
+    confirmSetupIntent: mockConfirmSetupIntent,
     jwtPublicKey: 'test-public-key',
   }));
 });
@@ -121,6 +124,40 @@ describe('POST /api/payments/setup-intent', () => {
       userId: 'user-1',
       email: 'test@example.com',
     });
+  });
+});
+
+describe('POST /api/payments/setup-intent/confirm', () => {
+  it('should_return200WithOk_when_setupIntentSucceeded', async () => {
+    vi.mocked(mockConfirmSetupIntent.execute).mockResolvedValue({ ok: true });
+
+    const res = await app.request('/api/payments/setup-intent/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ setupIntentId: 'seti_1' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { ok: boolean };
+    expect(body.ok).toBe(true);
+    expect(vi.mocked(mockConfirmSetupIntent.execute)).toHaveBeenCalledWith({
+      userId: 'user-1',
+      setupIntentId: 'seti_1',
+    });
+  });
+
+  it('should_return422_when_setupIntentHasNotSucceeded', async () => {
+    vi.mocked(mockConfirmSetupIntent.execute).mockRejectedValue(new Error('SetupIntent has not succeeded'));
+
+    const res = await app.request('/api/payments/setup-intent/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ setupIntentId: 'seti_1' }),
+    });
+
+    expect(res.status).toBe(422);
+    const body = await res.json() as { error: string };
+    expect(body.error).toBe('SetupIntent has not succeeded');
   });
 });
 

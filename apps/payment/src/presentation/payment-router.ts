@@ -5,12 +5,14 @@ import { GetInvoiceUseCase } from '../application/get-invoice-use-case';
 import { CreateCheckoutSessionUseCase } from '../application/create-checkout-session-use-case';
 import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
 import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
+import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.use-case';
 
 interface RouterDeps {
   getInvoice: Pick<GetInvoiceUseCase, 'execute'>;
   createCheckoutSession: Pick<CreateCheckoutSessionUseCase, 'execute'>;
   handleWebhook: Pick<HandleWebhookUseCase, 'execute'>;
   createSetupIntent: Pick<CreateSetupIntentUseCase, 'execute'>;
+  confirmSetupIntent: Pick<ConfirmSetupIntentUseCase, 'execute'>;
   jwtPublicKey: string;
 }
 
@@ -50,6 +52,18 @@ export function buildPaymentRouter(deps: RouterDeps): Hono {
       email: payload.email,
     });
     return c.json(result);
+  });
+
+  router.post('/api/payments/setup-intent/confirm', authMiddleware(deps.jwtPublicKey), async (c) => {
+    const payload = c.get('jwtPayload') as JwtPayload;
+    const { setupIntentId } = await c.req.json<{ setupIntentId: string }>();
+    try {
+      const result = await deps.confirmSetupIntent.execute({ userId: payload.userId, setupIntentId });
+      return c.json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Confirm failed';
+      return c.json({ error: message }, 422);
+    }
   });
 
   router.post('/api/payments/webhooks/stripe', async (c) => {
