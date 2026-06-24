@@ -5,6 +5,7 @@ import { Invoice, InvoiceStatus } from '../domain/invoice';
 import { GetInvoiceUseCase } from '../application/get-invoice-use-case';
 import { CreateCheckoutSessionUseCase } from '../application/create-checkout-session-use-case';
 import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
+import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
 
 vi.mock('@carat-room/shared-auth', () => ({
   authMiddleware: vi.fn().mockReturnValue(
@@ -42,6 +43,7 @@ function buildInvoice(): Invoice {
 const mockGetInvoice = { execute: vi.fn() } as unknown as GetInvoiceUseCase;
 const mockCreateCheckout = { execute: vi.fn() } as unknown as CreateCheckoutSessionUseCase;
 const mockHandleWebhook = { execute: vi.fn() } as unknown as HandleWebhookUseCase;
+const mockCreateSetupIntent = { execute: vi.fn() } as unknown as CreateSetupIntentUseCase;
 
 let app: Hono;
 
@@ -51,6 +53,7 @@ beforeEach(() => {
     getInvoice: mockGetInvoice,
     createCheckoutSession: mockCreateCheckout,
     handleWebhook: mockHandleWebhook,
+    createSetupIntent: mockCreateSetupIntent,
     jwtPublicKey: 'test-public-key',
   }));
 });
@@ -102,6 +105,22 @@ describe('POST /api/payments/invoices/:id/checkout', () => {
     });
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/payments/setup-intent', () => {
+  it('should_return200WithClientSecret_when_authenticated', async () => {
+    vi.mocked(mockCreateSetupIntent.execute).mockResolvedValue({ clientSecret: 'seti_test_secret' });
+
+    const res = await app.request('/api/payments/setup-intent', { method: 'POST' });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { clientSecret: string };
+    expect(body.clientSecret).toBe('seti_test_secret');
+    expect(vi.mocked(mockCreateSetupIntent.execute)).toHaveBeenCalledWith({
+      userId: 'user-1',
+      email: 'test@example.com',
+    });
   });
 });
 

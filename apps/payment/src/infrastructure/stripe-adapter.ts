@@ -48,4 +48,21 @@ export class StripeAdapter implements StripeClient {
       data: { object: event.data.object as Record<string, unknown> },
     };
   }
+
+  async createCustomer(userId: string, email: string): Promise<{ customerId: string }> {
+    const customer = await this.stripe.customers.create({
+      email,
+      metadata: { userId },
+    });
+    return { customerId: customer.id };
+  }
+
+  async createSetupIntent(customerId: string): Promise<{ clientSecret: string }> {
+    const intent = await this.stripe.setupIntents.create({
+      customer: customerId,
+      payment_method_types: ['card'],
+    });
+    if (!intent.client_secret) throw new Error('Stripe did not return a client_secret');
+    return { clientSecret: intent.client_secret };
+  }
 }

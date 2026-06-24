@@ -19,4 +19,6 @@ export interface StripeClient {
     cancelUrl: string;
   }): Promise<CheckoutSession>;
   constructWebhookEvent(payload: Buffer, signature: string): WebhookEvent;
+  createCustomer(userId: string, email: string): Promise<{ customerId: string }>;
+  createSetupIntent(customerId: string): Promise<{ clientSecret: string }>;
 }

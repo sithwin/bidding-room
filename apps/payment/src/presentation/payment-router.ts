@@ -4,11 +4,13 @@ import type { JwtPayload } from '@carat-room/shared-auth';
 import { GetInvoiceUseCase } from '../application/get-invoice-use-case';
 import { CreateCheckoutSessionUseCase } from '../application/create-checkout-session-use-case';
 import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
+import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
 
 interface RouterDeps {
   getInvoice: Pick<GetInvoiceUseCase, 'execute'>;
   createCheckoutSession: Pick<CreateCheckoutSessionUseCase, 'execute'>;
   handleWebhook: Pick<HandleWebhookUseCase, 'execute'>;
+  createSetupIntent: Pick<CreateSetupIntentUseCase, 'execute'>;
   jwtPublicKey: string;
 }
 
@@ -39,6 +41,15 @@ export function buildPaymentRouter(deps: RouterDeps): Hono {
       return c.json({ error: { code: 'NOT_FOUND', message: 'Invoice not found or not payable' } }, 404);
     }
     return c.json({ data: result });
+  });
+
+  router.post('/api/payments/setup-intent', authMiddleware(deps.jwtPublicKey), async (c) => {
+    const payload = c.get('jwtPayload') as JwtPayload;
+    const result = await deps.createSetupIntent.execute({
+      userId: payload.userId,
+      email: payload.email,
+    });
+    return c.json(result);
   });
 
   router.post('/api/payments/webhooks/stripe', async (c) => {

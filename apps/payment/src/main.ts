@@ -13,6 +13,8 @@ import { CreateCheckoutSessionUseCase } from './application/create-checkout-sess
 import { HandleWebhookUseCase } from './application/handle-webhook-use-case';
 import { CreateInvoiceUseCase } from './application/create-invoice-use-case';
 import { ExpireInvoiceUseCase } from './application/expire-invoice-use-case';
+import { CreateSetupIntentUseCase } from './application/create-setup-intent.use-case';
+import { PostgresPaymentProfileRepository } from './infrastructure/postgres-payment-profile-repository';
 import { buildPaymentRouter } from './presentation/payment-router';
 
 const PORT = Number(process.env['PORT'] ?? 3004);
@@ -41,6 +43,7 @@ async function main(): Promise<void> {
   `);
 
   const invoiceRepository = new PostgresInvoiceRepository(db);
+  const paymentProfileRepository = new PostgresPaymentProfileRepository(db);
   const stripeAdapter = new StripeAdapter(STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET);
   const redis = { host: REDIS_HOST, port: REDIS_PORT };
   const expiryScheduler = new BullMQExpiryScheduler(redis);
@@ -59,6 +62,9 @@ async function main(): Promise<void> {
   );
   const handleWebhookUseCase = new HandleWebhookUseCase(
     invoiceRepository, stripeAdapter, publish, expiryScheduler,
+  );
+  const createSetupIntentUseCase = new CreateSetupIntentUseCase(
+    paymentProfileRepository, stripeAdapter,
   );
 
   const eventSubscriber = new EventSubscriber(amqp);
@@ -79,6 +85,7 @@ async function main(): Promise<void> {
     getInvoice: getInvoiceUseCase,
     createCheckoutSession: createCheckoutSessionUseCase,
     handleWebhook: handleWebhookUseCase,
+    createSetupIntent: createSetupIntentUseCase,
     jwtPublicKey: JWT_PUBLIC_KEY,
   }));
 
