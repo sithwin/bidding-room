@@ -47,14 +47,14 @@ describe('User', () => {
   });
 
   describe('verifyPhone', () => {
-    it('should_setStatusToApprovedBidder_when_emailVerifiedAndPhoneSet', () => {
+    it('should_setStatusToPhoneVerified_when_emailVerifiedAndPhoneSet', () => {
       const user = makeUser();
       user.verifyEmail();
       user.requestPhoneVerification('+61412345678');
 
       user.verifyPhone();
 
-      expect(user.status).toBe(UserStatus.APPROVED_BIDDER);
+      expect(user.status).toBe(UserStatus.PHONE_VERIFIED);
     });
 
     it('should_throwError_when_phoneNotSet', () => {

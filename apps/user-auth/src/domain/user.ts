@@ -1,6 +1,8 @@
 export enum UserStatus {
   REGISTERED = 'REGISTERED',
   EMAIL_VERIFIED = 'EMAIL_VERIFIED',
+  PHONE_VERIFIED = 'PHONE_VERIFIED',
+  PENDING_REVIEW = 'PENDING_REVIEW',
   APPROVED_BIDDER = 'APPROVED_BIDDER',
   SUSPENDED = 'SUSPENDED',
 }
@@ -18,6 +20,7 @@ export interface UserProps {
   status: UserStatus;
   role: UserRole;
   country: string | null;
+  identityDocumentKey: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +47,7 @@ export class User {
       status: UserStatus.REGISTERED,
       role: params.role,
       country: params.country ?? null,
+      identityDocumentKey: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -60,6 +64,7 @@ export class User {
   get status(): UserStatus { return this.props.status; }
   get role(): UserRole { return this.props.role; }
   get country(): string | null { return this.props.country; }
+  get identityDocumentKey(): string | null { return this.props.identityDocumentKey; }
   get createdAt(): Date { return this.props.createdAt; }
   get updatedAt(): Date { return this.props.updatedAt; }
 
@@ -83,6 +88,20 @@ export class User {
     if (!this.props.phone) {
       throw new Error('Phone not set');
     }
+    this.props.status = UserStatus.PHONE_VERIFIED;
+    this.props.updatedAt = new Date();
+  }
+
+  submitIdentityDocument(key: string): void {
+    if (this.props.status === UserStatus.REGISTERED) {
+      throw new Error('Email must be verified before submitting identity');
+    }
+    this.props.identityDocumentKey = key;
+    this.props.status = UserStatus.PENDING_REVIEW;
+    this.props.updatedAt = new Date();
+  }
+
+  approve(): void {
     this.props.status = UserStatus.APPROVED_BIDDER;
     this.props.updatedAt = new Date();
   }

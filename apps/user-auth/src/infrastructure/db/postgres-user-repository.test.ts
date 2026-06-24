@@ -23,6 +23,7 @@ describe('PostgresUserRepository', () => {
         status TEXT NOT NULL DEFAULT 'REGISTERED',
         role TEXT NOT NULL DEFAULT 'BUYER',
         country TEXT,
+        identity_document_key TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
