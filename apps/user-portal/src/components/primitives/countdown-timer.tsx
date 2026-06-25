@@ -11,7 +11,7 @@ function formatMs(ms: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export function CountdownTimer({ endAt }: { endAt: string | Date }) {
+export function CountdownTimer({ endAt, urgentAtMs = 3 * 60 * 1000 }: { endAt: string | Date; urgentAtMs?: number }) {
   const end = new Date(endAt).getTime();
   const [remaining, setRemaining] = useState(() => end - Date.now());
 
@@ -20,7 +20,7 @@ export function CountdownTimer({ endAt }: { endAt: string | Date }) {
     return () => clearInterval(interval);
   }, [end]);
 
-  const isUrgent = remaining <= 3 * 60 * 1000;
+  const isUrgent = remaining <= urgentAtMs;
 
   return (
     <span className={`font-sans tabular-nums text-sm font-medium ${isUrgent ? 'text-red-600' : 'text-ink'}`}>

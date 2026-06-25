@@ -183,7 +183,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
 
             <div className='text-center'>
               <p className='font-sans text-xs text-[var(--mut)] mb-1'>Time remaining</p>
-              <CountdownTimer endAt={lot.endAt} />
+              <CountdownTimer endAt={lot.endAt} urgentAtMs={60_000} />
             </div>
 
             {/* Bid activity feed */}

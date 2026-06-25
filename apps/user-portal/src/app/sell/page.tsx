@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Header } from '@/components/layout/header';
+import { DropZone } from '@/components/primitives/drop-zone';
 
 const schema = z.object({
   category:    z.string().min(1, 'Select a category'),
@@ -89,11 +90,14 @@ export default function SellPage() {
 
               <div>
                 <label className='block font-sans text-sm font-medium text-ink mb-1'>Photographs (up to 6)</label>
-                <input type='file' accept='image/jpeg,image/png,application/pdf' multiple disabled={photoKeys.length >= 6}
-                  onChange={e => Array.from(e.target.files ?? []).forEach(uploadPhoto)}
-                  className='block w-full font-sans text-sm text-mut file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-ink file:text-paper hover:file:bg-ink/90' />
+                <DropZone
+                  accept='image/jpeg,image/png,application/pdf'
+                  multiple
+                  disabled={photoKeys.length >= 6}
+                  onFiles={files => files.forEach(uploadPhoto)}
+                  hint={`JPG, PNG or PDF · up to 6 images · ${photoKeys.length}/6 uploaded`}
+                />
                 {uploadError && <p className='font-sans text-xs text-red-600 mt-1'>{uploadError}</p>}
-                {photoKeys.length > 0 && <p className='font-sans text-xs text-mut mt-1'>{photoKeys.length} photo(s) uploaded</p>}
               </div>
 
               <div className='grid grid-cols-2 gap-4'>

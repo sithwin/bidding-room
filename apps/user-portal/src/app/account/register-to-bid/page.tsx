@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getStripe } from '@/lib/stripe';
+import { DropZone } from '@/components/primitives/drop-zone';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import useSWR from 'swr';
 
@@ -81,9 +82,12 @@ function Step2Identity({ onDone }: { onDone: () => void }) {
       <div className='space-y-4'>
         <div>
           <label className='block font-sans text-sm font-medium text-ink mb-1'>Government ID</label>
-          <input type='file' accept='image/jpeg,image/png,application/pdf' onChange={e => setFile(e.target.files?.[0] ?? null)}
-            className='block w-full font-sans text-sm text-mut file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-ink file:text-paper file:font-sans file:text-sm hover:file:bg-ink/90' />
-          <p className='font-sans text-xs text-mut mt-1'>JPG, PNG or PDF · max 10 MB · encrypted at rest</p>
+          <DropZone
+            accept='image/jpeg,application/pdf'
+            onFiles={files => setFile(files[0] ?? null)}
+            hint='JPG or PDF · max 10 MB · encrypted at rest'
+          />
+          {file && <p className='font-sans text-xs text-mut mt-1'>Selected: {file.name}</p>}
         </div>
       </div>
       {error && <p className='font-sans text-xs text-red-600'>{error}</p>}
