@@ -11,6 +11,16 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('@/lib/auth-context', () => ({
+  useAuth: vi.fn(() => ({
+    user: { userId: '1', email: 'test@example.com', verificationStatus: 'VERIFIED', role: 'USER' },
+    accessToken: null,
+    login: vi.fn(),
+    logout: vi.fn(),
+    setAccessToken: vi.fn(),
+  })),
+}));
+
 import { AccountShell } from './account-shell';
 
 describe('AccountShell', () => {
@@ -26,6 +36,7 @@ describe('AccountShell', () => {
     expect(screen.getByRole('link', { name: 'Watchlist' })).toHaveAttribute('href', '/account/watchlist');
     expect(screen.getByRole('link', { name: 'Won Lots' })).toHaveAttribute('href', '/account/won');
     expect(screen.getByRole('link', { name: 'Invoices & Payments' })).toHaveAttribute('href', '/account/invoices');
+    expect(screen.getByRole('link', { name: 'Profile & Paddle' })).toHaveAttribute('href', '/account/profile');
   });
 
   it('applies active styles to the current pathname', () => {
@@ -40,5 +51,25 @@ describe('AccountShell', () => {
     const inactiveLink = screen.getByRole('link', { name: 'Overview' });
     expect(inactiveLink.className).toContain('text-mut');
     expect(inactiveLink.className).not.toContain('bg-ink');
+  });
+
+  it('renders the user avatar initial', () => {
+    render(<AccountShell><span /></AccountShell>);
+    expect(screen.getByText('T')).toBeInTheDocument(); // first letter of test@example.com
+  });
+
+  it('renders the user email', () => {
+    render(<AccountShell><span /></AccountShell>);
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+  });
+
+  it('renders collectorSince when provided', () => {
+    render(<AccountShell collectorSince='2024'><span /></AccountShell>);
+    expect(screen.getByText('Collector since 2024')).toBeInTheDocument();
+  });
+
+  it('does not render collectorSince paragraph when not provided', () => {
+    render(<AccountShell><span /></AccountShell>);
+    expect(screen.queryByText(/Collector since/)).toBeNull();
   });
 });
