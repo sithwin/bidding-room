@@ -14,6 +14,7 @@ interface AuthState {
   login: (token: string, user: AuthUser) => void;
   logout: () => void;
   setAccessToken: (token: string) => void;
+  refreshAccessToken: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);
@@ -37,8 +38,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessTokenState(token);
   }, []);
 
+  const refreshAccessToken = useCallback(async () => {
+    const res = await fetch('/api/auth/refresh', { method: 'GET' });
+    if (!res.ok) return;
+    const data = (await res.json()) as { accessToken: string; user: AuthUser };
+    setAccessTokenState(data.accessToken);
+    setUser(data.user);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, accessToken, login, logout, setAccessToken }}>
+    <AuthContext.Provider value={{ user, accessToken, login, logout, setAccessToken, refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );

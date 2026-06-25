@@ -4,16 +4,21 @@ import { AuthProvider, useAuth } from './auth-context';
 
 /* Silence the logout DELETE fetch in unit tests */
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ accessToken: 'new-tok', user: { userId: 'u1', email: 'a@b.com', verificationStatus: 'PHONE_VERIFIED', role: 'BUYER' } }),
+  }));
 });
 
 function TestConsumer() {
-  const { user, login, logout } = useAuth();
+  const { user, login, logout, refreshAccessToken } = useAuth();
   return (
     <div>
       <span data-testid='user'>{user ? user.email : 'none'}</span>
+      <span data-testid='status'>{user ? user.verificationStatus : 'none'}</span>
       <button onClick={() => login('tok123', { userId: 'u1', email: 'a@b.com', verificationStatus: 'APPROVED_BIDDER', role: 'BUYER' })}>login</button>
       <button onClick={logout}>logout</button>
+      <button onClick={() => void refreshAccessToken()}>refresh</button>
     </div>
   );
 }
@@ -35,6 +40,14 @@ describe('AuthContext', () => {
     await act(async () => { screen.getByText('login').click(); });
     await act(async () => { screen.getByText('logout').click(); });
     expect(screen.getByTestId('user')).toHaveTextContent('none');
+  });
+
+  it('updates user and token after refreshAccessToken', async () => {
+    render(<AuthProvider><TestConsumer /></AuthProvider>);
+    await act(async () => { screen.getByText('login').click(); });
+    expect(screen.getByTestId('status')).toHaveTextContent('APPROVED_BIDDER');
+    await act(async () => { screen.getByText('refresh').click(); });
+    expect(screen.getByTestId('status')).toHaveTextContent('PHONE_VERIFIED');
   });
 
   it('throws when useAuth is called outside AuthProvider', () => {

@@ -23,7 +23,7 @@ type Lot = {
 };
 
 export function LotDetailClient({ lot: initial }: { lot: Lot }) {
-  const { user, accessToken } = useAuth();
+  const { user, accessToken, refreshAccessToken } = useAuth();
   const api = createApi(() => accessToken);
 
   const [lot, setLot] = useState(initial);
@@ -50,7 +50,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
       setLot(prev => ({ ...prev, currentBid: lastEvent.currentBid, bidCount: lastEvent.bidCount }));
       const isYou = !!user && lastEvent.bidderId === user.userId;
       setIsLeading(isYou);
-      if (user) setHasParticipated(true);
+      if (isYou) setHasParticipated(true);
       setBidActivity(prev => [
         { paddle: isYou ? 'You' : `Paddle ${lastEvent.bidderId.slice(-4)}`, amount: lastEvent.currentBid, isYou },
         ...prev.slice(0, 19),
@@ -355,7 +355,13 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
           <div className='bg-paper p-8 max-w-sm w-full mx-4'>
             <h2 className='font-serif text-xl font-semibold text-ink mb-4'>Verify your phone first</h2>
             <PhoneOtpInline
-              onVerified={() => { setShowPhoneModal(false); void placeBid(); }}
+              onVerified={() => {
+                  setShowPhoneModal(false);
+                  void (async () => {
+                    await refreshAccessToken();
+                    void placeBid();
+                  })();
+                }}
               onClose={() => setShowPhoneModal(false)}
             />
           </div>
