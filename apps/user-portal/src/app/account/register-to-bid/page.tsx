@@ -26,15 +26,25 @@ function ProgressBar({ step }: { step: number }) {
 
 function Step2Identity({ onDone }: { onDone: () => void }) {
   const { accessToken } = useAuth();
+  const [legalName, setLegalName] = useState('');
+  const [dob, setDob] = useState('');
+  const [address, setAddress] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function submit() {
+    if (!legalName || !dob || !address) {
+      setError('Please complete all fields');
+      return;
+    }
     if (!file) return;
     setError(''); setIsLoading(true);
     const form = new FormData();
     form.append('file', file);
+    form.append('legalName', legalName);
+    form.append('dob', dob);
+    form.append('address', address);
     const res = await fetch('/api/users/identity-document', {
       method: 'POST',
       headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
@@ -50,6 +60,23 @@ function Step2Identity({ onDone }: { onDone: () => void }) {
       <div>
         <h2 className='font-serif text-2xl font-semibold text-ink mb-2'>Verify your identity</h2>
         <p className='font-sans text-sm text-mut'>Upload a government-issued ID (passport or driver licence).</p>
+      </div>
+      <div className='space-y-4 mb-6'>
+        <div>
+          <label className='block font-sans text-sm font-medium text-ink mb-1'>Full legal name</label>
+          <input value={legalName} onChange={e => setLegalName(e.target.value)} type='text' placeholder='As it appears on your ID'
+            className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+        </div>
+        <div>
+          <label className='block font-sans text-sm font-medium text-ink mb-1'>Date of birth</label>
+          <input value={dob} onChange={e => setDob(e.target.value)} type='text' placeholder='DD/MM/YYYY'
+            className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+        </div>
+        <div>
+          <label className='block font-sans text-sm font-medium text-ink mb-1'>Residential address</label>
+          <input value={address} onChange={e => setAddress(e.target.value)} type='text' placeholder='Street address, suburb, state, postcode'
+            className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+        </div>
       </div>
       <div className='space-y-4'>
         <div>
