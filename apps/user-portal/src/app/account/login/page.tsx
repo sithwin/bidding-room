@@ -86,11 +86,17 @@ export default function LoginPage() {
                     <input {...loginForm.register('password')} type='password' className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
                     {loginForm.formState.errors.password && <p className='font-sans text-xs text-red-600 mt-1'>{loginForm.formState.errors.password.message}</p>}
                   </div>
+                  <div className='flex justify-end'>
+                    <button type='button' className='font-sans text-xs text-mut hover:text-ink'>Forgot password?</button>
+                  </div>
                   {serverError && <p className='font-sans text-xs text-red-600'>{serverError}</p>}
                   <button type='submit' disabled={loginForm.formState.isSubmitting}
                     className='w-full bg-ink text-paper font-sans text-sm font-medium py-3 hover:bg-ink/90 transition-colors disabled:opacity-60'>
                     {loginForm.formState.isSubmitting ? 'Signing in…' : 'Sign In'}
                   </button>
+                  <p className='font-sans text-xs text-center text-mut mt-4'>
+                    New? <button type='button' onClick={() => setTab('register')} className='text-ink underline'>Create account</button>
+                  </p>
                 </form>
               ) : (
                 <form onSubmit={registerForm.handleSubmit(handleRegister)} className='space-y-4'>
@@ -113,6 +119,9 @@ export default function LoginPage() {
                     className='w-full bg-ink text-paper font-sans text-sm font-medium py-3 hover:bg-ink/90 transition-colors disabled:opacity-60'>
                     {registerForm.formState.isSubmitting ? 'Creating account…' : 'Create Account'}
                   </button>
+                  <p className='font-sans text-xs text-center text-mut mt-4'>
+                    Already have an account? <button type='button' onClick={() => setTab('signin')} className='text-ink underline'>Sign in</button>
+                  </p>
                 </form>
               )}
             </>

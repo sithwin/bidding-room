@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
@@ -11,6 +11,19 @@ export default function VerifyPhonePage() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<Date | null>(null);
+  const [lockRemaining, setLockRemaining] = useState(0);
+
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, lockedUntil.getTime() - Date.now());
+      setLockRemaining(Math.ceil(remaining / 1000));
+      if (remaining <= 0) { setLockedUntil(null); setAttempts(0); }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
 
   async function requestCode() {
     setError(''); setIsLoading(true);
@@ -32,8 +45,30 @@ export default function VerifyPhonePage() {
       body: JSON.stringify({ otp }),
     });
     setIsLoading(false);
-    if (res.ok) router.push('/account/register-to-bid');
-    else { const d = await res.json() as { error?: string }; setError(d.error ?? 'Invalid code'); }
+    if (res.ok) { router.push('/account/register-to-bid'); return; }
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
+    if (newAttempts >= 3) {
+      const until = new Date(Date.now() + 15 * 60 * 1000);
+      setLockedUntil(until);
+      setLockRemaining(15 * 60);
+    } else {
+      setError(`Invalid code. ${3 - newAttempts} attempt${3 - newAttempts === 1 ? '' : 's'} remaining.`);
+    }
+  }
+
+  if (lockedUntil) {
+    const mins = Math.floor(lockRemaining / 60);
+    const secs = lockRemaining % 60;
+    return (
+      <div className='min-h-screen bg-paper flex items-center justify-center'>
+        <div className='text-center px-6'>
+          <h1 className='font-serif text-2xl font-semibold text-ink mb-3'>Too many attempts</h1>
+          <p className='font-sans text-sm text-mut mb-4'>Try again in</p>
+          <p className='font-serif text-4xl font-semibold text-ink'>{mins}:{String(secs).padStart(2, '0')}</p>
+        </div>
+      </div>
+    );
   }
 
   return (

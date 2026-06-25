@@ -7,6 +7,12 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const token = searchParams.get('token');
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [resent, setResent] = useState(false);
+
+  async function resendEmail() {
+    await fetch('/api/auth/resend-verification', { method: 'POST' });
+    setResent(true);
+  }
 
   useEffect(() => {
     if (!token) { setStatus('error'); return; }
@@ -31,8 +37,12 @@ export default function VerifyEmailPage() {
         {status === 'error' && (
           <>
             <h1 className='font-serif text-2xl font-semibold text-ink mb-3'>Link expired</h1>
-            <p className='font-sans text-sm text-mut mb-6'>This verification link has expired or already been used.</p>
-            <a href='/account/login' className='font-sans text-sm text-ink underline'>Back to sign in</a>
+            <p className='font-sans text-sm text-mut mb-4'>This verification link has expired or already been used.</p>
+            {resent ? (
+              <p className='font-sans text-sm text-green-700'>New link sent — check your inbox.</p>
+            ) : (
+              <button onClick={resendEmail} className='font-sans text-sm text-ink underline'>Resend verification email</button>
+            )}
           </>
         )}
       </div>
