@@ -12,6 +12,14 @@ vi.mock('@/components/primitives/lot-card', () => ({
   LotCard: ({ title }: { title: string }) => <div data-testid='lot-card'>{title}</div>,
 }));
 
+// Mock next-intl
+vi.mock('next-intl', () => ({
+  useFormatter: () => ({
+    number: (n: number) => String(n),
+    dateTime: (d: Date) => d.toISOString(),
+  }),
+}));
+
 import useSWR from 'swr';
 
 const mockLots = Array.from({ length: 3 }, (_, i) => ({
@@ -94,5 +102,18 @@ describe('CatalogueLots', () => {
 
     render(<CatalogueLots auctionId='auction-1' />);
     expect(screen.getByText('— lots')).toBeTruthy();
+  });
+
+  it('shows error message when SWR returns an error', () => {
+    vi.mocked(useSWR).mockReturnValue({
+      data: undefined,
+      error: new Error('Network error'),
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as ReturnType<typeof useSWR>);
+
+    render(<CatalogueLots auctionId='auction-1' />);
+    expect(screen.getByText('Unable to load lots.')).toBeTruthy();
   });
 });

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import useSWR from 'swr';
+import { useFormatter } from 'next-intl';
 import { LotCard } from '@/components/primitives/lot-card';
 
 type Lot = {
@@ -21,8 +22,9 @@ const PAGE_SIZE = 24;
 export function CatalogueLots({ auctionId }: { auctionId: string }) {
   const [sort, setSort] = useState<Sort>('lotNumber');
   const [page, setPage] = useState(1);
+  const format = useFormatter();
 
-  const { data } = useSWR<{ lots: Lot[]; total: number }>(
+  const { data, error } = useSWR<{ lots: Lot[]; total: number }>(
     `/api/catalogue/lots?auctionId=${auctionId}&sort=${sort}&page=${page}&limit=${PAGE_SIZE}`,
     fetcher,
     { refreshInterval: 30000 },
@@ -30,11 +32,15 @@ export function CatalogueLots({ auctionId }: { auctionId: string }) {
 
   const totalPages = Math.ceil((data?.total ?? 0) / PAGE_SIZE);
 
+  if (error) return <p className='font-sans text-sm text-mut'>Unable to load lots.</p>;
+
   return (
     <div className='max-w-7xl mx-auto px-6 py-12'>
       {/* Sort controls */}
       <div className='flex items-center justify-between mb-6'>
-        <p className='font-sans text-sm text-mut'>{data?.total ?? '—'} lots</p>
+        <p className='font-sans text-sm text-mut'>
+          {data?.total != null ? format.number(data.total) : '—'} lots
+        </p>
         <div className='flex gap-2'>
           {(
             [
