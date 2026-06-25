@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -21,10 +21,15 @@ interface Lot {
   estimatedValue: number;
 }
 
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Button type='submit' disabled={pending}>{pending ? 'Saving…' : 'Save Changes'}</Button>;
+}
+
 export function EditLotForm({ lot }: { lot: Lot }) {
   const router = useRouter();
   const boundAction = updateLot.bind(null, lot.id);
-  const [state, formAction, isPending] = useActionState(boundAction, {});
+  const [state, formAction] = useFormState(boundAction, {});
 
   useEffect(() => {
     if (state.ok) router.push('/admin/lots');
@@ -58,9 +63,7 @@ export function EditLotForm({ lot }: { lot: Lot }) {
         <Label htmlFor='estimatedValue'>Estimated Value</Label>
         <Input id='estimatedValue' name='estimatedValue' type='number' min={0} step={0.01} defaultValue={lot.estimatedValue} />
       </div>
-      <Button type='submit' disabled={isPending}>
-        {isPending ? 'Saving…' : 'Save Changes'}
-      </Button>
+      <SubmitButton />
     </form>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,14 @@ import { createLot } from '../_actions';
 
 const CONDITIONS = ['EXCELLENT', 'VERY_GOOD', 'GOOD', 'FAIR'] as const;
 
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <Button type='submit' disabled={pending}>{pending ? 'Creating…' : 'Create Lot'}</Button>;
+}
+
 export default function NewLotPage() {
   const router = useRouter();
-  const [state, formAction, isPending] = useActionState(createLot, {});
+  const [state, formAction] = useFormState(createLot, {});
 
   useEffect(() => {
     if (state.ok) router.push('/admin/lots');
@@ -50,9 +55,7 @@ export default function NewLotPage() {
           <Label htmlFor='estimatedValue'>Estimated Value</Label>
           <Input id='estimatedValue' name='estimatedValue' type='number' min={0} step={0.01} />
         </div>
-        <Button type='submit' disabled={isPending}>
-          {isPending ? 'Creating…' : 'Create Lot'}
-        </Button>
+        <SubmitButton />
       </form>
     </div>
   );

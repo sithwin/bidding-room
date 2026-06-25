@@ -1,18 +1,30 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { scheduleAuction } from '../_actions';
 
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type='submit' disabled={pending}>
+      {pending ? 'Scheduling…' : 'Schedule Auction'}
+    </Button>
+  );
+}
+
+function LotIdInput() {
+  const searchParams = useSearchParams();
+  return <input type='hidden' name='lotId' value={searchParams.get('lotId') ?? ''} />;
+}
+
 export default function NewAuctionPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const lotId = searchParams.get('lotId') ?? '';
-  const [state, formAction, isPending] = useActionState(scheduleAuction, {});
+  const [state, formAction] = useFormState(scheduleAuction, {});
 
   useEffect(() => {
     if (state.ok) router.push('/admin/auctions');
@@ -22,7 +34,9 @@ export default function NewAuctionPage() {
     <div className='max-w-lg space-y-4'>
       <h1 className='text-2xl font-semibold'>Schedule Auction</h1>
       <form action={formAction} className='space-y-4'>
-        <input type='hidden' name='lotId' value={lotId} />
+        <Suspense fallback={<input type='hidden' name='lotId' value='' />}>
+          <LotIdInput />
+        </Suspense>
         <div className='space-y-1'>
           <Label htmlFor='startAt'>Start Date/Time</Label>
           <Input id='startAt' name='startAt' type='datetime-local' />
@@ -51,9 +65,7 @@ export default function NewAuctionPage() {
             <Input id='autoExtendDurationMinutes' name='autoExtendDurationMinutes' type='number' min={1} defaultValue={3} />
           </div>
         </div>
-        <Button type='submit' disabled={isPending}>
-          {isPending ? 'Scheduling…' : 'Schedule Auction'}
-        </Button>
+        <SubmitButton />
       </form>
     </div>
   );
