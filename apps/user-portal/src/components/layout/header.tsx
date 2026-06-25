@@ -1,16 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useRef, useState } from 'react';
+import { Suspense, useCallback, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { MobileNavDrawer } from './mobile-nav-drawer';
 
-export function Header() {
-  const { user, logout } = useAuth();
+function HeaderSearchInput() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -23,6 +21,21 @@ export function Header() {
   }, [router, searchParams]);
 
   return (
+    <input
+      type='search'
+      defaultValue={searchParams.get('q') ?? ''}
+      onChange={handleSearch}
+      placeholder='Search lots…'
+      className='w-full border border-[var(--line)] bg-cream px-3 py-1.5 font-sans text-sm text-ink placeholder-mut focus:outline-none focus:border-ink'
+    />
+  );
+}
+
+export function Header() {
+  const { user, logout } = useAuth();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  return (
     <>
       <header className='bg-paper border-b border-[var(--line)] px-6 py-4'>
         <div className='max-w-7xl mx-auto flex items-center gap-6'>
@@ -32,13 +45,9 @@ export function Header() {
 
           {/* Search bar — hidden on mobile */}
           <div className='hidden md:block flex-1 max-w-sm'>
-            <input
-              type='search'
-              defaultValue={searchParams.get('q') ?? ''}
-              onChange={handleSearch}
-              placeholder='Search lots…'
-              className='w-full border border-[var(--line)] bg-cream px-3 py-1.5 font-sans text-sm text-ink placeholder-mut focus:outline-none focus:border-ink'
-            />
+            <Suspense fallback={<input type='search' placeholder='Search lots…' disabled className='w-full border border-[var(--line)] bg-cream px-3 py-1.5 font-sans text-sm text-ink placeholder-mut' />}>
+              <HeaderSearchInput />
+            </Suspense>
           </div>
 
           {/* Desktop nav */}

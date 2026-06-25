@@ -108,7 +108,8 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
           return;
         }
       } catch {
-        // if check fails, allow the bid attempt — backend will reject if needed
+        setToast({ message: 'Unable to verify payment method. Please try again.', type: 'error' });
+        return;
       }
     }
 
