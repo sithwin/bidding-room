@@ -6,7 +6,7 @@ export const revalidate = 30;
 
 const CATALOGUE_URL = process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002';
 
-type Auction = { id: string; title: string; saleDate: string; location: string; description: string };
+type Auction = { id: string; title: string; saleDate: string; location: string; description: string; viewingDates: string | null };
 
 export default async function SaleCataloguePage({ params }: { params: { auctionId: string } }) {
   const auctionRes = await fetch(`${CATALOGUE_URL}/api/auctions/${params.auctionId}`, {
@@ -32,6 +32,9 @@ export default async function SaleCataloguePage({ params }: { params: { auctionI
           </p>
           <h1 className='font-serif text-4xl font-semibold mb-2'>{auction.title}</h1>
           <p className='font-sans text-mut text-sm'>{auction.location}</p>
+          {auction.viewingDates && (
+            <p className='font-sans text-sm text-mut/80 mt-1'>Viewing: {auction.viewingDates}</p>
+          )}
         </div>
       </section>
 

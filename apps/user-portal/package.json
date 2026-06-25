@@ -16,6 +16,7 @@
     "@radix-ui/react-select": "^2.3.1",
     "@radix-ui/react-separator": "^1.1.10",
     "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-slider": "^1.2.0",
     "@radix-ui/react-tabs": "^1.1.15",
     "@radix-ui/react-toast": "^1.2.17",
     "@stripe/react-stripe-js": "^2.7.3",
