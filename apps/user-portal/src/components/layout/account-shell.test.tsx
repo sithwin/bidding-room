@@ -29,28 +29,54 @@ describe('AccountShell', () => {
     expect(screen.getByText('page content')).toBeInTheDocument();
   });
 
-  it('renders all nav links', () => {
+  it('renders all nav links (both mobile strip and desktop sidebar)', () => {
     render(<AccountShell><span /></AccountShell>);
-    expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/account/dashboard');
-    expect(screen.getByRole('link', { name: 'My Bids' })).toHaveAttribute('href', '/account/bids');
-    expect(screen.getByRole('link', { name: 'Watchlist' })).toHaveAttribute('href', '/account/watchlist');
-    expect(screen.getByRole('link', { name: 'Won Lots' })).toHaveAttribute('href', '/account/won');
-    expect(screen.getByRole('link', { name: 'Invoices & Payments' })).toHaveAttribute('href', '/account/invoices');
-    expect(screen.getByRole('link', { name: 'Profile & Paddle' })).toHaveAttribute('href', '/account/profile');
+    // Nav links appear twice: once in mobile strip, once in desktop sidebar
+    const overviewLinks = screen.getAllByRole('link', { name: 'Overview' });
+    expect(overviewLinks.length).toBeGreaterThanOrEqual(1);
+    expect(overviewLinks[0]).toHaveAttribute('href', '/account/dashboard');
+
+    const bidsLinks = screen.getAllByRole('link', { name: 'My Bids' });
+    expect(bidsLinks.length).toBeGreaterThanOrEqual(1);
+    expect(bidsLinks[0]).toHaveAttribute('href', '/account/bids');
+
+    const watchLinks = screen.getAllByRole('link', { name: 'Watchlist' });
+    expect(watchLinks[0]).toHaveAttribute('href', '/account/watchlist');
+
+    const wonLinks = screen.getAllByRole('link', { name: 'Won Lots' });
+    expect(wonLinks[0]).toHaveAttribute('href', '/account/won');
+
+    const invoicesLinks = screen.getAllByRole('link', { name: 'Invoices & Payments' });
+    expect(invoicesLinks[0]).toHaveAttribute('href', '/account/invoices');
+
+    const profileLinks = screen.getAllByRole('link', { name: 'Profile & Paddle' });
+    expect(profileLinks[0]).toHaveAttribute('href', '/account/profile');
   });
 
-  it('applies active styles to the current pathname', () => {
+  it('applies active styles to the current pathname in desktop sidebar', () => {
     render(<AccountShell><span /></AccountShell>);
-    const activeLink = screen.getByRole('link', { name: 'My Bids' });
-    expect(activeLink.className).toContain('bg-ink');
-    expect(activeLink.className).toContain('text-paper');
+    // Desktop sidebar active link has bg-ink text-paper
+    const activeLinks = screen.getAllByRole('link', { name: 'My Bids' });
+    const sidebarActive = activeLinks.find(el => el.className.includes('bg-ink'));
+    expect(sidebarActive).toBeDefined();
+    expect(sidebarActive!.className).toContain('text-paper');
   });
 
-  it('applies inactive styles to non-active links', () => {
+  it('applies active styles to the current pathname in mobile tab strip', () => {
     render(<AccountShell><span /></AccountShell>);
-    const inactiveLink = screen.getByRole('link', { name: 'Overview' });
-    expect(inactiveLink.className).toContain('text-mut');
-    expect(inactiveLink.className).not.toContain('bg-ink');
+    // Mobile strip active link has border-ink text-ink font-medium
+    const activeLinks = screen.getAllByRole('link', { name: 'My Bids' });
+    const mobileActive = activeLinks.find(el => el.className.includes('border-ink'));
+    expect(mobileActive).toBeDefined();
+    expect(mobileActive!.className).toContain('font-medium');
+  });
+
+  it('applies inactive styles to non-active links in desktop sidebar', () => {
+    render(<AccountShell><span /></AccountShell>);
+    const overviewLinks = screen.getAllByRole('link', { name: 'Overview' });
+    const sidebarInactive = overviewLinks.find(el => el.className.includes('text-mut') && !el.className.includes('border-b-2'));
+    expect(sidebarInactive).toBeDefined();
+    expect(sidebarInactive!.className).not.toContain('bg-ink');
   });
 
   it('renders the user avatar initial', () => {

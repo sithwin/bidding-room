@@ -118,7 +118,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
 
       {isLive ? (
         /* ── Live state ── */
-        <div className='max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-10'>
+        <div className='max-w-6xl mx-auto px-6 py-10 pb-20 md:pb-10 grid grid-cols-1 md:grid-cols-2 gap-10'>
           <div>
             <div className='relative aspect-square border border-[var(--line)]'>
               <Image src={lot.imageUrls[selectedImage] ?? '/placeholder.jpg'} alt={lot.title} fill className='object-contain' />
@@ -223,7 +223,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
       ) : (
         /* ── Standard state ── */
         <>
-          <div className='max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-10'>
+          <div className='max-w-6xl mx-auto px-6 py-10 pb-20 md:pb-10 grid grid-cols-1 md:grid-cols-2 gap-10'>
             {/* Gallery */}
             <div>
               <div className='relative aspect-square border border-[var(--line)] mb-3'>
@@ -341,6 +341,18 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
           )}
         </>
       )}
+
+      {/* Mobile sticky bid bar */}
+      <div className='md:hidden fixed bottom-0 left-0 right-0 bg-paper border-t border-[var(--line)] flex items-center gap-3 px-4 py-3 z-40'>
+        <div className='flex-1'>
+          <p className='font-sans text-xs text-mut'>Current bid</p>
+          <p className='font-sans text-sm font-semibold text-ink'>{lot.currency.toUpperCase()} {lot.currentBid.toLocaleString()}</p>
+        </div>
+        <button onClick={placeBid} disabled={isAuctionClosed}
+          className='bg-ink text-paper font-sans text-sm font-medium px-6 py-3 disabled:opacity-60'>
+          Place Bid · {lot.currency.toUpperCase()} {bidAmount || (lot.currentBid + 100).toLocaleString()}
+        </button>
+      </div>
 
       {/* Reconnecting badge */}
       {isReconnecting && (

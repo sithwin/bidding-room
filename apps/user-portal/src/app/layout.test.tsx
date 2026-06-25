@@ -17,6 +17,24 @@ vi.mock('next/font/google', () => ({
 /* Mock the CSS import — vitest/jsdom cannot process @tailwind directives. */
 vi.mock('./globals.css', () => ({}));
 
+/* Mock next/navigation — MobileBottomNav calls usePathname inside the layout. */
+vi.mock('next/navigation', () => ({
+  usePathname: vi.fn(() => '/'),
+}));
+
+/* Mock next/link — used by MobileBottomNav. */
+vi.mock('next/link', () => ({
+  default: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
+    <a href={href} className={className}>{children}</a>
+  ),
+}));
+
+/* Mock AuthProvider — used in the root layout body. */
+vi.mock('@/lib/auth-context', () => ({
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useAuth: vi.fn(() => ({ user: null, accessToken: null, login: vi.fn(), logout: vi.fn(), setAccessToken: vi.fn() })),
+}));
+
 import RootLayout from './layout';
 
 describe('RootLayout', () => {

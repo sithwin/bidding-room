@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Bodoni_Moda, Mulish } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 
 const bodoni = Bodoni_Moda({
   subsets: ['latin'],
@@ -26,7 +27,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang='en' className={`${bodoni.variable} ${mulish.variable}`}>
-      <body><AuthProvider>{children}</AuthProvider></body>
+      <body>
+        <AuthProvider>
+          <div className='pb-16 md:pb-0'>{children}</div>
+          <MobileBottomNav />
+        </AuthProvider>
+      </body>
     </html>
   );
 }

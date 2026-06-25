@@ -18,8 +18,22 @@ export function AccountShell({ children, collectorSince }: { children: ReactNode
   const { user } = useAuth();
 
   return (
-    <div className='max-w-7xl mx-auto px-6 py-10 flex gap-10'>
-      <aside className='w-56 shrink-0'>
+    <div className='max-w-7xl mx-auto px-6 py-10'>
+      {/* Mobile: horizontal tab strip */}
+      <div className='md:hidden flex overflow-x-auto border-b border-[var(--line)] mb-6 -mx-6 px-6'>
+        {NAV.map(({ href, label }) => {
+          const isActive = pathname.startsWith(href);
+          return (
+            <Link key={href} href={href}
+              className={`shrink-0 pb-3 px-3 font-sans text-sm whitespace-nowrap border-b-2 transition-colors ${isActive ? 'border-ink text-ink font-medium' : 'border-transparent text-mut hover:text-ink'}`}>
+              {label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className='flex gap-10'>
+      <aside className='w-56 shrink-0 hidden md:block'>
         {/* Avatar + name */}
         <div className='mb-6 pb-6 border-b border-[var(--line)]'>
           <div className='w-12 h-12 rounded-full bg-ink text-paper flex items-center justify-center font-sans text-lg font-semibold mb-3'>
@@ -44,6 +58,7 @@ export function AccountShell({ children, collectorSince }: { children: ReactNode
         </nav>
       </aside>
       <main className='flex-1 min-w-0'>{children}</main>
+      </div>
     </div>
   );
 }
