@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { useAuth } from '@/lib/auth-context';
 
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(8) });
-const registerSchema = z.object({ email: z.string().email(), password: z.string().min(8), confirmPassword: z.string() })
+const registerSchema = z.object({ email: z.string().email(), password: z.string().min(8, 'Password must be at least 8 characters'), confirmPassword: z.string() })
   .refine(d => d.password === d.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -27,19 +27,29 @@ export function LoginClient() {
 
   async function handleLogin(data: LoginForm) {
     setServerError('');
-    const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-    const json = await res.json() as { accessToken?: string; user?: { userId: string; email: string; verificationStatus: string; role: string }; error?: string };
-    if (!res.ok) { setServerError(json.error ?? 'Sign in failed'); return; }
-    login(json.accessToken!, json.user!);
-    router.push(returnUrl);
+    try {
+      const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+      const json = await res.json() as { data?: { accessToken: string }; error?: { code: string; message: string } };
+      if (!res.ok) { setServerError(json.error?.message ?? 'Sign in failed'); return; }
+      const accessToken = json.data!.accessToken;
+      const payload = JSON.parse(atob(accessToken.split('.')[1])) as { userId: string; email: string; verificationStatus: string; role: string };
+      login(accessToken, { userId: payload.userId, email: payload.email, verificationStatus: payload.verificationStatus, role: payload.role });
+      router.push(returnUrl);
+    } catch {
+      setServerError('Unable to connect. Please try again.');
+    }
   }
 
   async function handleRegister(data: RegisterForm) {
     setServerError('');
-    const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: data.email, password: data.password }) });
-    const json = await res.json() as { error?: string };
-    if (!res.ok) { setServerError(json.error ?? 'Registration failed'); return; }
-    setRegistered(true);
+    try {
+      const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: data.email, password: data.password }) });
+      const json = await res.json() as { error?: { code: string; message: string } };
+      if (!res.ok) { setServerError(json.error?.message ?? 'Registration failed'); return; }
+      setRegistered(true);
+    } catch {
+      setServerError('Unable to connect. Please try again.');
+    }
   }
 
   return (
@@ -108,6 +118,7 @@ export function LoginClient() {
                   <div>
                     <label className='block font-sans text-sm font-medium text-ink mb-1'>Password</label>
                     <input {...registerForm.register('password')} type='password' className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
+                    {registerForm.formState.errors.password && <p className='font-sans text-xs text-red-600 mt-1'>{registerForm.formState.errors.password.message}</p>}
                   </div>
                   <div>
                     <label className='block font-sans text-sm font-medium text-ink mb-1'>Confirm Password</label>
