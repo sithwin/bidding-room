@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
+import Image from 'next/image';
 import useSWR from 'swr';
 import { Header } from '@/components/layout/header';
 
-type Auction = { id: string; title: string; saleDate: string; lotCount: number; status: 'upcoming' | 'open' | 'closed'; location: string };
+type Auction = { id: string; title: string; saleDate: string; lotCount: number; status: 'upcoming' | 'open' | 'closed'; location: string; imageUrl: string };
 type Tab = 'upcoming' | 'live' | 'results';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
@@ -12,17 +13,29 @@ function AuctionRow({ auction }: { auction: Auction }) {
   const date = new Date(auction.saleDate);
   return (
     <div className='flex items-center gap-6 bg-paper border border-[var(--line)] p-5'>
+      {/* Date column */}
       <div className='w-16 text-center shrink-0'>
         <p className='font-serif text-2xl font-semibold text-ink'>{date.getDate()}</p>
         <p className='font-sans text-xs text-mut uppercase'>{date.toLocaleString('en-AU', { month: 'short' })}</p>
       </div>
+
+      {/* Thumbnail */}
+      <div className='relative w-16 h-16 shrink-0 border border-[var(--line)] overflow-hidden'>
+        {auction.imageUrl
+          ? <Image src={auction.imageUrl} alt={auction.title} fill className='object-cover' />
+          : <div className='w-full h-full bg-cream' />}
+      </div>
+
+      {/* Text */}
       <div className='flex-1 min-w-0'>
         <p className='font-serif text-base font-semibold text-ink truncate'>{auction.title}</p>
         <p className='font-sans text-sm text-mut'>{auction.lotCount} lots · {auction.location}</p>
       </div>
+
+      {/* CTA */}
       {auction.status === 'open'
-        ? <a href={`/auctions/${auction.id}`} className='shrink-0 bg-ink text-paper font-sans text-sm px-5 py-2 hover:bg-ink/90'>View Catalogue</a>
-        : <button className='shrink-0 border border-[var(--line)] font-sans text-sm px-5 py-2 text-mut hover:text-ink'>Register Interest</button>}
+        ? <a href={`/auctions/${auction.id}`} className='shrink-0 bg-ink text-paper font-sans text-sm px-5 py-2 hover:bg-ink/90 transition-colors'>View Catalogue</a>
+        : <button className='shrink-0 border border-[var(--line)] font-sans text-sm px-5 py-2 text-mut hover:text-ink transition-colors'>Register Interest</button>}
     </div>
   );
 }

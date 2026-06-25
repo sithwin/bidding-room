@@ -83,12 +83,12 @@ export function buildPaymentRouter(deps: RouterDeps): Hono {
   router.get('/api/payments/profile', authMiddleware(deps.jwtPublicKey), async (c) => {
     const payload = c.get('jwtPayload') as JwtPayload;
     const profile = await deps.profileRepo.findByUserId(payload.userId);
-    const hasCard = profile?.stripePaymentMethodId != null;
-    if (!hasCard) {
-      return c.json({ hasCard: false });
+    const stripePaymentMethodId = profile?.stripePaymentMethodId ?? null;
+    if (!stripePaymentMethodId) {
+      return c.json({ stripePaymentMethodId: null, hasCard: false });
     }
-    const { last4, brand } = await deps.stripe.retrievePaymentMethod(profile!.stripePaymentMethodId!);
-    return c.json({ hasCard: true, last4, brand });
+    const { last4, brand } = await deps.stripe.retrievePaymentMethod(stripePaymentMethodId);
+    return c.json({ stripePaymentMethodId, hasCard: true, last4, brand });
   });
 
   router.post('/api/payments/webhooks/stripe', async (c) => {

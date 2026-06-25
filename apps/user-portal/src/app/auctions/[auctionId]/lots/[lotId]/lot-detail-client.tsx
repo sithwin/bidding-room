@@ -96,6 +96,22 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
       setToast({ message: 'Your identity is under review.', type: 'info' }); return;
     }
 
+    // APPROVED_BIDDER but no saved payment method on file
+    if (user.verificationStatus === 'APPROVED_BIDDER') {
+      try {
+        const profileRes = await fetch('/api/payments/profile', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const profile = await profileRes.json() as { stripePaymentMethodId: string | null };
+        if (!profile.stripePaymentMethodId) {
+          window.location.href = '/account/register-to-bid?step=3';
+          return;
+        }
+      } catch {
+        // if check fails, allow the bid attempt — backend will reject if needed
+      }
+    }
+
     try {
       await api.post(`/api/auction/auctions/${lot.auctionId}/lots/${lot.id}/bids`, { amount });
       setConfirmedBid(amount);

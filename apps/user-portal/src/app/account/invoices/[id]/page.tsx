@@ -1,5 +1,6 @@
 ﻿'use client';
 import { useState } from 'react';
+import Image from 'next/image';
 import useSWR from 'swr';
 import { Header } from '@/components/layout/header';
 import { AccountShell } from '@/components/layout/account-shell';
@@ -47,6 +48,12 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
         <div className='max-w-lg'>
           {/* Lot summary */}
           <div className='flex gap-4 mb-8 pb-8 border-b border-[var(--line)]'>
+            {/* Thumbnail */}
+            <div className='relative w-20 h-20 shrink-0 border border-[var(--line)] overflow-hidden'>
+              {invoice.lotImageUrl
+                ? <Image src={invoice.lotImageUrl} alt={invoice.lotTitle} fill className='object-cover' />
+                : <div className='w-full h-full bg-cream' />}
+            </div>
             <div className='flex-1'>
               <p className='font-serif text-base font-semibold text-ink'>{invoice.lotTitle}</p>
               <p className='font-sans text-xs text-mut mt-1'>Won {new Date(invoice.wonDate).toLocaleDateString('en-AU')}</p>

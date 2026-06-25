@@ -1,11 +1,12 @@
 'use client';
+import Image from 'next/image';
+import Link from 'next/link';
 import useSWR from 'swr';
 import { Header } from '@/components/layout/header';
 import { AccountShell } from '@/components/layout/account-shell';
 import { useAuth } from '@/lib/auth-context';
-import Link from 'next/link';
 
-type WonLot = { lotId: string; auctionId: string; title: string; wonDate: string; hammerPrice: number; currency: string; invoiceId: string; fulfilmentId?: string; paymentStatus: string };
+type WonLot = { lotId: string; auctionId: string; title: string; imageUrl: string; wonDate: string; hammerPrice: number; currency: string; invoiceId: string; fulfilmentId?: string; paymentStatus: string };
 
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -44,15 +45,43 @@ export default function WonLotsPage() {
             <tbody className='divide-y divide-[var(--line)]'>
               {data.lots.map(lot => (
                 <tr key={lot.lotId}>
+                  {/* Lot: thumbnail + title + won date */}
                   <td className='px-4 py-3'>
-                    <Link href={`/auctions/${lot.auctionId}/lots/${lot.lotId}`} className='text-ink font-medium hover:underline'>{lot.title}</Link>
-                    <p className='text-xs text-mut mt-0.5'>{new Date(lot.wonDate).toLocaleDateString('en-AU')}</p>
+                    <div className='flex items-center gap-3'>
+                      <div className='relative w-10 h-10 border border-[var(--line)] overflow-hidden shrink-0'>
+                        {lot.imageUrl
+                          ? <Image src={lot.imageUrl} alt={lot.title} fill className='object-cover' />
+                          : <div className='w-full h-full bg-cream' />}
+                      </div>
+                      <div>
+                        <Link href={`/auctions/${lot.auctionId}/lots/${lot.lotId}`}
+                          className='text-ink font-medium hover:underline line-clamp-1'>{lot.title}</Link>
+                        <p className='text-xs text-mut mt-0.5'>{new Date(lot.wonDate).toLocaleDateString('en-AU')}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className='px-4 py-3'>{lot.currency.toUpperCase()} {lot.hammerPrice.toLocaleString()}</td>
                   <td className='px-4 py-3'><StatusPill status={lot.paymentStatus} /></td>
-                  <td className='px-4 py-3 flex gap-3'>
-                    <Link href={`/account/invoices/${lot.invoiceId}`} className='text-ink text-xs hover:underline'>Invoice</Link>
-                    {lot.fulfilmentId && <Link href={`/account/fulfilments/${lot.fulfilmentId}`} className='text-ink text-xs hover:underline'>Fulfilment</Link>}
+                  {/* Context-sensitive actions */}
+                  <td className='px-4 py-3'>
+                    <div className='flex gap-3 flex-wrap'>
+                      {lot.paymentStatus === 'Payment due' && (
+                        <Link href={`/account/invoices/${lot.invoiceId}`}
+                          className='font-sans text-xs text-ink border border-[var(--line)] px-3 py-1.5 hover:bg-cream transition-colors'>
+                          Pay now
+                        </Link>
+                      )}
+                      {lot.fulfilmentId && ['Shipped', 'Delivered'].includes(lot.paymentStatus) && (
+                        <Link href={`/account/fulfilments/${lot.fulfilmentId}`}
+                          className='font-sans text-xs text-ink hover:underline'>
+                          Track
+                        </Link>
+                      )}
+                      <Link href={`/account/invoices/${lot.invoiceId}`}
+                        className='font-sans text-xs text-mut hover:text-ink hover:underline'>
+                        Invoice
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}

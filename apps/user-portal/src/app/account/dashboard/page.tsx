@@ -1,17 +1,18 @@
 'use client';
+import Image from 'next/image';
 import useSWR from 'swr';
+import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { AccountShell } from '@/components/layout/account-shell';
 import { BidStatusBadge } from '@/components/primitives/bid-status-badge';
 import { CountdownTimer } from '@/components/primitives/countdown-timer';
 import { useAuth } from '@/lib/auth-context';
-import Link from 'next/link';
 
 const fetcher = (url: string, token: string) =>
   fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
 
 type Stats = { activeBids: number; leading: number; watching: number; wonThisYear: number };
-type Bid = { lotId: string; auctionId: string; title: string; yourBid: number; currentBid: number; status: 'leading' | 'outbid'; endAt: string };
+type Bid = { lotId: string; auctionId: string; title: string; imageUrl: string; yourBid: number; currentBid: number; status: 'leading' | 'outbid'; endAt: string };
 
 export default function DashboardPage() {
   const { accessToken, user } = useAuth();
@@ -33,7 +34,11 @@ export default function DashboardPage() {
         <h1 className='font-serif text-2xl font-semibold text-ink mb-2'>
           Welcome back{user ? `, ${user.email.split('@')[0]}` : ''}
         </h1>
-        <p className='font-sans text-sm text-mut mb-8'>Here&apos;s your bidding overview.</p>
+        <p className='font-sans text-sm text-mut mb-8'>
+          {stats
+            ? `You are leading on ${stats.leading} lot${stats.leading !== 1 ? 's' : ''}${stats.activeBids > 0 ? `. ${stats.activeBids} bid${stats.activeBids !== 1 ? 's' : ''} active.` : '.'}`
+            : 'Here\'s your bidding overview.'}
+        </p>
 
         {/* Stat cards */}
         <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-10'>
@@ -60,6 +65,12 @@ export default function DashboardPage() {
           <div className='flex flex-col divide-y divide-[var(--line)]'>
             {bidsData?.bids.map(bid => (
               <div key={bid.lotId} className='py-4 flex items-center gap-4'>
+                {/* Thumbnail 46px */}
+                <div className='relative w-[46px] h-[46px] shrink-0 border border-[var(--line)] overflow-hidden'>
+                  {bid.imageUrl
+                    ? <Image src={bid.imageUrl} alt={bid.title} fill className='object-cover' />
+                    : <div className='w-full h-full bg-cream' />}
+                </div>
                 <div className='flex-1 min-w-0'>
                   <Link href={`/auctions/${bid.auctionId}/lots/${bid.lotId}`}
                     className='font-sans text-sm font-medium text-ink hover:underline truncate block'>{bid.title}</Link>
