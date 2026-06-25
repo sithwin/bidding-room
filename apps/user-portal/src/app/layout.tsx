@@ -6,7 +6,6 @@ import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 
 const bodoni = Bodoni_Moda({
   subsets: ['latin'],
-  axes: ['opsz'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-bodoni',
   display: 'swap',
