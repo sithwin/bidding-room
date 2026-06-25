@@ -63,7 +63,19 @@ export default function BrowsePage() {
             <p className='font-sans text-sm text-mut'>No lots match your filters.</p>
           ) : (
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-              {data?.lots.map(lot => <LotCard key={lot.id} {...lot} />)}
+              {data?.lots.map(lot => (
+                <LotCard
+                  key={lot.id}
+                  lotId={lot.id}
+                  auctionId={lot.auctionId}
+                  lotNumber={lot.lotNumber}
+                  title={lot.title}
+                  imageUrl={lot.imageUrl}
+                  currentBid={lot.currentBid}
+                  currency={lot.currency}
+                  endAt={lot.endAt}
+                />
+              ))}
             </div>
           )}
         </div>
