@@ -1,4 +1,4 @@
-import { BidRow, LotQueryRepository, LotStatusRow } from '../application/lot-query-repository';
+import { BidRow, DashboardStats, LotQueryRepository, LotStatusRow } from '../application/lot-query-repository';
 import { Db } from './db';
 
 const ACTIVE_STATUSES = ['SCHEDULED', 'LIVE', 'CLOSING'];
@@ -62,6 +62,29 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
     return {
       lots: rows.map(mapLotStatusRow),
       total: countRows[0]['total'] as number,
+    };
+  }
+
+  async getDashboardStats(): Promise<DashboardStats> {
+    const ENDING_SOON_STATUSES = ['LIVE', 'CLOSING'];
+    const [activeRows, endingSoonRows] = await Promise.all([
+      this.db`
+        SELECT COUNT(*)::int AS count
+        FROM lot_status
+        WHERE status = ANY(${ACTIVE_STATUSES})
+      `,
+      this.db`
+        SELECT COUNT(*)::int AS count
+        FROM lot_status
+        WHERE status = ANY(${ENDING_SOON_STATUSES})
+          AND end_at <= NOW() + INTERVAL '24 hours'
+      `,
+    ]);
+    return {
+      activeAuctions: activeRows[0]['count'] as number,
+      endingSoon: endingSoonRows[0]['count'] as number,
+      pendingInvoices: 0,
+      pendingFulfilments: 0,
     };
   }
 }

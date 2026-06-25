@@ -17,6 +17,7 @@ import { CloseAuctionCommandHandler } from './application/close-auction-handler'
 import { GetLotStatusHandler } from './application/get-lot-status-handler';
 import { GetBidHistoryHandler } from './application/get-bid-history-handler';
 import { GetActiveLotsHandler } from './application/get-active-lots-handler';
+import { GetDashboardStatsHandler } from './application/get-dashboard-stats-handler';
 import { createAuctionRouter } from './presentation/auction-router';
 
 const PORT = Number(process.env['PORT'] ?? 3003);
@@ -61,6 +62,7 @@ async function main(): Promise<void> {
   const getLotStatusHandler = new GetLotStatusHandler(queryRepository);
   const getBidHistoryHandler = new GetBidHistoryHandler(queryRepository);
   const getActiveLotsHandler = new GetActiveLotsHandler(queryRepository);
+  const getDashboardStatsHandler = new GetDashboardStatsHandler(queryRepository);
 
   // BullMQ worker — processes timer jobs enqueued by BullMQTimerScheduler
   new BullMQAuctionWorker(
@@ -79,6 +81,7 @@ async function main(): Promise<void> {
     getActiveLots: getActiveLotsHandler,
     getLotStatus: getLotStatusHandler,
     getBidHistory: getBidHistoryHandler,
+    getDashboardStats: getDashboardStatsHandler,
     placeBidHandler,
     scheduleAuctionHandler,
     sseBroadcaster,

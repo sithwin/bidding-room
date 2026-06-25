@@ -40,16 +40,16 @@ export async function startNotificationSubscribers(deps: Deps): Promise<void> {
   const connection = await createAmqpConnection(deps.amqpUrl);
   const subscriber = new EventSubscriber(connection);
 
-  await subscriber.subscribe<UserRegisteredPayload>('notification.user.registered', (p) => handleUserRegistered(p, deps.useCase, deps.emailSender, deps.appBaseUrl));
-  await subscriber.subscribe<PhoneVerificationRequestedPayload>('notification.phone.verification.requested', (p) => handlePhoneVerification(p, deps.useCase, deps.smsSender));
-  await subscriber.subscribe<BidPlacedPayload>('notification.bid.placed', (p) => handleBidPlaced(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl));
-  await subscriber.subscribe<AuctionClosingSoonPayload>('notification.auction.closing.soon', (p) => handleAuctionClosingSoon(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.getCurrentBid, deps.appBaseUrl));
-  await subscriber.subscribe<AuctionClosedPayload>('notification.auction.closed', (p) => handleAuctionClosed(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl));
-  await subscriber.subscribe<InvoiceCreatedPayload>('notification.invoice.created', (p) => handleInvoiceCreated(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl));
-  await subscriber.subscribe<PaymentReceivedPayload>('notification.payment.received', (p) => handlePaymentReceived(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl));
-  await subscriber.subscribe<InvoiceExpiredPayload>('notification.invoice.expired', (p) => handleInvoiceExpired(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle));
-  await subscriber.subscribe<ItemDispatchedPayload>('notification.item.dispatched', (p) => handleItemDispatched(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle));
-  await subscriber.subscribe<ItemCollectedPayload>('notification.item.collected', (p) => handleItemCollected(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle));
+  await subscriber.subscribe<UserRegisteredPayload>('notification.user.registered', (p) => handleUserRegistered(p, deps.useCase, deps.emailSender, deps.appBaseUrl), 'user.registered');
+  await subscriber.subscribe<PhoneVerificationRequestedPayload>('notification.phone.verification.requested', (p) => handlePhoneVerification(p, deps.useCase, deps.smsSender), 'user.phone.verification.requested');
+  await subscriber.subscribe<BidPlacedPayload>('notification.bid.placed', (p) => handleBidPlaced(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl), 'auction.bid.placed');
+  await subscriber.subscribe<AuctionClosingSoonPayload>('notification.auction.closing.soon', (p) => handleAuctionClosingSoon(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.getCurrentBid, deps.appBaseUrl), 'auction.closing.soon');
+  await subscriber.subscribe<AuctionClosedPayload>('notification.auction.closed', (p) => handleAuctionClosed(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl), 'auction.closed');
+  await subscriber.subscribe<InvoiceCreatedPayload>('notification.invoice.created', (p) => handleInvoiceCreated(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl), 'payment.invoice.created');
+  await subscriber.subscribe<PaymentReceivedPayload>('notification.payment.received', (p) => handlePaymentReceived(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle, deps.appBaseUrl), 'payment.received');
+  await subscriber.subscribe<InvoiceExpiredPayload>('notification.invoice.expired', (p) => handleInvoiceExpired(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle), 'payment.invoice.expired');
+  await subscriber.subscribe<ItemDispatchedPayload>('notification.item.dispatched', (p) => handleItemDispatched(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle), 'shipping.item.dispatched');
+  await subscriber.subscribe<ItemCollectedPayload>('notification.item.collected', (p) => handleItemCollected(p, deps.useCase, deps.emailSender, deps.getUserEmail, deps.getLotTitle), 'shipping.item.collected');
 
   console.log('[NotificationService] Subscribed to all 10 queues');
 }

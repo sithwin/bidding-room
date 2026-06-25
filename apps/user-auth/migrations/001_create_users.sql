@@ -32,3 +32,5 @@ CREATE TABLE refresh_tokens (
 CREATE INDEX idx_users_email               ON users(email);
 CREATE INDEX idx_verification_tokens_user  ON verification_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_user       ON refresh_tokens(user_id);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS identity_document_key TEXT;

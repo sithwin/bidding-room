@@ -6,6 +6,7 @@ export function VerifyEmailClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');
+  const userId = searchParams.get('userId');
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [resent, setResent] = useState(false);
 
@@ -15,8 +16,8 @@ export function VerifyEmailClient() {
   }
 
   useEffect(() => {
-    if (!token) { setStatus('error'); return; }
-    fetch(`/api/auth/verify-email?token=${token}`, { method: 'POST' })
+    if (!token || !userId) { setStatus('error'); return; }
+    fetch(`/api/auth/verify-email?token=${token}&userId=${userId}`, { method: 'POST' })
       .then(r => {
         if (r.ok) { setStatus('success'); setTimeout(() => router.push('/account/login'), 3000); }
         else setStatus('error');

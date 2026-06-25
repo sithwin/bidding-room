@@ -1,4 +1,17 @@
 services:
+  postgres:
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: postgres
+
+  rabbitmq:
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: carat
+      RABBITMQ_DEFAULT_PASS: devpassword123
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: " "
+
   admin-portal:
     build: { context: ., dockerfile: apps/admin-portal/Dockerfile }
     pull_policy: never

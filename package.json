@@ -4,7 +4,7 @@
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
-    "dev": "concurrently --kill-others-on-fail --names \"user-auth,catalogue,auction,payment,notification,shipping,admin,admin-portal,user-portal\" \"cd apps/user-auth && npx tsx watch --env-file .env src/main.ts\" \"cd apps/catalogue && npx tsx watch --env-file .env src/main.ts\" \"cd apps/auction-engine && npx tsx watch --env-file .env src/main.ts\" \"cd apps/payment && npx tsx watch --env-file .env src/main.ts\" \"cd apps/notification-service && npx tsx watch --env-file .env src/main.ts\" \"cd apps/shipping && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin-portal && npx next dev -p 3008\" \"cd apps/user-portal && npx next dev -p 3000\"",
+    "dev": "concurrently --names \"user-auth,catalogue,auction,payment,notification,shipping,admin,admin-portal,user-portal\" \"cd apps/user-auth && npx tsx watch --env-file .env src/main.ts\" \"cd apps/catalogue && npx tsx watch --env-file .env src/main.ts\" \"cd apps/auction-engine && npx tsx watch --env-file .env src/main.ts\" \"cd apps/payment && npx tsx watch --env-file .env src/main.ts\" \"cd apps/notification-service && npx tsx watch --env-file .env src/main.ts\" \"cd apps/shipping && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin-portal && npx next dev -p 3008\" \"cd apps/user-portal && npx next dev -p 3000\"",
     "lint": "turbo lint",
     "test:integration": "vitest run --config tests/vitest.integration.config.ts",
     "start": "docker compose up --build"

@@ -7,10 +7,15 @@ export class EventSubscriber {
 
   async subscribe<T>(
     queue: string,
-    handler: (payload: T) => Promise<void>
+    handler: (payload: T) => Promise<void>,
+    routingKey?: string
   ): Promise<void> {
     const channel = await this.getChannel();
+    await channel.assertExchange('carat.events', 'topic', { durable: true });
     await channel.assertQueue(queue, { durable: true });
+    if (routingKey) {
+      await channel.bindQueue(queue, 'carat.events', routingKey);
+    }
     await channel.prefetch(1);
 
     await channel.consume(queue, async (msg: ConsumeMessage | null) => {

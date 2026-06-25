@@ -6,6 +6,7 @@ import type { JwtPayload } from '@carat-room/shared-auth';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
+import { GetDashboardStatsHandler } from '../application/get-dashboard-stats-handler';
 import { PlaceBidCommandHandler } from '../application/place-bid-handler';
 import { ScheduleAuctionCommandHandler } from '../application/schedule-auction-handler';
 import { SseBroadcaster } from '../application/sse-broadcaster';
@@ -17,6 +18,7 @@ export interface AuctionRouterDeps {
   getActiveLots: GetActiveLotsHandler;
   getLotStatus: GetLotStatusHandler;
   getBidHistory: GetBidHistoryHandler;
+  getDashboardStats: GetDashboardStatsHandler;
   placeBidHandler: PlaceBidCommandHandler;
   scheduleAuctionHandler: ScheduleAuctionCommandHandler;
   sseBroadcaster: SseBroadcaster;
@@ -78,6 +80,11 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
         unsub();
       }
     });
+  });
+
+  app.get('/api/reports/dashboard', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
+    const stats = await deps.getDashboardStats.execute();
+    return c.json({ data: stats });
   });
 
   app.post('/api/auctions', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {

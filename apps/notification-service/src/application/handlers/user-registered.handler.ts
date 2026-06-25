@@ -9,8 +9,8 @@ export async function handleUserRegistered(
   emailSender: EmailSender,
   appBaseUrl: string
 ): Promise<void> {
-  const verificationUrl = `${appBaseUrl}/account/verify-email?userId=${payload.userId}`;
-  await useCase.execute({
+  const verificationUrl = `${appBaseUrl}/account/verify-email?token=${payload.emailVerificationCode}&userId=${payload.userId}`;
+await useCase.execute({
     userId: payload.userId,
     type: 'USER_REGISTERED',
     channel: 'EMAIL',
