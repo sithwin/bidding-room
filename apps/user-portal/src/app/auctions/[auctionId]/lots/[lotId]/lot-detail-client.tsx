@@ -34,10 +34,10 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
 
-  // Task B-16: new state
   const [bidActivity, setBidActivity] = useState<Array<{ paddle: string; amount: number; isYou: boolean }>>([]);
   const [isLeading, setIsLeading] = useState(false);
-  const [auctionClosed, setAuctionClosed] = useState(false);
+  const [hasParticipated, setHasParticipated] = useState(false);
+  const [isAuctionClosed, setIsAuctionClosed] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [relatedLots, setRelatedLots] = useState<LotCardProps[]>([]);
   const [nextLots, setNextLots] = useState<LotCardProps[]>([]);
@@ -50,6 +50,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
       setLot(prev => ({ ...prev, currentBid: lastEvent.currentBid, bidCount: lastEvent.bidCount }));
       const isYou = !!user && lastEvent.bidderId === user.userId;
       setIsLeading(isYou);
+      if (user) setHasParticipated(true);
       setBidActivity(prev => [
         { paddle: isYou ? 'You' : `Paddle ${lastEvent.bidderId.slice(-4)}`, amount: lastEvent.currentBid, isYou },
         ...prev.slice(0, 19),
@@ -59,7 +60,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
     if (lastEvent.type === 'timer_extended') setLot(prev => ({ ...prev, endAt: lastEvent.endAt }));
     if (lastEvent.type === 'closing_soon') setIsLive(true);
     if (lastEvent.type === 'auction_closed') {
-      setAuctionClosed(true);
+      setIsAuctionClosed(true);
       setLot(prev => ({ ...prev, status: lastEvent.result }));
     }
   }, [lastEvent]);
@@ -82,7 +83,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
   }, [isLive, lot.auctionId, lot.lotNumber]);
 
   async function placeBid() {
-    if (auctionClosed) return;
+    if (isAuctionClosed) return;
     const amount = Number(bidAmount);
     if (!amount || amount <= lot.currentBid) {
       setToast({ message: `Bid must exceed current bid of ${lot.currency.toUpperCase()} ${lot.currentBid.toLocaleString()}`, type: 'error' });
@@ -158,7 +159,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
             </div>
 
             {/* Status line */}
-            {user && (
+            {user && hasParticipated && (
               <p className={`font-sans text-sm font-medium ${isLeading ? 'text-[var(--gold)]' : 'text-red-400'}`}>
                 {isLeading ? 'You are leading' : 'You\'ve been outbid'}
               </p>
@@ -182,7 +183,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
             )}
 
             {/* Auction closed banner */}
-            {auctionClosed && (
+            {isAuctionClosed && (
               <div className='bg-ink/10 border border-[var(--line)] px-4 py-3 text-center'>
                 <p className='font-sans text-sm font-medium text-ink'>This auction has closed</p>
               </div>
@@ -194,12 +195,12 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                 value={bidAmount}
                 onChange={e => setBidAmount(e.target.value)}
                 placeholder={`Min ${lot.currentBid + 100}`}
-                disabled={auctionClosed}
+                disabled={isAuctionClosed}
                 className='w-full border border-[var(--line)] bg-transparent text-[var(--ink)] font-sans text-lg px-4 py-3 mb-3 disabled:opacity-50'
               />
               <button
                 onClick={placeBid}
-                disabled={auctionClosed}
+                disabled={isAuctionClosed}
                 className='w-full bg-[var(--ink)] text-paper font-sans font-semibold py-4 text-base hover:opacity-90 transition-opacity disabled:opacity-50'
               >
                 Bid {lot.currency.toUpperCase()} {bidAmount || '—'}
@@ -265,7 +266,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                 </div>
 
                 {/* Auction closed banner */}
-                {auctionClosed && (
+                {isAuctionClosed && (
                   <div className='bg-ink/10 border border-[var(--line)] px-4 py-3 mb-4 text-center'>
                     <p className='font-sans text-sm font-medium text-ink'>This auction has closed</p>
                   </div>
@@ -281,12 +282,12 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                   value={bidAmount}
                   onChange={e => setBidAmount(e.target.value)}
                   placeholder={`$ ${lot.currentBid + 100}`}
-                  disabled={auctionClosed}
+                  disabled={isAuctionClosed}
                   className='w-full border border-[var(--line)] font-sans text-base px-4 py-3 mb-3 disabled:opacity-50'
                 />
                 <button
                   onClick={placeBid}
-                  disabled={auctionClosed}
+                  disabled={isAuctionClosed}
                   className='w-full bg-ink text-paper font-sans font-semibold py-3 hover:bg-ink/90 transition-colors disabled:opacity-50'
                 >
                   Place Bid
@@ -294,13 +295,19 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                 <p className='font-sans text-xs text-mut mt-3 text-center'>22% buyer&apos;s premium applies</p>
               </div>
 
-              {/* Add to Watchlist + Enquire */}
+              {/* Add to Watchlist + Enquire + Condition */}
               <div className='flex gap-3 mb-6'>
                 <button onClick={toggleWatchlist} className='flex-1 border border-[var(--line)] font-sans text-sm py-2 hover:bg-cream transition-colors'>
                   ♡ Add to Watchlist
                 </button>
                 <button className='flex-1 border border-[var(--line)] font-sans text-sm py-2 hover:bg-cream transition-colors'>
                   Enquire
+                </button>
+                <button
+                  onClick={() => { const el = document.getElementById('condition'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }}
+                  className='flex-1 border border-[var(--line)] font-sans text-sm py-2 hover:bg-cream transition-colors'
+                >
+                  Condition
                 </button>
               </div>
 
