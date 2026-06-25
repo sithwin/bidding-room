@@ -6,6 +6,7 @@ const nextConfig = {
     AUCTION_SERVICE_URL:   process.env.AUCTION_SERVICE_URL   ?? 'http://localhost:3003',
     PAYMENT_SERVICE_URL:   process.env.PAYMENT_SERVICE_URL   ?? 'http://localhost:3004',
     SHIPPING_SERVICE_URL:  process.env.SHIPPING_SERVICE_URL  ?? 'http://localhost:3006',
+    ADMIN_SERVICE_URL:     process.env.ADMIN_SERVICE_URL     ?? 'http://localhost:3007',
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '',
   },
   images: { domains: ['pub-placeholder.r2.dev'] },
