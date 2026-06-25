@@ -10,13 +10,16 @@ export type SseEvent =
 export interface UseLotSseReturn {
   lastEvent: SseEvent | null;
   isConnected: boolean;
+  isReconnecting: boolean;
 }
 
 export function useLotSse(lotId: string): UseLotSseReturn {
   const [lastEvent, setLastEvent] = useState<SseEvent | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const esRef = useRef<EventSource | null>(null);
   const retryDelay = useRef(1000);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,6 +31,8 @@ export function useLotSse(lotId: string): UseLotSseReturn {
 
       es.onopen = () => {
         setIsConnected(true);
+        setIsReconnecting(false);
+        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
         retryDelay.current = 1000;
       };
 
@@ -43,6 +48,8 @@ export function useLotSse(lotId: string): UseLotSseReturn {
       es.onerror = () => {
         setIsConnected(false);
         es.close();
+        // Show "Reconnecting…" badge only after 5 seconds
+        reconnectTimerRef.current = setTimeout(() => setIsReconnecting(true), 5000);
         if (!cancelled) {
           setTimeout(() => {
             retryDelay.current = Math.min(retryDelay.current * 2, 30000);
@@ -55,9 +62,10 @@ export function useLotSse(lotId: string): UseLotSseReturn {
     connect();
     return () => {
       cancelled = true;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       esRef.current?.close();
     };
   }, [lotId]);
 
-  return { lastEvent, isConnected };
+  return { lastEvent, isConnected, isReconnecting };
 }

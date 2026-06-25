@@ -208,4 +208,52 @@ describe('useLotSse', () => {
     // Old EventSource should have been closed
     expect(MockEventSource.instances[0].close).toHaveBeenCalled();
   });
+
+  it('returns isReconnecting=false initially', () => {
+    const { result } = renderHook(() => useLotSse('lot-1'));
+    expect(result.current.isReconnecting).toBe(false);
+  });
+
+  it('does not show isReconnecting immediately after error (requires 5s delay)', () => {
+    const { result } = renderHook(() => useLotSse('lot-1'));
+    act(() => {
+      MockEventSource.instances[0].simulateOpen();
+      MockEventSource.instances[0].simulateError();
+    });
+    // Not yet showing — timer has not fired
+    expect(result.current.isReconnecting).toBe(false);
+  });
+
+  it('sets isReconnecting=true after 5 seconds of disconnect', () => {
+    const { result } = renderHook(() => useLotSse('lot-1'));
+    act(() => {
+      MockEventSource.instances[0].simulateOpen();
+      MockEventSource.instances[0].simulateError();
+    });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(result.current.isReconnecting).toBe(true);
+  });
+
+  it('clears isReconnecting when connection is re-established', () => {
+    const { result } = renderHook(() => useLotSse('lot-1'));
+    act(() => {
+      MockEventSource.instances[0].simulateOpen();
+      MockEventSource.instances[0].simulateError();
+      vi.advanceTimersByTime(5000);
+    });
+    expect(result.current.isReconnecting).toBe(true);
+
+    // Advance time to trigger reconnect (1s back-off)
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    // Second instance is created — simulate open
+    act(() => {
+      MockEventSource.instances[1].simulateOpen();
+    });
+    expect(result.current.isReconnecting).toBe(false);
+    expect(result.current.isConnected).toBe(true);
+  });
 });
