@@ -1,232 +1,158 @@
-### Task 1: user-auth — PENDING_REVIEW status + identity document field
+### Task 1: Scaffold — package.json, tsconfig, next.config, tailwind, postcss, vitest
 
-**Files:**
-- Modify: `apps/user-auth/src/domain/user.ts`
-- Modify: `apps/user-auth/src/infrastructure/db/postgres-user-repository.ts`
+**Files:** Create all config files.
 
-**Interfaces:**
-- Produces: `UserStatus.PENDING_REVIEW`, `User.submitIdentityDocument(key: string)`, `UserProps.identityDocumentKey`
-- `verifyPhone()` now sets status to `PHONE_VERIFIED` (not `APPROVED_BIDDER`) — bidder registration wizard handles final approval
+- [x] **Step 1: Create `apps/user-portal/package.json`**
 
-**Migration SQL** (run manually against user-auth DB before starting):
-
-```sql
-ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS identity_document_key TEXT;
-
-ALTER TYPE user_status ADD VALUE IF NOT EXISTS 'PHONE_VERIFIED';
-ALTER TYPE user_status ADD VALUE IF NOT EXISTS 'PENDING_REVIEW';
+```json
+{
+  "name": "@carat-room/user-portal",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@radix-ui/react-dialog": "^1.1.17",
+    "@radix-ui/react-label": "^2.1.10",
+    "@radix-ui/react-select": "^2.3.1",
+    "@radix-ui/react-separator": "^1.1.10",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.15",
+    "@radix-ui/react-toast": "^1.2.17",
+    "@stripe/react-stripe-js": "^2.7.3",
+    "@stripe/stripe-js": "^4.1.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.395.0",
+    "next": "14.2.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.80.0",
+    "swr": "^2.2.5",
+    "tailwind-merge": "^2.3.0",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@carat-room/tsconfig": "workspace:*",
+    "@testing-library/jest-dom": "^6.4.6",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "jsdom": "^24.1.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
 ```
 
-If `user_status` is stored as plain `VARCHAR` (not a Postgres enum), no `ALTER TYPE` needed — only the column addition.
+- [x] **Step 2: Create `apps/user-portal/tsconfig.json`**
 
-- [ ] **Step 1: Update `apps/user-auth/src/domain/user.ts`**
+```json
+{
+  "extends": "@carat-room/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}
+```
+
+- [x] **Step 3: Create `apps/user-portal/next.config.mjs`**
+
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  env: {
+    USER_SERVICE_URL:      process.env.USER_SERVICE_URL      ?? 'http://localhost:3001',
+    CATALOGUE_SERVICE_URL: process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002',
+    AUCTION_SERVICE_URL:   process.env.AUCTION_SERVICE_URL   ?? 'http://localhost:3003',
+    PAYMENT_SERVICE_URL:   process.env.PAYMENT_SERVICE_URL   ?? 'http://localhost:3004',
+    SHIPPING_SERVICE_URL:  process.env.SHIPPING_SERVICE_URL  ?? 'http://localhost:3006',
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '',
+  },
+  images: { domains: ['pub-placeholder.r2.dev'] },
+};
+
+export default nextConfig;
+```
+
+- [x] **Step 4: Create `apps/user-portal/tailwind.config.ts`**
 
 ```typescript
-export enum UserStatus {
-  REGISTERED = 'REGISTERED',
-  EMAIL_VERIFIED = 'EMAIL_VERIFIED',
-  PHONE_VERIFIED = 'PHONE_VERIFIED',
-  PENDING_REVIEW = 'PENDING_REVIEW',
-  APPROVED_BIDDER = 'APPROVED_BIDDER',
-  SUSPENDED = 'SUSPENDED',
-}
+import type { Config } from 'tailwindcss';
 
-export enum UserRole {
-  BUYER = 'BUYER',
-  ADMIN = 'ADMIN',
-}
+const config: Config = {
+  darkMode: ['class'],
+  content: ['./src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        paper:  '#FFFFFF',
+        cream:  '#F5F5F4',
+        ink:    '#111111',
+        gold:   '#8a8a8a',
+        mut:    '#777777',
+        canvas: '#e7e5df',
+      },
+      fontFamily: {
+        serif: ['var(--font-bodoni)', 'Georgia', 'serif'],
+        sans:  ['var(--font-mulish)', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [require('tailwindcss-animate')],
+};
 
-export interface UserProps {
-  id: string;
-  email: string;
-  passwordHash: string;
-  phone: string | null;
-  status: UserStatus;
-  role: UserRole;
-  country: string | null;
-  identityDocumentKey: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export class User {
-  private props: UserProps;
-
-  private constructor(props: UserProps) {
-    this.props = props;
-  }
-
-  static create(params: {
-    id: string;
-    email: string;
-    passwordHash: string;
-    role: UserRole;
-    country?: string;
-  }): User {
-    return new User({
-      id: params.id,
-      email: params.email,
-      passwordHash: params.passwordHash,
-      phone: null,
-      status: UserStatus.REGISTERED,
-      role: params.role,
-      country: params.country ?? null,
-      identityDocumentKey: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-  }
-
-  static reconstitute(props: UserProps): User {
-    return new User(props);
-  }
-
-  get id(): string { return this.props.id; }
-  get email(): string { return this.props.email; }
-  get passwordHash(): string { return this.props.passwordHash; }
-  get phone(): string | null { return this.props.phone; }
-  get status(): UserStatus { return this.props.status; }
-  get role(): UserRole { return this.props.role; }
-  get country(): string | null { return this.props.country; }
-  get identityDocumentKey(): string | null { return this.props.identityDocumentKey; }
-  get createdAt(): Date { return this.props.createdAt; }
-  get updatedAt(): Date { return this.props.updatedAt; }
-
-  verifyEmail(): void {
-    if (this.props.status !== UserStatus.REGISTERED) {
-      throw new Error('Email already verified');
-    }
-    this.props.status = UserStatus.EMAIL_VERIFIED;
-    this.props.updatedAt = new Date();
-  }
-
-  requestPhoneVerification(phone: string): void {
-    if (this.props.status === UserStatus.REGISTERED) {
-      throw new Error('Email must be verified before phone verification');
-    }
-    this.props.phone = phone;
-    this.props.updatedAt = new Date();
-  }
-
-  verifyPhone(): void {
-    if (!this.props.phone) {
-      throw new Error('Phone not set');
-    }
-    this.props.status = UserStatus.PHONE_VERIFIED;
-    this.props.updatedAt = new Date();
-  }
-
-  submitIdentityDocument(key: string): void {
-    if (this.props.status === UserStatus.REGISTERED) {
-      throw new Error('Email must be verified before submitting identity');
-    }
-    this.props.identityDocumentKey = key;
-    this.props.status = UserStatus.PENDING_REVIEW;
-    this.props.updatedAt = new Date();
-  }
-
-  approve(): void {
-    this.props.status = UserStatus.APPROVED_BIDDER;
-    this.props.updatedAt = new Date();
-  }
-
-  suspend(): void {
-    this.props.status = UserStatus.SUSPENDED;
-    this.props.updatedAt = new Date();
-  }
-
-  updateProfile(patch: { country?: string }): void {
-    if (patch.country !== undefined) {
-      this.props.country = patch.country;
-    }
-    this.props.updatedAt = new Date();
-  }
-
-  toProps(): UserProps {
-    return { ...this.props };
-  }
-}
+export default config;
 ```
 
-- [ ] **Step 2: Update `apps/user-auth/src/infrastructure/db/postgres-user-repository.ts`**
+- [x] **Step 5: Create `apps/user-portal/postcss.config.js`**
+
+```js
+module.exports = { plugins: { tailwindcss: {}, autoprefixer: {} } };
+```
+
+- [x] **Step 6: Create `apps/user-portal/vitest.config.ts`**
 
 ```typescript
-import { Db } from './db';
-import { User, UserProps, UserRole, UserStatus } from '../../domain/user';
-import { UserRepository } from '../../domain/user-repository';
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
-interface UserRow {
-  id: string;
-  email: string;
-  password_hash: string;
-  phone: string | null;
-  status: string;
-  role: string;
-  country: string | null;
-  identity_document_key: string | null;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export class PostgresUserRepository implements UserRepository {
-  constructor(private readonly db: Db) {}
-
-  async findById(id: string): Promise<User | null> {
-    const [row] = await this.db<UserRow[]>`SELECT * FROM users WHERE id = ${id}`;
-    return row ? this.toEntity(row) : null;
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    const [row] = await this.db<UserRow[]>`SELECT * FROM users WHERE email = ${email}`;
-    return row ? this.toEntity(row) : null;
-  }
-
-  async save(user: User): Promise<void> {
-    const props = user.toProps();
-    await this.db`
-      INSERT INTO users (id, email, password_hash, phone, status, role, country, identity_document_key, created_at, updated_at)
-      VALUES (${props.id}, ${props.email}, ${props.passwordHash}, ${props.phone}, ${props.status}, ${props.role}, ${props.country}, ${props.identityDocumentKey}, ${props.createdAt}, ${props.updatedAt})
-      ON CONFLICT (id) DO UPDATE
-        SET phone                 = EXCLUDED.phone,
-            status                = EXCLUDED.status,
-            country               = EXCLUDED.country,
-            identity_document_key = EXCLUDED.identity_document_key,
-            updated_at            = EXCLUDED.updated_at
-    `;
-  }
-
-  private toEntity(row: UserRow): User {
-    const props: UserProps = {
-      id: row.id,
-      email: row.email,
-      passwordHash: row.password_hash,
-      phone: row.phone,
-      status: row.status as UserStatus,
-      role: row.role as UserRole,
-      country: row.country,
-      identityDocumentKey: row.identity_document_key,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
-    return User.reconstitute(props);
-  }
-}
+export default defineConfig({
+  plugins: [react()],
+  test: { environment: 'jsdom', setupFiles: ['./src/test-setup.ts'], globals: true },
+  resolve: { alias: { '@': resolve(__dirname, './src') } },
+});
 ```
 
-- [ ] **Step 3: Run the existing user-auth tests to confirm no regressions**
+- [x] **Step 7: Create `apps/user-portal/src/test-setup.ts`**
 
-```bash
-pnpm turbo test --filter=user-auth
+```typescript
+import '@testing-library/jest-dom';
 ```
 
-Expected: all existing tests pass. If `verifyPhone` tests assert `APPROVED_BIDDER`, update them to assert `PHONE_VERIFIED`.
-
-- [ ] **Step 4: Commit**
+- [x] **Step 8: Install and commit**
 
 ```bash
-git add apps/user-auth/src/domain/user.ts apps/user-auth/src/infrastructure/db/postgres-user-repository.ts
-git commit -m "feat(user-auth): add PENDING_REVIEW status and identity_document_key field"
+pnpm install
+git add apps/user-portal/package.json apps/user-portal/tsconfig.json apps/user-portal/next.config.mjs apps/user-portal/tailwind.config.ts apps/user-portal/postcss.config.js apps/user-portal/vitest.config.ts apps/user-portal/src/test-setup.ts
+git commit -m "feat(user-portal): scaffold config files"
 ```
 
 ---
