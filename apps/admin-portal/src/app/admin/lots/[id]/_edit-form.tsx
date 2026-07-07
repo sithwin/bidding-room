@@ -1,8 +1,8 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useActionState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +29,7 @@ function SubmitButton() {
 export function EditLotForm({ lot }: { lot: Lot }) {
   const router = useRouter();
   const boundAction = updateLot.bind(null, lot.id);
-  const [state, formAction] = useFormState(boundAction, {});
+  const [state, formAction] = useActionState(boundAction, {});
 
   useEffect(() => {
     if (state.ok) router.push('/admin/lots');

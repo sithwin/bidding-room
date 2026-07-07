@@ -1,8 +1,8 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useActionState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ function LotIdInput() {
 
 export default function NewAuctionPage() {
   const router = useRouter();
-  const [state, formAction] = useFormState(scheduleAuction, {});
+  const [state, formAction] = useActionState(scheduleAuction, {});
 
   useEffect(() => {
     if (state.ok) router.push('/admin/auctions');
