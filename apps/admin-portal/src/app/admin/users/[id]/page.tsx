@@ -14,8 +14,9 @@ interface UserDetail {
   registeredAt: string;
 }
 
-export default async function UserDetailPage({ params }: { params: { id: string } }) {
-  const res = await adminApi.get<{ data: UserDetail }>(`/admin/api/users/${params.id}`);
+export default async function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const res = await adminApi.get<{ data: UserDetail }>(`/admin/api/users/${id}`);
   const user = res.data;
 
   return (

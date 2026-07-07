@@ -18,8 +18,9 @@ interface Lot {
   images: LotImage[];
 }
 
-export default async function EditLotPage({ params }: { params: { id: string } }) {
-  const res = await adminApi.get<{ data: Lot }>(`/admin/api/lots/${params.id}`);
+export default async function EditLotPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const res = await adminApi.get<{ data: Lot }>(`/admin/api/lots/${id}`);
   const lot = res.data;
 
   return (

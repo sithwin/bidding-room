@@ -8,7 +8,7 @@ export class AdminApiError extends Error {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const token = cookies().get(ADMIN_TOKEN_COOKIE)?.value ?? '';
+  const token = (await cookies()).get(ADMIN_TOKEN_COOKIE)?.value ?? '';
   const baseUrl = process.env.ADMIN_SERVICE_URL ?? 'http://localhost:3007';
 
   const res = await fetch(`${baseUrl}${path}`, {

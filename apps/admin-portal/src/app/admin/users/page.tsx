@@ -1,10 +1,11 @@
 import { adminApi } from '@/lib/admin-api';
 import { UsersTable, type UserSummary } from './_table';
 
-export default async function UsersPage({ searchParams }: { searchParams: { status?: string; search?: string } }) {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ status?: string; search?: string }> }) {
+  const { status, search } = await searchParams;
   const query = new URLSearchParams();
-  if (searchParams.status) query.set('status', searchParams.status);
-  if (searchParams.search) query.set('search', searchParams.search);
+  if (status) query.set('status', status);
+  if (search) query.set('search', search);
 
   const res = await adminApi.get<{ data: UserSummary[] }>(`/admin/api/users?${query.toString()}`);
 

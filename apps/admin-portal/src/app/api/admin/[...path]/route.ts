@@ -2,17 +2,18 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { ADMIN_TOKEN_COOKIE } from '@/lib/auth-cookie';
 
-type RouteContext = { params: { path: string[] } };
+type RouteContext = { params: Promise<{ path: string[] }> };
 
 async function proxyToAdminService(req: NextRequest, context: RouteContext): Promise<NextResponse> {
-  const token = cookies().get(ADMIN_TOKEN_COOKIE)?.value;
+  const token = (await cookies()).get(ADMIN_TOKEN_COOKIE)?.value;
 
   if (!token) {
     return NextResponse.json({ error: { code: 'UNAUTHORIZED' } }, { status: 401 });
   }
 
   const adminServiceUrl = process.env.ADMIN_SERVICE_URL ?? 'http://localhost:3007';
-  const targetPath = context.params.path.join('/');
+  const { path } = await context.params;
+  const targetPath = path.join('/');
   const searchParams = req.nextUrl.searchParams.toString();
   const url = `${adminServiceUrl}/admin/api/${targetPath}${searchParams ? `?${searchParams}` : ''}`;
 

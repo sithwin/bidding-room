@@ -17,8 +17,9 @@ interface InvoiceDetail {
   stripePaymentIntent: string | null;
 }
 
-export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
-  const res = await adminApi.get<{ data: InvoiceDetail }>(`/admin/api/invoices/${params.id}`);
+export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const res = await adminApi.get<{ data: InvoiceDetail }>(`/admin/api/invoices/${id}`);
   const invoice = res.data;
   const isUnpaid = invoice.status === 'AWAITING_PAYMENT';
 

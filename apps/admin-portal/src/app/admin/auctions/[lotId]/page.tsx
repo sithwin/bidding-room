@@ -14,14 +14,15 @@ interface AuctionDetail {
   autoExtendDurationMinutes: number;
 }
 
-export default async function AuctionDetailPage({ params }: { params: { lotId: string } }) {
-  const res = await adminApi.get<{ data: AuctionDetail }>(`/admin/api/auctions/${params.lotId}`);
+export default async function AuctionDetailPage({ params }: { params: Promise<{ lotId: string }> }) {
+  const { lotId } = await params;
+  const res = await adminApi.get<{ data: AuctionDetail }>(`/admin/api/auctions/${lotId}`);
   const auction = res.data;
 
   return (
     <div className='space-y-6'>
       <h1 className='text-2xl font-semibold'>{auction.lotTitle}</h1>
-      <AuctionLiveStats lotId={params.lotId} />
+      <AuctionLiveStats lotId={lotId} />
       <section className='space-y-2'>
         <h2 className='text-lg font-medium'>Bid History</h2>
         <BidsTable data={auction.bids} />

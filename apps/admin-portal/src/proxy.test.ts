@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from './middleware';
+import { proxy } from './proxy';
 
 function encodeSegment(value: Record<string, unknown>): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -23,40 +23,40 @@ function buildRequest(path: string, token?: string): NextRequest {
 const FUTURE_EXP = Math.floor(Date.now() / 1000) + 900;
 const PAST_EXP = Math.floor(Date.now() / 1000) - 60;
 
-describe('middleware', () => {
+describe('proxy', () => {
   it('should_redirectToLogin_when_noTokenOnProtectedPath', () => {
-    const res = middleware(buildRequest('/admin/dashboard'));
+    const res = proxy(buildRequest('/admin/dashboard'));
 
     expect(res.headers.get('location')).toBe('http://localhost:3006/admin/login');
   });
 
   it('should_allowRequest_when_tokenIsValidOnProtectedPath', () => {
-    const res = middleware(buildRequest('/admin/dashboard', buildToken(FUTURE_EXP)));
+    const res = proxy(buildRequest('/admin/dashboard', buildToken(FUTURE_EXP)));
 
     expect(res.headers.get('location')).toBeNull();
   });
 
   it('should_redirectToDashboard_when_tokenIsValidOnLoginPage', () => {
-    const res = middleware(buildRequest('/admin/login', buildToken(FUTURE_EXP)));
+    const res = proxy(buildRequest('/admin/login', buildToken(FUTURE_EXP)));
 
     expect(res.headers.get('location')).toBe('http://localhost:3006/admin/dashboard');
   });
 
   it('should_redirectToLoginAndClearCookie_when_tokenIsExpiredOnProtectedPath', () => {
-    const res = middleware(buildRequest('/admin/dashboard', buildToken(PAST_EXP)));
+    const res = proxy(buildRequest('/admin/dashboard', buildToken(PAST_EXP)));
 
     expect(res.headers.get('location')).toBe('http://localhost:3006/admin/login');
     expect(res.headers.get('set-cookie')).toContain('admin_token=;');
   });
 
   it('should_allowLoginPage_when_tokenIsExpired', () => {
-    const res = middleware(buildRequest('/admin/login', buildToken(PAST_EXP)));
+    const res = proxy(buildRequest('/admin/login', buildToken(PAST_EXP)));
 
     expect(res.headers.get('location')).toBeNull();
   });
 
   it('should_redirectToLoginAndClearCookie_when_tokenIsMalformed', () => {
-    const res = middleware(buildRequest('/admin/dashboard', 'not-a-jwt'));
+    const res = proxy(buildRequest('/admin/dashboard', 'not-a-jwt'));
 
     expect(res.headers.get('location')).toBe('http://localhost:3006/admin/login');
     expect(res.headers.get('set-cookie')).toContain('admin_token=;');

@@ -1,8 +1,8 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useActionState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +19,7 @@ function SubmitButton() {
 
 export default function NewLotPage() {
   const router = useRouter();
-  const [state, formAction] = useFormState(createLot, {});
+  const [state, formAction] = useActionState(createLot, {});
 
   useEffect(() => {
     if (state.ok) router.push('/admin/lots');
