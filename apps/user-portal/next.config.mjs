@@ -9,7 +9,14 @@ const nextConfig = {
     ADMIN_SERVICE_URL:     process.env.ADMIN_SERVICE_URL     ?? 'http://localhost:3007',
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '',
   },
-  images: { domains: ['pub-placeholder.r2.dev'] },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'pub-placeholder.r2.dev',
+      },
+    ],
+  },
 };
 
 export default nextConfig;
