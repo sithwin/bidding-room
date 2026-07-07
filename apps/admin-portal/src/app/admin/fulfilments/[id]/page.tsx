@@ -31,8 +31,9 @@ interface FulfilmentDetail {
   collectionSlot: CollectionSlot | null;
 }
 
-export default async function FulfilmentDetailPage({ params }: { params: { id: string } }) {
-  const res = await adminApi.get<{ data: FulfilmentDetail }>(`/admin/api/fulfilments/${params.id}`);
+export default async function FulfilmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const res = await adminApi.get<{ data: FulfilmentDetail }>(`/admin/api/fulfilments/${id}`);
   const ful = res.data;
   const isPendingDispatch = ful.method === 'SHIP' && ful.status === 'PENDING_DISPATCH';
   const isPendingCollection = ful.method === 'COLLECT' && ful.status === 'PENDING_DISPATCH';
