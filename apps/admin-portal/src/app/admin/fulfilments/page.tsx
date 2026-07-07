@@ -1,8 +1,9 @@
 import { adminApi } from '@/lib/admin-api';
 import { FulfilmentsTable, type FulfilmentSummary } from './_table';
 
-export default async function FulfilmentsPage({ searchParams }: { searchParams: { status?: string } }) {
-  const query = searchParams.status ? `?status=${searchParams.status}` : '';
+export default async function FulfilmentsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  const { status } = await searchParams;
+  const query = status ? `?status=${status}` : '';
   const res = await adminApi.get<{ data: FulfilmentSummary[] }>(`/admin/api/fulfilments${query}`);
 
   return (
