@@ -11,21 +11,21 @@ describe('getAdminToken', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('should_returnToken_when_cookieIsPresent', async () => {
-    vi.mocked(cookies).mockReturnValue({
+    vi.mocked(cookies).mockResolvedValue({
       get: vi.fn().mockReturnValue({ value: 'admin-jwt-abc' }),
-    } as unknown as ReturnType<typeof cookies>);
+    } as unknown as Awaited<ReturnType<typeof cookies>>);
 
-    const token = getAdminToken();
+    const token = await getAdminToken();
 
     expect(token).toBe('admin-jwt-abc');
   });
 
   it('should_returnUndefined_when_cookieIsAbsent', async () => {
-    vi.mocked(cookies).mockReturnValue({
+    vi.mocked(cookies).mockResolvedValue({
       get: vi.fn().mockReturnValue(undefined),
-    } as unknown as ReturnType<typeof cookies>);
+    } as unknown as Awaited<ReturnType<typeof cookies>>);
 
-    const token = getAdminToken();
+    const token = await getAdminToken();
 
     expect(token).toBeUndefined();
   });
