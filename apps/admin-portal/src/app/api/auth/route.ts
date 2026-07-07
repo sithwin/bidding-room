@@ -29,7 +29,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: { code: 'INVALID_TOKEN', message: 'Received an expired or non-expiring token' } }, { status: 401 });
   }
 
-  cookies().set(ADMIN_TOKEN_COOKIE, body.data.accessToken, {
+  (await cookies()).set(ADMIN_TOKEN_COOKIE, body.data.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -41,6 +41,6 @@ export async function POST(req: Request): Promise<NextResponse> {
 }
 
 export async function DELETE(): Promise<NextResponse> {
-  cookies().delete(ADMIN_TOKEN_COOKIE);
+  (await cookies()).delete(ADMIN_TOKEN_COOKIE);
   return NextResponse.json({ ok: true });
 }

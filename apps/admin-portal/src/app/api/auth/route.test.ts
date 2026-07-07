@@ -6,7 +6,7 @@ vi.stubGlobal('fetch', mockFetch);
 const mockCookiesSet = vi.fn();
 const mockCookiesDelete = vi.fn();
 vi.mock('next/headers', () => ({
-  cookies: vi.fn(() => ({ set: mockCookiesSet, delete: mockCookiesDelete })),
+  cookies: vi.fn(() => Promise.resolve({ set: mockCookiesSet, delete: mockCookiesDelete })),
 }));
 
 import { POST, DELETE } from './route';
