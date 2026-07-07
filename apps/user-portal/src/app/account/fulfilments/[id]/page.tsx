@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,7 +21,8 @@ const collectSchema = z.object({
 });
 type CollectForm = z.infer<typeof collectSchema>;
 
-export default function FulfilmentPage({ params }: { params: { id: string } }) {
+export default function FulfilmentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { accessToken } = useAuth();
   const [option, setOption] = useState<'ship' | 'collect'>('ship');
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
@@ -30,7 +31,7 @@ export default function FulfilmentPage({ params }: { params: { id: string } }) {
   const collectForm = useForm<CollectForm>({ resolver: zodResolver(collectSchema) });
 
   async function submitAddress(data: AddressForm) {
-    const res = await fetch(`/api/shipping/fulfilments/${params.id}/address`, {
+    const res = await fetch(`/api/shipping/fulfilments/${id}/address`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify(data),
@@ -40,7 +41,7 @@ export default function FulfilmentPage({ params }: { params: { id: string } }) {
   }
 
   async function submitCollect(data: CollectForm) {
-    const res = await fetch(`/api/shipping/fulfilments/${params.id}/collection-slot`, {
+    const res = await fetch(`/api/shipping/fulfilments/${id}/collection-slot`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify(data),
