@@ -10,8 +10,9 @@ type Lot = {
   endAt: string; estimate: string; provenance: string; status: string;
 };
 
-export default async function LotDetailPage({ params }: { params: { auctionId: string; lotId: string } }) {
-  const res = await fetch(`${CATALOGUE_URL}/api/lots/${params.lotId}`, { cache: 'no-store' });
+export default async function LotDetailPage({ params }: { params: Promise<{ auctionId: string; lotId: string }> }) {
+  const { lotId } = await params;
+  const res = await fetch(`${CATALOGUE_URL}/api/lots/${lotId}`, { cache: 'no-store' });
   if (!res.ok) notFound();
   const lot = await res.json() as Lot;
 

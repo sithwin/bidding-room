@@ -8,8 +8,9 @@ const CATALOGUE_URL = process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:300
 
 type Auction = { id: string; title: string; saleDate: string; location: string; description: string; viewingDates: string | null };
 
-export default async function SaleCataloguePage({ params }: { params: { auctionId: string } }) {
-  const auctionRes = await fetch(`${CATALOGUE_URL}/api/auctions/${params.auctionId}`, {
+export default async function SaleCataloguePage({ params }: { params: Promise<{ auctionId: string }> }) {
+  const { auctionId } = await params;
+  const auctionRes = await fetch(`${CATALOGUE_URL}/api/auctions/${auctionId}`, {
     next: { revalidate: 30 },
   });
 
@@ -54,7 +55,7 @@ export default async function SaleCataloguePage({ params }: { params: { auctionI
       </div>
 
       {/* Lot grid with sort + pagination */}
-      <CatalogueLots auctionId={params.auctionId} />
+      <CatalogueLots auctionId={auctionId} />
     </>
   );
 }
