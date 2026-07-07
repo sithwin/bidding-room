@@ -49,15 +49,16 @@ describe('RootLayout', () => {
   });
 
   it('applies font CSS variable classes to the html element', () => {
-    const { container } = render(
+    render(
       <RootLayout>
         <span>content</span>
       </RootLayout>,
     );
 
-    /* The outerHTML wraps in a div by RTL — check the html element inside */
-    const html = container.querySelector('html');
-    expect(html?.className).toContain('--font-bodoni');
-    expect(html?.className).toContain('--font-mulish');
+    /* React 19 hoists a rendered <html> element to the document itself
+       rather than nesting it inside RTL's container div, so assert against
+       document.documentElement rather than container.querySelector('html'). */
+    expect(document.documentElement.className).toContain('--font-bodoni');
+    expect(document.documentElement.className).toContain('--font-mulish');
   });
 });
