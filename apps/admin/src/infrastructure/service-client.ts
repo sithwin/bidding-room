@@ -32,7 +32,14 @@ export class ServiceClient {
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    const json = await res.json();
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      // Downstream returned non-JSON (e.g. a framework's plain-text 404) — surface it as-is
+      json = { error: { code: 'UPSTREAM_ERROR', message: text.slice(0, 200) } };
+    }
     if (!res.ok) {
       throw new ServiceError(res.status, json);
     }

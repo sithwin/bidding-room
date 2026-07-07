@@ -42,6 +42,16 @@ export class PostgresInvoiceRepository implements InvoiceRepository {
     return rows[0] ? rowToInvoice(rows[0]) : null;
   }
 
+  async findAll(filter: { status?: string }): Promise<Invoice[]> {
+    const rows = await this.db<InvoiceRow[]>`
+      SELECT * FROM invoices
+      WHERE (${filter.status ?? null}::text IS NULL OR status = ${filter.status ?? null})
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
+    return rows.map(rowToInvoice);
+  }
+
   async findByLotId(lotId: string): Promise<Invoice | null> {
     const rows = await this.db<InvoiceRow[]>`
       SELECT * FROM invoices WHERE lot_id = ${lotId}
@@ -64,6 +74,7 @@ export class PostgresInvoiceRepository implements InvoiceRepository {
         status = EXCLUDED.status,
         stripe_checkout_id = EXCLUDED.stripe_checkout_id,
         stripe_payment_intent = EXCLUDED.stripe_payment_intent,
+        due_at = EXCLUDED.due_at,
         paid_at = EXCLUDED.paid_at
     `;
   }

@@ -28,6 +28,7 @@ function buildInvoice(overrides: Partial<ConstructorParameters<typeof Invoice>[0
 
 const mockRepo: InvoiceRepository = {
   findById: vi.fn(),
+  findAll: vi.fn(),
   findByLotId: vi.fn(),
   save: vi.fn(),
   isPaymentEventProcessed: vi.fn(),

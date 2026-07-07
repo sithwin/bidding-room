@@ -17,7 +17,12 @@ import { GetMeUseCase } from './application/get-me.use-case';
 import { UpdateMeUseCase } from './application/update-me.use-case';
 import { UploadIdentityDocumentUseCase } from './application/upload-identity-document.use-case';
 import { R2UploadClient } from './infrastructure/r2/r2-upload-client';
+import { ListUsersUseCase } from './application/list-users.use-case';
+import { SuspendUserUseCase } from './application/suspend-user.use-case';
+import { ReinstateUserUseCase } from './application/reinstate-user.use-case';
+import { ApproveUserUseCase } from './application/approve-user.use-case';
 import { buildUserRouter } from './presentation/user-router';
+import { buildAdminUsersRouter } from './presentation/admin-users-router';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
 
@@ -79,6 +84,15 @@ async function main(): Promise<void> {
     updateMe:                new UpdateMeUseCase(userRepo),
     uploadIdentityDocument:  new UploadIdentityDocumentUseCase(userRepo, r2),
   }));
+
+  // Admin routes mounted after the public router so specific paths like /me match first
+  app.route('/api/users', buildAdminUsersRouter({
+    listUsers:     new ListUsersUseCase(userRepo),
+    getUser:       new GetMeUseCase(userRepo),
+    suspendUser:   new SuspendUserUseCase(userRepo),
+    reinstateUser: new ReinstateUserUseCase(userRepo),
+    approveUser:   new ApproveUserUseCase(userRepo),
+  }, jwtPublicKey));
 
   serve({ fetch: app.fetch, port });
 }

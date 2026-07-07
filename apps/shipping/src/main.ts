@@ -8,6 +8,7 @@ import { ChooseCollectUseCase } from './application/choose-collect.use-case';
 import { MarkDispatchedUseCase } from './application/mark-dispatched.use-case';
 import { MarkCollectedUseCase } from './application/mark-collected.use-case';
 import { GetFulfilmentUseCase } from './application/get-fulfilment.use-case';
+import { ListFulfilmentsUseCase } from './application/list-fulfilments.use-case';
 import { PaymentReceivedHandler } from './infrastructure/events/payment-received-handler';
 import { buildShippingRouter } from './presentation/shipping-router';
 import { createAmqpConnection, EventSubscriber } from '@carat-room/shared-events';
@@ -35,6 +36,7 @@ async function main(): Promise<void> {
   const markDispatched = new MarkDispatchedUseCase(repo);
   const markCollected = new MarkCollectedUseCase(repo);
   const getFulfilment = new GetFulfilmentUseCase(repo);
+  const listFulfilments = new ListFulfilmentsUseCase(repo);
 
   const amqp = await createAmqpConnection(amqpUrl);
   const subscriber = new EventSubscriber(amqp);
@@ -55,6 +57,7 @@ async function main(): Promise<void> {
   app.use('/api/*', authMiddleware(jwtPublicKey));
   app.route('/api/shipping', buildShippingRouter({
     getFulfilment,
+    listFulfilments,
     chooseShip,
     chooseCollect,
     markDispatched,

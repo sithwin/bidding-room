@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { Hono } from 'hono';
 import { buildShippingRouter } from './shipping-router';
 import { GetFulfilmentUseCase } from '../application/get-fulfilment.use-case';
+import { ListFulfilmentsUseCase } from '../application/list-fulfilments.use-case';
 import { ChooseShipUseCase } from '../application/choose-ship.use-case';
 import { ChooseCollectUseCase } from '../application/choose-collect.use-case';
 import { MarkDispatchedUseCase } from '../application/mark-dispatched.use-case';
@@ -11,6 +12,7 @@ import { JwtPayload } from '@carat-room/shared-auth';
 
 const makeUseCases = () => ({
   getFulfilment: { execute: vi.fn() } as unknown as GetFulfilmentUseCase,
+  listFulfilments: { execute: vi.fn() } as unknown as ListFulfilmentsUseCase,
   chooseShip: { execute: vi.fn() } as unknown as ChooseShipUseCase,
   chooseCollect: { execute: vi.fn() } as unknown as ChooseCollectUseCase,
   markDispatched: { execute: vi.fn() } as unknown as MarkDispatchedUseCase,

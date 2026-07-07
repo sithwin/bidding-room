@@ -26,7 +26,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
           <StatusBadge status={user.status} />
         </div>
         <div className='flex gap-2'>
-          {user.status === 'ACTIVE' && (
+          {user.status !== 'SUSPENDED' && (
             <ConfirmDialog
               trigger={<Button variant='destructive'>Suspend</Button>}
               title='Suspend user?'
@@ -40,7 +40,7 @@ export default async function UserDetailPage({ params }: { params: { id: string 
               <Button type='submit'>Reinstate</Button>
             </form>
           )}
-          {!user.emailVerified && (
+          {user.status === 'PENDING_REVIEW' && (
             <form action={async () => { 'use server'; await manuallyApproveUser(user.id); }}>
               <Button type='submit' variant='outline'>Manually Approve</Button>
             </form>

@@ -68,6 +68,31 @@ export class User {
   get createdAt(): Date { return this.props.createdAt; }
   get updatedAt(): Date { return this.props.updatedAt; }
 
+  suspend(): void {
+    if (this.props.status === UserStatus.SUSPENDED) {
+      throw new Error('User already suspended');
+    }
+    this.props.status = UserStatus.SUSPENDED;
+    this.props.updatedAt = new Date();
+  }
+
+  reinstate(): void {
+    if (this.props.status !== UserStatus.SUSPENDED) {
+      throw new Error('User is not suspended');
+    }
+    // Pre-suspension status is not stored, so a reinstated user returns to APPROVED_BIDDER
+    this.props.status = UserStatus.APPROVED_BIDDER;
+    this.props.updatedAt = new Date();
+  }
+
+  approve(): void {
+    if (this.props.status === UserStatus.SUSPENDED || this.props.status === UserStatus.APPROVED_BIDDER) {
+      throw new Error('User cannot be approved from current status');
+    }
+    this.props.status = UserStatus.APPROVED_BIDDER;
+    this.props.updatedAt = new Date();
+  }
+
   verifyEmail(): void {
     if (this.props.status !== UserStatus.REGISTERED) {
       throw new Error('Email already verified');
@@ -98,16 +123,6 @@ export class User {
     }
     this.props.identityDocumentKey = key;
     this.props.status = UserStatus.PENDING_REVIEW;
-    this.props.updatedAt = new Date();
-  }
-
-  approve(): void {
-    this.props.status = UserStatus.APPROVED_BIDDER;
-    this.props.updatedAt = new Date();
-  }
-
-  suspend(): void {
-    this.props.status = UserStatus.SUSPENDED;
     this.props.updatedAt = new Date();
   }
 

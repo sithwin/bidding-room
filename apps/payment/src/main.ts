@@ -9,6 +9,9 @@ import { BullMQExpiryScheduler } from './infrastructure/bullmq-expiry-scheduler'
 import { createPaymentEventPublisher } from './infrastructure/payment-event-publisher';
 import { startAuctionClosedConsumer } from './infrastructure/auction-closed-consumer';
 import { GetInvoiceUseCase } from './application/get-invoice-use-case';
+import { ListInvoicesUseCase } from './application/list-invoices-use-case';
+import { CancelInvoiceUseCase } from './application/cancel-invoice-use-case';
+import { ExtendInvoiceDueDateUseCase } from './application/extend-invoice-due-date-use-case';
 import { CreateCheckoutSessionUseCase } from './application/create-checkout-session-use-case';
 import { HandleWebhookUseCase } from './application/handle-webhook-use-case';
 import { CreateInvoiceUseCase } from './application/create-invoice-use-case';
@@ -59,6 +62,9 @@ async function main(): Promise<void> {
   );
   const expireInvoiceUseCase = new ExpireInvoiceUseCase(invoiceRepository, publish);
   const getInvoiceUseCase = new GetInvoiceUseCase(invoiceRepository);
+  const listInvoicesUseCase = new ListInvoicesUseCase(invoiceRepository);
+  const cancelInvoiceUseCase = new CancelInvoiceUseCase(invoiceRepository, expiryScheduler);
+  const extendInvoiceDueDateUseCase = new ExtendInvoiceDueDateUseCase(invoiceRepository, expiryScheduler);
   const createCheckoutSessionUseCase = new CreateCheckoutSessionUseCase(
     invoiceRepository, stripeAdapter, FRONTEND_URL,
   );
@@ -91,6 +97,10 @@ async function main(): Promise<void> {
   app.get('/health', (c) => c.json({ status: 'ok', service: 'payment' }));
   app.route('/', buildPaymentRouter({
     getInvoice: getInvoiceUseCase,
+    listInvoices: listInvoicesUseCase,
+    cancelInvoice: cancelInvoiceUseCase,
+    extendInvoiceDueDate: extendInvoiceDueDateUseCase,
+    invoiceRepo: invoiceRepository,
     createCheckoutSession: createCheckoutSessionUseCase,
     handleWebhook: handleWebhookUseCase,
     createSetupIntent: createSetupIntentUseCase,

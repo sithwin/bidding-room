@@ -30,6 +30,7 @@ const makeSlot = (fulfilmentId: string) => ({
 
 const makeMockRepo = (): FulfilmentRepository => ({
   findById: vi.fn(),
+  findAll: vi.fn(),
   findByLotId: vi.fn(),
   save: vi.fn(),
   saveWithAddress: vi.fn(),

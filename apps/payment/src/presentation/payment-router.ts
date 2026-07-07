@@ -2,6 +2,11 @@ import { Hono } from 'hono';
 import { authMiddleware } from '@carat-room/shared-auth';
 import type { JwtPayload } from '@carat-room/shared-auth';
 import { GetInvoiceUseCase } from '../application/get-invoice-use-case';
+import { ListInvoicesUseCase } from '../application/list-invoices-use-case';
+import { CancelInvoiceUseCase } from '../application/cancel-invoice-use-case';
+import { ExtendInvoiceDueDateUseCase } from '../application/extend-invoice-due-date-use-case';
+import { InvoiceRepository } from '../domain/invoice-repository';
+import { Invoice } from '../domain/invoice';
 import { CreateCheckoutSessionUseCase } from '../application/create-checkout-session-use-case';
 import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
 import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
@@ -12,6 +17,10 @@ import { StripeClient } from '../application/stripe-client';
 
 interface RouterDeps {
   getInvoice: Pick<GetInvoiceUseCase, 'execute'>;
+  listInvoices: Pick<ListInvoicesUseCase, 'execute'>;
+  cancelInvoice: Pick<CancelInvoiceUseCase, 'execute'>;
+  extendInvoiceDueDate: Pick<ExtendInvoiceDueDateUseCase, 'execute'>;
+  invoiceRepo: Pick<InvoiceRepository, 'findById'>;
   createCheckoutSession: Pick<CreateCheckoutSessionUseCase, 'execute'>;
   handleWebhook: Pick<HandleWebhookUseCase, 'execute'>;
   createSetupIntent: Pick<CreateSetupIntentUseCase, 'execute'>;
@@ -22,19 +31,74 @@ interface RouterDeps {
   jwtPublicKey: string;
 }
 
+function toInvoiceDto(invoice: Invoice) {
+  return {
+    id: invoice.id,
+    lotId: invoice.lotId,
+    winnerUserId: invoice.winnerUserId,
+    amount: invoice.amount,
+    currency: invoice.currency,
+    status: invoice.status,
+    stripeCheckoutId: invoice.stripeCheckoutId,
+    stripePaymentIntent: invoice.stripePaymentIntent,
+    dueAt: invoice.dueAt.toISOString(),
+    paidAt: invoice.paidAt ? invoice.paidAt.toISOString() : null,
+    createdAt: invoice.createdAt.toISOString(),
+  };
+}
+
 export function buildPaymentRouter(deps: RouterDeps): Hono {
   const router = new Hono();
+  const adminOnly = authMiddleware(deps.jwtPublicKey, { adminOnly: true });
+
+  router.get('/api/payments/invoices', adminOnly, async (c) => {
+    const invoices = await deps.listInvoices.execute({ status: c.req.query('status') });
+    return c.json({ data: invoices.map(toInvoiceDto) });
+  });
 
   router.get('/api/payments/invoices/:id', authMiddleware(deps.jwtPublicKey), async (c) => {
     const payload = c.get('jwtPayload') as JwtPayload;
-    const invoice = await deps.getInvoice.execute({
-      invoiceId: c.req.param('id'),
-      requestingUserId: payload.userId,
-    });
+    // Admins may view any invoice; buyers only their own
+    const invoice = payload.role === 'ADMIN'
+      ? await deps.invoiceRepo.findById(c.req.param('id'))
+      : await deps.getInvoice.execute({
+          invoiceId: c.req.param('id'),
+          requestingUserId: payload.userId,
+        });
     if (!invoice) {
       return c.json({ error: { code: 'NOT_FOUND', message: 'Invoice not found' } }, 404);
     }
-    return c.json({ data: invoice });
+    return c.json({ data: toInvoiceDto(invoice) });
+  });
+
+  router.patch('/api/payments/invoices/:id/extend', adminOnly, async (c) => {
+    const body = await c.req.json<{ dueAt: string }>();
+    try {
+      const invoice = await deps.extendInvoiceDueDate.execute({
+        invoiceId: c.req.param('id'),
+        dueAt: body.dueAt,
+      });
+      return c.json({ data: toInvoiceDto(invoice) });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Extend failed';
+      if (message === 'Invoice not found') {
+        return c.json({ error: { code: 'NOT_FOUND', message } }, 404);
+      }
+      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+    }
+  });
+
+  router.patch('/api/payments/invoices/:id/cancel', adminOnly, async (c) => {
+    try {
+      const invoice = await deps.cancelInvoice.execute({ invoiceId: c.req.param('id') });
+      return c.json({ data: toInvoiceDto(invoice) });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Cancel failed';
+      if (message === 'Invoice not found') {
+        return c.json({ error: { code: 'NOT_FOUND', message } }, 404);
+      }
+      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+    }
   });
 
   router.post('/api/payments/invoices/:id/checkout', authMiddleware(deps.jwtPublicKey), async (c) => {

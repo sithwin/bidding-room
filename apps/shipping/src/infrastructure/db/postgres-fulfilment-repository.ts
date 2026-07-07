@@ -50,6 +50,16 @@ export class PostgresFulfilmentRepository implements FulfilmentRepository {
     return this.hydrate(row);
   }
 
+  async findAll(filter: { status?: string }): Promise<Fulfilment[]> {
+    const rows = await this.db<FulfilmentRow[]>`
+      SELECT * FROM fulfilments
+      WHERE (${filter.status ?? null}::text IS NULL OR status = ${filter.status ?? null})
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
+    return Promise.all(rows.map((row) => this.hydrate(row)));
+  }
+
   async findByLotId(lotId: string): Promise<Fulfilment | null> {
     const [row] = await this.db<FulfilmentRow[]>`
       SELECT * FROM fulfilments WHERE lot_id = ${lotId}

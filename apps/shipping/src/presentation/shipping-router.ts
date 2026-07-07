@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
+import { Fulfilment } from '../domain/fulfilment';
 import { GetFulfilmentUseCase } from '../application/get-fulfilment.use-case';
+import { ListFulfilmentsUseCase } from '../application/list-fulfilments.use-case';
 import { ChooseShipUseCase } from '../application/choose-ship.use-case';
 import { ChooseCollectUseCase } from '../application/choose-collect.use-case';
 import { MarkDispatchedUseCase } from '../application/mark-dispatched.use-case';
@@ -8,6 +10,7 @@ import { JwtPayload } from '@carat-room/shared-auth';
 
 interface UseCases {
   getFulfilment: GetFulfilmentUseCase;
+  listFulfilments: ListFulfilmentsUseCase;
   chooseShip: ChooseShipUseCase;
   chooseCollect: ChooseCollectUseCase;
   markDispatched: MarkDispatchedUseCase;
@@ -16,25 +19,75 @@ interface UseCases {
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
+function toFulfilmentDto(fulfilment: Fulfilment) {
+  const p = fulfilment.toProps();
+  return {
+    id: p.id,
+    lotId: p.lotId,
+    userId: p.userId,
+    method: p.method,
+    status: p.status,
+    shippingAddress: p.shippingAddress,
+    collectionSlot: p.collectionSlot,
+  };
+}
+
 export function buildShippingRouter(useCases: UseCases): Hono<AppEnv> {
   const router = new Hono<AppEnv>();
 
+  router.get('/fulfilments', async (c) => {
+    const { role } = c.get('jwtPayload');
+    if (role !== 'ADMIN') {
+      return c.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    }
+    const fulfilments = await useCases.listFulfilments.execute({ status: c.req.query('status') });
+    return c.json({ data: fulfilments.map(toFulfilmentDto) });
+  });
+
+  router.patch('/fulfilments/:id/dispatch', async (c) => {
+    const { role } = c.get('jwtPayload');
+    if (role !== 'ADMIN') {
+      return c.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    }
+    try {
+      await useCases.markDispatched.execute({ fulfilmentId: c.req.param('id') });
+      return c.json({ data: { id: c.req.param('id') } });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (message === 'Fulfilment not found') {
+        return c.json({ error: { code: 'NOT_FOUND', message } }, 404);
+      }
+      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+    }
+  });
+
+  router.patch('/fulfilments/:id/collect', async (c) => {
+    const { role } = c.get('jwtPayload');
+    if (role !== 'ADMIN') {
+      return c.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    }
+    try {
+      await useCases.markCollected.execute({ fulfilmentId: c.req.param('id') });
+      return c.json({ data: { id: c.req.param('id') } });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (message === 'Fulfilment not found') {
+        return c.json({ error: { code: 'NOT_FOUND', message } }, 404);
+      }
+      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+    }
+  });
+
   router.get('/fulfilments/:id', async (c) => {
-    const { userId } = c.get('jwtPayload');
+    const { userId, role } = c.get('jwtPayload');
     const { id } = c.req.param();
     try {
-      const fulfilment = await useCases.getFulfilment.execute({ fulfilmentId: id, userId });
-      const p = fulfilment.toProps();
-      return c.json({
-        data: {
-          id: p.id,
-          lotId: p.lotId,
-          method: p.method,
-          status: p.status,
-          shippingAddress: p.shippingAddress,
-          collectionSlot: p.collectionSlot,
-        },
+      const fulfilment = await useCases.getFulfilment.execute({
+        fulfilmentId: id,
+        userId,
+        isAdmin: role === 'ADMIN',
       });
+      return c.json({ data: toFulfilmentDto(fulfilment) });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       if (message === 'Forbidden') {

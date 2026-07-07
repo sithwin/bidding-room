@@ -6,33 +6,42 @@ import { Label } from '@/components/ui/label';
 import { markDispatched, markCollected } from './_actions';
 
 interface ShippingAddress {
+  fullName: string;
   line1: string;
+  line2: string | null;
   city: string;
+  state: string | null;
+  postcode: string;
   country: string;
-  postalCode: string;
+}
+
+interface CollectionSlot {
+  location: string;
+  date: string;
+  timeSlot: string;
 }
 
 interface FulfilmentDetail {
   id: string;
-  lotTitle: string;
-  buyerEmail: string;
-  method: string;
+  lotTitle: string | null;
+  buyerEmail: string | null;
+  method: string | null;
   status: string;
-  address?: ShippingAddress;
-  collectionSlot?: string;
+  shippingAddress: ShippingAddress | null;
+  collectionSlot: CollectionSlot | null;
 }
 
 export default async function FulfilmentDetailPage({ params }: { params: { id: string } }) {
   const res = await adminApi.get<{ data: FulfilmentDetail }>(`/admin/api/fulfilments/${params.id}`);
   const ful = res.data;
-  const isPendingDispatch = ful.method === 'SHIP' && ful.status === 'PENDING';
-  const isPendingCollection = ful.method === 'COLLECT' && ful.status === 'PENDING';
+  const isPendingDispatch = ful.method === 'SHIP' && ful.status === 'PENDING_DISPATCH';
+  const isPendingCollection = ful.method === 'COLLECT' && ful.status === 'PENDING_DISPATCH';
 
   return (
     <div className='max-w-2xl space-y-6'>
       <div className='flex items-center justify-between'>
         <div>
-          <h1 className='text-2xl font-semibold'>{ful.lotTitle}</h1>
+          <h1 className='text-2xl font-semibold'>{ful.lotTitle ?? ful.id}</h1>
           <StatusBadge status={ful.status} />
         </div>
         {isPendingCollection && (
@@ -42,16 +51,22 @@ export default async function FulfilmentDetailPage({ params }: { params: { id: s
         )}
       </div>
       <dl className='grid grid-cols-2 gap-4 rounded border p-4'>
-        <div><dt className='text-xs text-muted-foreground'>Buyer</dt><dd>{ful.buyerEmail}</dd></div>
-        <div><dt className='text-xs text-muted-foreground'>Method</dt><dd>{ful.method}</dd></div>
-        {ful.address && (
+        <div><dt className='text-xs text-muted-foreground'>Buyer</dt><dd>{ful.buyerEmail ?? '—'}</dd></div>
+        <div><dt className='text-xs text-muted-foreground'>Method</dt><dd>{ful.method ?? 'Not chosen'}</dd></div>
+        {ful.shippingAddress && (
           <div className='col-span-2'>
             <dt className='text-xs text-muted-foreground'>Shipping Address</dt>
-            <dd>{ful.address.line1}, {ful.address.city}, {ful.address.postalCode}, {ful.address.country}</dd>
+            <dd>
+              {ful.shippingAddress.fullName}, {ful.shippingAddress.line1},{' '}
+              {ful.shippingAddress.city}, {ful.shippingAddress.postcode}, {ful.shippingAddress.country}
+            </dd>
           </div>
         )}
         {ful.collectionSlot && (
-          <div><dt className='text-xs text-muted-foreground'>Collection Slot</dt><dd>{ful.collectionSlot}</dd></div>
+          <div>
+            <dt className='text-xs text-muted-foreground'>Collection Slot</dt>
+            <dd>{ful.collectionSlot.location} — {ful.collectionSlot.date} ({ful.collectionSlot.timeSlot})</dd>
+          </div>
         )}
       </dl>
       {isPendingDispatch && (

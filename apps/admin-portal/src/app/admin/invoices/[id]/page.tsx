@@ -14,13 +14,13 @@ interface InvoiceDetail {
   currency: string;
   status: string;
   dueAt: string;
-  stripePaymentIntentId: string;
+  stripePaymentIntent: string | null;
 }
 
 export default async function InvoiceDetailPage({ params }: { params: { id: string } }) {
   const res = await adminApi.get<{ data: InvoiceDetail }>(`/admin/api/invoices/${params.id}`);
   const invoice = res.data;
-  const isUnpaid = invoice.status === 'UNPAID';
+  const isUnpaid = invoice.status === 'AWAITING_PAYMENT';
 
   return (
     <div className='max-w-2xl space-y-6'>
@@ -43,7 +43,7 @@ export default async function InvoiceDetailPage({ params }: { params: { id: stri
         <div><dt className='text-xs text-muted-foreground'>Winner</dt><dd>{invoice.winnerEmail}</dd></div>
         <div><dt className='text-xs text-muted-foreground'>Amount</dt><dd>{invoice.currency} {invoice.amount.toLocaleString()}</dd></div>
         <div><dt className='text-xs text-muted-foreground'>Due</dt><dd>{new Date(invoice.dueAt).toLocaleDateString()}</dd></div>
-        <div><dt className='text-xs text-muted-foreground'>Stripe PI</dt><dd className='font-mono text-xs'>{invoice.stripePaymentIntentId}</dd></div>
+        <div><dt className='text-xs text-muted-foreground'>Stripe PI</dt><dd className='font-mono text-xs'>{invoice.stripePaymentIntent ?? '—'}</dd></div>
       </dl>
       {isUnpaid && (
         <form action={async (fd: FormData) => { 'use server'; await extendDueDate(invoice.id, fd.get('dueAt') as string); }} className='space-y-2'>

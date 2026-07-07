@@ -23,6 +23,12 @@ export function buildLotsRouter(client: ServiceClient): Hono {
   const r = new Hono();
   const auth = authMiddleware(jwtPublicKey, { adminOnly: true });
 
+  r.get('/admin/api/lots', auth, async c =>
+    proxy(() => client.get(`/api/lots?${new URLSearchParams(c.req.query() as Record<string, string>)}`, tok(c)), c));
+
+  r.get('/admin/api/lots/:id', auth, async c =>
+    proxy(() => client.get(`/api/lots/${c.req.param('id')}`, tok(c)), c));
+
   r.post('/admin/api/lots', auth, async c =>
     proxy(async () => client.post('/api/lots', tok(c), await c.req.json()), c));
 

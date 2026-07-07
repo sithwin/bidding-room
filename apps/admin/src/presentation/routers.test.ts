@@ -42,6 +42,26 @@ beforeEach(() => {
 const authHeader = () => ({ Authorization: 'Bearer admin-token' });
 
 describe('Lots router', () => {
+  it('should_return200_when_listingLots', async () => {
+    vi.mocked(mockClient.get).mockResolvedValue({ data: [] });
+    const app = new Hono().route('/', buildLotsRouter(mockClient));
+
+    const res = await app.request('/admin/api/lots?status=DRAFT', { headers: authHeader() });
+
+    expect(res.status).toBe(200);
+    expect(mockClient.get).toHaveBeenCalledWith('/api/lots?status=DRAFT', 'admin-token');
+  });
+
+  it('should_return200_when_fetchingSingleLot', async () => {
+    vi.mocked(mockClient.get).mockResolvedValue({ data: { id: 'lot-1' } });
+    const app = new Hono().route('/', buildLotsRouter(mockClient));
+
+    const res = await app.request('/admin/api/lots/lot-1', { headers: authHeader() });
+
+    expect(res.status).toBe(200);
+    expect(mockClient.get).toHaveBeenCalledWith('/api/lots/lot-1', 'admin-token');
+  });
+
   it('should_return200_when_postingNewLot', async () => {
     vi.mocked(mockClient.post).mockResolvedValue({ data: { id: 'lot-1' } });
     const app = new Hono().route('/', buildLotsRouter(mockClient));
@@ -147,7 +167,7 @@ describe('Users router', () => {
 describe('Invoices router', () => {
   it('should_return200_when_listingInvoices', async () => {
     vi.mocked(mockClient.get).mockResolvedValue({ data: [] });
-    const app = new Hono().route('/', buildInvoicesRouter(mockClient));
+    const app = new Hono().route('/', buildInvoicesRouter({ payment: mockClient, catalogue: mockClient, user: mockClient }));
 
     const res = await app.request('/admin/api/invoices', { headers: authHeader() });
 
@@ -156,7 +176,7 @@ describe('Invoices router', () => {
 
   it('should_return200_when_cancellingInvoice', async () => {
     vi.mocked(mockClient.patch).mockResolvedValue({ data: { id: 'inv-1' } });
-    const app = new Hono().route('/', buildInvoicesRouter(mockClient));
+    const app = new Hono().route('/', buildInvoicesRouter({ payment: mockClient, catalogue: mockClient, user: mockClient }));
 
     const res = await app.request('/admin/api/invoices/inv-1/cancel', {
       method: 'PATCH',
@@ -171,7 +191,7 @@ describe('Invoices router', () => {
 describe('Fulfilments + Reports routers', () => {
   it('should_return200_when_dispatchingFulfilment', async () => {
     vi.mocked(mockClient.patch).mockResolvedValue({ data: { id: 'ful-1' } });
-    const app = new Hono().route('/', buildFulfilmentsRouter(mockClient));
+    const app = new Hono().route('/', buildFulfilmentsRouter({ shipping: mockClient, catalogue: mockClient, user: mockClient }));
 
     const res = await app.request('/admin/api/fulfilments/ful-1/dispatch', {
       method: 'PATCH',

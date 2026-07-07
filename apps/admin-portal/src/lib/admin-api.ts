@@ -21,7 +21,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     cache: 'no-store',
   });
 
-  const json = await res.json();
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // Non-JSON upstream response (e.g. plain-text 404) must not crash the page render
+    json = { error: { code: 'UPSTREAM_ERROR', message: text.slice(0, 200) } };
+  }
   if (!res.ok) throw new AdminApiError(res.status, json);
   return json as T;
 }

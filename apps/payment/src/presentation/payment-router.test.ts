@@ -43,6 +43,10 @@ function buildInvoice(): Invoice {
 }
 
 const mockGetInvoice = { execute: vi.fn() } as unknown as GetInvoiceUseCase;
+const mockListInvoices = { execute: vi.fn() };
+const mockCancelInvoice = { execute: vi.fn() };
+const mockExtendInvoiceDueDate = { execute: vi.fn() };
+const mockInvoiceRepo = { findById: vi.fn() };
 const mockCreateCheckout = { execute: vi.fn() } as unknown as CreateCheckoutSessionUseCase;
 const mockHandleWebhook = { execute: vi.fn() } as unknown as HandleWebhookUseCase;
 const mockCreateSetupIntent = { execute: vi.fn() } as unknown as CreateSetupIntentUseCase;
@@ -57,6 +61,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   app = new Hono().route('/', buildPaymentRouter({
     getInvoice: mockGetInvoice,
+    listInvoices: mockListInvoices,
+    cancelInvoice: mockCancelInvoice,
+    extendInvoiceDueDate: mockExtendInvoiceDueDate,
+    invoiceRepo: mockInvoiceRepo,
     createCheckoutSession: mockCreateCheckout,
     handleWebhook: mockHandleWebhook,
     createSetupIntent: mockCreateSetupIntent,

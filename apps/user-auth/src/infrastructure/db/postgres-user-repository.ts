@@ -6,7 +6,7 @@
 
 import { Db } from './db';
 import { User, UserProps, UserRole, UserStatus } from '../../domain/user';
-import { UserRepository } from '../../domain/user-repository';
+import { UserRepository, UserListFilter } from '../../domain/user-repository';
 
 interface UserRow {
   id: string;
@@ -32,6 +32,18 @@ export class PostgresUserRepository implements UserRepository {
   async findByEmail(email: string): Promise<User | null> {
     const [row] = await this.db<UserRow[]>`SELECT * FROM users WHERE email = ${email}`;
     return row ? this.toEntity(row) : null;
+  }
+
+  async findAll(filter: UserListFilter): Promise<User[]> {
+    const search = filter.search ? `%${filter.search}%` : null;
+    const rows = await this.db<UserRow[]>`
+      SELECT * FROM users
+      WHERE (${filter.status ?? null}::text IS NULL OR status = ${filter.status ?? null})
+        AND (${search}::text IS NULL OR email ILIKE ${search})
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
+    return rows.map((row) => this.toEntity(row));
   }
 
   async save(user: User): Promise<void> {
