@@ -56,6 +56,7 @@ describe('Header (light)', () => {
       login: vi.fn(),
       logout: vi.fn(),
       setAccessToken: vi.fn(),
+      refreshAccessToken: vi.fn().mockResolvedValue(undefined),
     });
     render(<Header />);
     expect(screen.getByText('T')).toBeInTheDocument(); // avatar initial
