@@ -27,6 +27,7 @@ The Carat Room is a timed online auction platform for premium goods (jewellery, 
 
 Read `docs/superpowers/SESSION-SUMMARY.md` for the full decision log and plan status.
 Read `docs/superpowers/specs/2026-06-20-architecture-design.md` for the full architecture.
+See `docs/architecture.md` for the architecture diagram as built (the spec's service consolidation was not implemented — the diagram reflects the actual services).
 
 ---
 
@@ -218,4 +219,10 @@ docs/superpowers/
 Before implementing any domain, read its plan file in full.
 
 
-admin@caratroom.com / Test1234!
+## Self-learning
+When I correct you, or you catch yourself making a mistake before continuing, add the lesson as a one-line rule
+
+## Lessons
+- Never hard-code values that another service owns (e.g. token TTLs) — derive them from the source of truth (the JWT `exp` claim) and extract repeated literals (cookie names) into a shared constant.
+
+

@@ -1,10 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { ADMIN_TOKEN_COOKIE } from '@/lib/auth-cookie';
 
 type RouteContext = { params: { path: string[] } };
 
 async function proxyToAdminService(req: NextRequest, context: RouteContext): Promise<NextResponse> {
-  const token = cookies().get('admin_token')?.value;
+  const token = cookies().get(ADMIN_TOKEN_COOKIE)?.value;
 
   if (!token) {
     return NextResponse.json({ error: { code: 'UNAUTHORIZED' } }, { status: 401 });

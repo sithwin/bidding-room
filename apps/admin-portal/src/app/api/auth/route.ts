@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { decodeJwt } from 'jose';
+import { ADMIN_TOKEN_COOKIE, cookieMaxAgeFrom } from '@/lib/auth-cookie';
 
 export async function POST(req: Request): Promise<NextResponse> {
   const { email, password } = await req.json() as { email: string; password: string };
@@ -23,11 +24,16 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, { status: 401 });
   }
 
-  cookies().set('admin_token', body.data.accessToken, {
+  const maxAge = cookieMaxAgeFrom(payload.exp);
+  if (maxAge === 0) {
+    return NextResponse.json({ error: { code: 'INVALID_TOKEN', message: 'Received an expired or non-expiring token' } }, { status: 401 });
+  }
+
+  cookies().set(ADMIN_TOKEN_COOKIE, body.data.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 28800,
+    maxAge,
     path: '/',
   });
 
@@ -35,6 +41,6 @@ export async function POST(req: Request): Promise<NextResponse> {
 }
 
 export async function DELETE(): Promise<NextResponse> {
-  cookies().delete('admin_token');
+  cookies().delete(ADMIN_TOKEN_COOKIE);
   return NextResponse.json({ ok: true });
 }

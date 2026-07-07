@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { ADMIN_TOKEN_COOKIE } from './auth-cookie';
 
 export class AdminApiError extends Error {
   constructor(readonly status: number, readonly body: unknown) {
@@ -7,7 +8,7 @@ export class AdminApiError extends Error {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const token = cookies().get('admin_token')?.value ?? '';
+  const token = cookies().get(ADMIN_TOKEN_COOKIE)?.value ?? '';
   const baseUrl = process.env.ADMIN_SERVICE_URL ?? 'http://localhost:3007';
 
   const res = await fetch(`${baseUrl}${path}`, {

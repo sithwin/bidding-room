@@ -11,7 +11,11 @@ async function proxy(fn: () => Promise<unknown>, c: Ctx): Promise<Response> {
   try {
     return c.json(await fn());
   } catch (err) {
-    if (err instanceof ServiceError) return c.json(err.body, err.status as 400 | 500);
+    if (err instanceof ServiceError) {
+      console.error('[proxy] ServiceError', err.status, JSON.stringify(err.body));
+      return c.json(err.body, err.status as 400 | 500);
+    }
+    console.error('[proxy] Unexpected error:', err);
     return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
   }
 }
