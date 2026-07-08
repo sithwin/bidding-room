@@ -1,5 +1,5 @@
 ﻿'use client';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import Image from 'next/image';
 import useSWR from 'swr';
 import { Header } from '@/components/layout/header';
@@ -13,19 +13,20 @@ type Invoice = {
   total: number; currency: string; status: string; stripeCheckoutUrl?: string;
 };
 
-export default function InvoicePage({ params }: { params: { id: string } }) {
+export default function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const { accessToken } = useAuth();
   const [isPaying, setIsPaying] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
 
   const { data: invoice, mutate } = useSWR<Invoice>(
-    accessToken ? `/api/account/invoices/${params.id}` : null,
+    accessToken ? `/api/account/invoices/${id}` : null,
     (url: string) => fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } }).then(r => r.json()),
   );
 
   async function paySavedCard() {
     setIsPaying(true);
-    const res = await fetch(`/api/payments/invoices/${params.id}/pay-saved-card`, {
+    const res = await fetch(`/api/payments/invoices/${id}/pay-saved-card`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}` },
     });

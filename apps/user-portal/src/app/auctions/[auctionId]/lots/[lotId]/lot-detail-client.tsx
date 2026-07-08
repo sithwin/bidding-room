@@ -13,6 +13,7 @@ import { PhoneOtpInline } from '@/components/primitives/phone-otp-inline';
 import { useLotSse } from '@/hooks/use-lot-sse';
 import { useAuth } from '@/lib/auth-context';
 import { createApi } from '@/lib/api';
+import { CatalogueListResponse, CatalogueLot, lotsFromResponse, toLotCardProps } from '@/lib/catalogue';
 import Image from 'next/image';
 
 type Lot = {
@@ -65,22 +66,26 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
     }
   }, [lastEvent]);
 
-  // Fetch related lots (same collection)
+  // Fetch related lots (same collection) — exclude the lot being viewed
   useEffect(() => {
-    fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&limit=4&exclude=${lot.id}`)
+    fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&limit=5`)
       .then(r => r.json())
-      .then((d: { lots: LotCardProps[] }) => setRelatedLots(d.lots))
+      .then((d: CatalogueListResponse<CatalogueLot>) => setRelatedLots(
+        lotsFromResponse(d).filter(l => l.id !== lot.id).slice(0, 4).map(l => toLotCardProps(l, lot.auctionId)),
+      ))
       .catch(() => {});
   }, [lot.auctionId, lot.id]);
 
   // Fetch "Up Next" lots (live mode only)
   useEffect(() => {
     if (!isLive) return;
-    fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&after=${lot.lotNumber}&limit=2`)
+    fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&limit=3`)
       .then(r => r.json())
-      .then((d: { lots: LotCardProps[] }) => setNextLots(d.lots))
+      .then((d: CatalogueListResponse<CatalogueLot>) => setNextLots(
+        lotsFromResponse(d).filter(l => l.id !== lot.id).slice(0, 2).map(l => toLotCardProps(l, lot.auctionId)),
+      ))
       .catch(() => {});
-  }, [isLive, lot.auctionId, lot.lotNumber]);
+  }, [isLive, lot.auctionId, lot.id]);
 
   async function placeBid() {
     if (isAuctionClosed) return;
@@ -154,10 +159,14 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                   {nextLots.map(l => (
                     <Link key={l.lotId} href={`/auctions/${l.auctionId}/lots/${l.lotId}`} className='flex gap-3 items-center hover:opacity-80'>
                       <div className='relative w-12 h-12 shrink-0'>
-                        <Image src={l.imageUrl} alt={l.title} fill className='object-cover' />
+                        {l.imageUrl ? (
+                          <Image src={l.imageUrl} alt={l.title} fill className='object-cover' />
+                        ) : (
+                          <div className='absolute inset-0 bg-cream' aria-hidden='true' />
+                        )}
                       </div>
                       <div>
-                        <p className='font-sans text-xs text-[var(--mut)]'>Lot {l.lotNumber}</p>
+                        {l.lotNumber && <p className='font-sans text-xs text-[var(--mut)]'>Lot {l.lotNumber}</p>}
                         <p className='font-serif text-sm text-[var(--ink)] line-clamp-1'>{l.title}</p>
                       </div>
                     </Link>

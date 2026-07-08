@@ -6,7 +6,8 @@ import * as Slider from '@radix-ui/react-slider';
 import { Header } from '@/components/layout/header';
 import { LotCard } from '@/components/primitives/lot-card';
 
-type Lot = { id: string; auctionId: string; lotNumber: string; title: string; imageUrl: string; currentBid: number; currency: string; endAt: string };
+import { CatalogueListResponse, CatalogueLot, lotsFromResponse, toLotCardProps } from '@/lib/catalogue';
+
 type Facets = { departments: Array<{ name: string; count: number }>; auctions: Array<{ id: string; title: string }> };
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
@@ -30,16 +31,19 @@ export function BrowseClient() {
   const statuses    = searchParams.getAll('status');
   const auctions    = searchParams.getAll('auction');
 
-  const lotsParams = new URLSearchParams({ sort, ...(q && { q }), ...(minPrice !== '0' && { minPrice }), ...(maxPrice !== '100000' && { maxPrice }) });
+  const lotsParams = new URLSearchParams({ sort, ...(q && { q }), ...(minPrice !== '0' && { minValue: minPrice }), ...(maxPrice !== '100000' && { maxValue: maxPrice }) });
   departments.forEach(d => lotsParams.append('department', d));
   statuses.forEach(s => lotsParams.append('status', s));
   auctions.forEach(a => lotsParams.append('auctionId', a));
 
-  const { data, isLoading } = useSWR<{ lots: Lot[]; total: number }>(
+  const { data, isLoading } = useSWR<CatalogueListResponse<CatalogueLot>>(
     `/api/catalogue/lots?${lotsParams}`,
     fetcher,
     { refreshInterval: 15000 },
   );
+
+  const lots = lotsFromResponse(data);
+  const total = data?.meta?.total;
 
   const facetsParams = new URLSearchParams({ ...(q && { q }) });
   const { data: facets } = useSWR<Facets>(`/api/catalogue/facets?${facetsParams}`, fetcher, { revalidateOnFocus: false });
@@ -250,27 +254,15 @@ export function BrowseClient() {
           )}
 
           <div className='flex items-center justify-between mb-6'>
-            <p className='font-sans text-sm text-mut'>{data?.total ?? '—'} lots found</p>
+            <p className='font-sans text-sm text-mut'>{total ?? '—'} lots found</p>
           </div>
           {isLoading ? (
             <p className='font-sans text-sm text-mut'>Loading…</p>
-          ) : data?.lots.length === 0 ? (
+          ) : lots.length === 0 ? (
             <p className='font-sans text-sm text-mut'>No lots match your filters.</p>
           ) : (
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-              {data?.lots.map(lot => (
-                <LotCard
-                  key={lot.id}
-                  lotId={lot.id}
-                  auctionId={lot.auctionId}
-                  lotNumber={lot.lotNumber}
-                  title={lot.title}
-                  imageUrl={lot.imageUrl}
-                  currentBid={lot.currentBid}
-                  currency={lot.currency}
-                  endAt={lot.endAt}
-                />
-              ))}
+              {lots.map(lot => <LotCard key={lot.id} {...toLotCardProps(lot, 'catalogue')} />)}
             </div>
           )}
         </div>

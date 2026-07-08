@@ -66,6 +66,20 @@ describe('GET /api/lots', () => {
     expect(body.data).toHaveLength(1);
     expect(body.meta.total).toBe(1);
   });
+
+  it('should_passAuctionIdFilter_when_auctionIdQueryProvided', async () => {
+    const listLots = { execute: vi.fn().mockResolvedValue({ items: [], total: 0, limit: 20, offset: 0 }) };
+    const app = new Hono().route('/', buildCatalogueRouter(buildUseCases({ listLots })));
+
+    const res = await app.request('/api/lots?auctionId=auction-1');
+
+    expect(res.status).toBe(200);
+    expect(listLots.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ auctionId: 'auction-1' }),
+      20,
+      0,
+    );
+  });
 });
 
 describe('GET /api/lots/search', () => {

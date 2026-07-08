@@ -1,6 +1,7 @@
 import { Lot, LotCondition } from './lot';
 
 export interface LotFilters {
+  auctionId?: string;
   categoryId?: string;
   condition?: LotCondition;
   minEstimatedValue?: number;

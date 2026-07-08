@@ -15,12 +15,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.9'
+          node-version: '20'
           cache: pnpm
 
       - name: Install dependencies
@@ -39,14 +37,8 @@ jobs:
         run: |
           echo "Waiting for services to pass health checks..."
           timeout 180 bash -c '
-            until docker compose -f docker-compose.test.yml ps --format json | \
-              python3 -c "
-import sys, json
-data = sys.stdin.read()
-services = [json.loads(line) for line in data.strip().splitlines() if line.strip()]
-unhealthy = [s[\"Service\"] for s in services if s.get(\"Health\") not in (\"healthy\", \"\")]
-print(\"\\n\".join(unhealthy) if unhealthy else \"\")
-" | grep -q .; do
+            while docker compose -f docker-compose.test.yml ps --format json |
+              jq -r "select(.Health != \"healthy\" and .Health != \"\") | .Service" | grep -q .; do
               sleep 5
             done
           ' || true

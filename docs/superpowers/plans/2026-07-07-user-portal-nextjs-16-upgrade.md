@@ -28,7 +28,7 @@
 **Interfaces:**
 - Produces: `apps/user-portal` running on `next@16.2.x`, `react@19.2.x`, `react-dom@19.2.x` — every later task in this plan assumes these versions are installed.
 
-- [ ] **Step 1: Create the upgrade branch**
+- [x] **Step 1: Create the upgrade branch**
 
 ```bash
 git checkout main
@@ -36,7 +36,7 @@ git pull
 git checkout -b upgrade/user-portal-nextjs-16
 ```
 
-- [ ] **Step 2: Update `apps/user-portal/package.json` dependency versions**
+- [x] **Step 2: Update `apps/user-portal/package.json` dependency versions**
 
 Change these three lines in the `dependencies` block:
 
@@ -58,7 +58,7 @@ Change these two lines in the `devDependencies` block:
 +    "@types/react-dom": "^19.2.0",
 ```
 
-- [ ] **Step 3: Install and verify the version landed**
+- [x] **Step 3: Install and verify the version landed**
 
 ```bash
 pnpm install
@@ -72,7 +72,7 @@ cat apps/user-portal/node_modules/next/package.json | grep '"version"'
 
 Expected: `"version": "16.2.7"` (or newer 16.x).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/user-portal/package.json pnpm-lock.yaml
@@ -91,7 +91,7 @@ git commit -m "chore(user-portal): bump next to 16, react to 19"
 - Consumes: nothing from earlier tasks.
 - Produces: `proxy` function that Next.js 16 invokes at the network boundary — no other task in this plan imports it. Unlike admin-portal, there is no `middleware.test.ts` for this file, so there is no test to rename.
 
-- [ ] **Step 1: Write `apps/user-portal/src/proxy.ts`**
+- [x] **Step 1: Write `apps/user-portal/src/proxy.ts`**
 
 Same logic as the current `middleware.ts`, with the function renamed:
 
@@ -116,13 +116,13 @@ export const config = {
 };
 ```
 
-- [ ] **Step 2: Delete the old file**
+- [x] **Step 2: Delete the old file**
 
 ```bash
 git rm apps/user-portal/src/middleware.ts
 ```
 
-- [ ] **Step 3: Verify with a type-check (no unit test exists for this file)**
+- [x] **Step 3: Verify with a type-check (no unit test exists for this file)**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec tsc --noEmit
@@ -130,7 +130,7 @@ pnpm --filter @carat-room/user-portal exec tsc --noEmit
 
 Expected: no errors referencing `proxy.ts`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/user-portal/src/proxy.ts
@@ -148,7 +148,7 @@ git commit -m "refactor(user-portal): rename middleware to proxy for Next.js 16"
 - Consumes: nothing from earlier tasks.
 - Produces: `next/image` configuration consumed by every page using `<Image>` from `next/image` (e.g. `app/account/invoices/[id]/page.tsx` in Task 5) — the remote host allowlist must stay correct or those images will 400 at request time.
 
-- [ ] **Step 1: Edit `apps/user-portal/next.config.mjs`**
+- [x] **Step 1: Edit `apps/user-portal/next.config.mjs`**
 
 ```diff
 -  images: { domains: ['pub-placeholder.r2.dev'] },
@@ -162,7 +162,7 @@ git commit -m "refactor(user-portal): rename middleware to proxy for Next.js 16"
 +  },
 ```
 
-- [ ] **Step 2: Verify the config loads**
+- [x] **Step 2: Verify the config loads**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec node -e "import('./next.config.mjs').then(m => console.log(JSON.stringify(m.default.images)))"
@@ -170,7 +170,7 @@ pnpm --filter @carat-room/user-portal exec node -e "import('./next.config.mjs').
 
 Expected output: `{"remotePatterns":[{"protocol":"https","hostname":"pub-placeholder.r2.dev"}]}`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/user-portal/next.config.mjs
@@ -189,7 +189,7 @@ git commit -m "fix(user-portal): migrate images.domains to remotePatterns for Ne
 - Consumes: nothing from earlier tasks.
 - Produces: nothing consumed by later tasks. Both pages are already `async function` Server Components, so the fix is the same `await params` pattern used throughout the admin-portal plan.
 
-- [ ] **Step 1: Edit `apps/user-portal/src/app/auctions/[auctionId]/page.tsx`**
+- [x] **Step 1: Edit `apps/user-portal/src/app/auctions/[auctionId]/page.tsx`**
 
 `params.auctionId` is read twice here — once for the fetch URL, once as a prop to `<CatalogueLots>` — so both call sites need updating:
 
@@ -210,7 +210,7 @@ And further down in the same file:
 +      <CatalogueLots auctionId={auctionId} />
 ```
 
-- [ ] **Step 2: Edit `apps/user-portal/src/app/auctions/[auctionId]/lots/[lotId]/page.tsx`**
+- [x] **Step 2: Edit `apps/user-portal/src/app/auctions/[auctionId]/lots/[lotId]/page.tsx`**
 
 ```diff
 -export default async function LotDetailPage({ params }: { params: { auctionId: string; lotId: string } }) {
@@ -220,7 +220,7 @@ And further down in the same file:
 +  const res = await fetch(`${CATALOGUE_URL}/api/lots/${lotId}`, { cache: 'no-store' });
 ```
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec tsc --noEmit
@@ -228,7 +228,7 @@ pnpm --filter @carat-room/user-portal exec tsc --noEmit
 
 Expected: no errors referencing either of these two files.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/user-portal/src/app/auctions/\[auctionId\]/page.tsx \
@@ -250,7 +250,7 @@ git commit -m "refactor(user-portal): await async params in catalogue and lot de
 
 Both files start with `'use client'`, so they cannot become `async function` components — `await` is not valid syntax for unwrapping `params` here. Next.js still passes `params` as a `Promise` to Client Component pages, and the supported way to read it synchronously inside a Client Component's render is React's `use()` hook, which suspends the component until the promise resolves.
 
-- [ ] **Step 1: Edit `apps/user-portal/src/app/account/invoices/[id]/page.tsx`**
+- [x] **Step 1: Edit `apps/user-portal/src/app/account/invoices/[id]/page.tsx`**
 
 Add the `use` import and unwrap `params` once at the top of the component, then replace every `params.id` reference:
 
@@ -289,7 +289,7 @@ Add the `use` import and unwrap `params` once at the top of the component, then 
      });
 ```
 
-- [ ] **Step 2: Edit `apps/user-portal/src/app/account/fulfilments/[id]/page.tsx`**
+- [x] **Step 2: Edit `apps/user-portal/src/app/account/fulfilments/[id]/page.tsx`**
 
 Add the `use` import and unwrap `params` once at the top of the component, then replace both `params.id` references:
 
@@ -331,7 +331,7 @@ Add the `use` import and unwrap `params` once at the top of the component, then 
      });
 ```
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec tsc --noEmit
@@ -339,7 +339,7 @@ pnpm --filter @carat-room/user-portal exec tsc --noEmit
 
 Expected: no errors referencing either of these two files.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/user-portal/src/app/account/invoices/\[id\]/page.tsx \
@@ -359,7 +359,7 @@ git commit -m "refactor(user-portal): unwrap async params with React use() in cl
 - Consumes: nothing from earlier tasks.
 - Produces: nothing consumed by later tasks. Both are already `async function` route handlers, so this is the standard `await params` fix.
 
-- [ ] **Step 1: Edit `apps/user-portal/src/app/api/payments/invoices/[id]/pay-saved-card/route.ts`**
+- [x] **Step 1: Edit `apps/user-portal/src/app/api/payments/invoices/[id]/pay-saved-card/route.ts`**
 
 ```diff
 -export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -372,7 +372,7 @@ git commit -m "refactor(user-portal): unwrap async params with React use() in cl
  }
 ```
 
-- [ ] **Step 2: Edit `apps/user-portal/src/app/api/account/invoices/[id]/route.ts`**
+- [x] **Step 2: Edit `apps/user-portal/src/app/api/account/invoices/[id]/route.ts`**
 
 ```diff
 -export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -387,7 +387,7 @@ git commit -m "refactor(user-portal): unwrap async params with React use() in cl
  }
 ```
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec tsc --noEmit
@@ -395,7 +395,7 @@ pnpm --filter @carat-room/user-portal exec tsc --noEmit
 
 Expected: no errors referencing either of these two files.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/user-portal/src/app/api/payments/invoices/\[id\]/pay-saved-card/route.ts \
@@ -416,7 +416,7 @@ git commit -m "refactor(user-portal): await async params in payment and invoice 
 - Consumes: nothing from earlier tasks.
 - Produces: nothing consumed by later tasks. All three are already `async function` route handlers.
 
-- [ ] **Step 1: Edit `apps/user-portal/src/app/api/shipping/fulfilments/[id]/collection-slot/route.ts`**
+- [x] **Step 1: Edit `apps/user-portal/src/app/api/shipping/fulfilments/[id]/collection-slot/route.ts`**
 
 ```diff
 -export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -434,7 +434,7 @@ git commit -m "refactor(user-portal): await async params in payment and invoice 
  }
 ```
 
-- [ ] **Step 2: Edit `apps/user-portal/src/app/api/shipping/fulfilments/[id]/address/route.ts`**
+- [x] **Step 2: Edit `apps/user-portal/src/app/api/shipping/fulfilments/[id]/address/route.ts`**
 
 ```diff
 -export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -452,7 +452,7 @@ git commit -m "refactor(user-portal): await async params in payment and invoice 
  }
 ```
 
-- [ ] **Step 3: Edit `apps/user-portal/src/app/api/auctions/[lotId]/stream/route.ts`**
+- [x] **Step 3: Edit `apps/user-portal/src/app/api/auctions/[lotId]/stream/route.ts`**
 
 ```diff
  export async function GET(
@@ -468,7 +468,7 @@ git commit -m "refactor(user-portal): await async params in payment and invoice 
    });
 ```
 
-- [ ] **Step 4: Type-check**
+- [x] **Step 4: Type-check**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec tsc --noEmit
@@ -476,7 +476,7 @@ pnpm --filter @carat-room/user-portal exec tsc --noEmit
 
 Expected: no errors referencing any of these three files.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/user-portal/src/app/api/shipping/fulfilments/\[id\]/collection-slot/route.ts \
@@ -496,7 +496,7 @@ git commit -m "refactor(user-portal): await async params in shipping and auction
 - Consumes: nothing from earlier tasks.
 - Produces: nothing consumed by later tasks. `GET` and `DELETE` are already `async function`s, so this is the standard `await cookies()` fix.
 
-- [ ] **Step 1: Edit `apps/user-portal/src/app/api/auth/refresh/route.ts`**
+- [x] **Step 1: Edit `apps/user-portal/src/app/api/auth/refresh/route.ts`**
 
 ```diff
  export async function GET() {
@@ -513,7 +513,7 @@ git commit -m "refactor(user-portal): await async params in shipping and auction
    const refreshToken = cookieStore.get('refresh_token')?.value;
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec tsc --noEmit
@@ -521,7 +521,7 @@ pnpm --filter @carat-room/user-portal exec tsc --noEmit
 
 Expected: no errors referencing `api/auth/refresh/route.ts`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/user-portal/src/app/api/auth/refresh/route.ts
@@ -542,7 +542,7 @@ git commit -m "refactor(user-portal): await async cookies in refresh route for N
 
 The admin-portal upgrade plan already bumped these monorepo-wide workflow files to `node-version: '20.9'`. Since this branch is created off `main` after that plan's PR merges, the change should already be present. This task exists only as a safety check in case the merge order slipped.
 
-- [ ] **Step 1: Check the current CI Node.js version**
+- [x] **Step 1: Check the current CI Node.js version**
 
 ```bash
 grep -A1 "setup-node@v4" .github/workflows/ci.yml .github/workflows/integration-tests.yml
@@ -550,7 +550,7 @@ grep -A1 "setup-node@v4" .github/workflows/ci.yml .github/workflows/integration-
 
 Expected: both files show `node-version: '20.9'`.
 
-- [ ] **Step 2: If either file still shows `node-version: 20` (unbumped), fix it**
+- [x] **Step 2: If either file still shows `node-version: 20` (unbumped), fix it** — not needed, both already `'20.9'`
 
 ```diff
        - uses: actions/setup-node@v4
@@ -562,7 +562,7 @@ Expected: both files show `node-version: '20.9'`.
 
 Apply this to whichever of `.github/workflows/ci.yml` / `.github/workflows/integration-tests.yml` still needs it.
 
-- [ ] **Step 3: Commit only if Step 2 made a change**
+- [x] **Step 3: Commit only if Step 2 made a change** — skipped, no change was needed
 
 ```bash
 git add .github/workflows/ci.yml .github/workflows/integration-tests.yml
@@ -582,7 +582,7 @@ If Step 1 already showed `'20.9'` in both files, skip this commit — there is n
 - Consumes: the fully migrated `apps/user-portal` from Tasks 1–9.
 - Produces: a verified branch ready to open as a PR into `main`.
 
-- [ ] **Step 1: Run the full user-portal test suite**
+- [x] **Step 1: Run the full user-portal test suite**
 
 ```bash
 pnpm --filter @carat-room/user-portal test
@@ -590,7 +590,7 @@ pnpm --filter @carat-room/user-portal test
 
 Expected: PASS, all existing test files (e.g. `catalogue-lots.test.tsx`) untouched by this plan continue to pass.
 
-- [ ] **Step 2: Build with Turbopack (the new v16 default)**
+- [x] **Step 2: Build with Turbopack (the new v16 default)**
 
 ```bash
 pnpm --filter @carat-room/user-portal build
@@ -598,7 +598,7 @@ pnpm --filter @carat-room/user-portal build
 
 Expected: build succeeds. Since `apps/user-portal/next.config.mjs` has no custom `webpack()` block, Turbopack should build without the "webpack config found" failure documented in the Next.js 16 upgrade guide.
 
-- [ ] **Step 3: Type-check the whole app one more time**
+- [x] **Step 3: Type-check the whole app one more time**
 
 ```bash
 pnpm --filter @carat-room/user-portal exec tsc --noEmit
