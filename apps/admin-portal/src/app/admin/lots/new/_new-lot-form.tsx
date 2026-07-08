@@ -8,22 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { updateLot } from '../_actions';
+import { createLot } from '../_actions';
 import { LOT_CONDITIONS } from '@/lib/schemas/lot.schema';
 import type { CategoryOption } from '@/lib/categories';
 
-interface Lot {
-  id: string;
-  title: string;
-  description: string;
-  categoryId: string;
-  condition: string;
-  estimatedValue: number;
-}
-
 function SubmitButton() {
   const { pending } = useFormStatus();
-  return <Button type='submit' disabled={pending}>{pending ? 'Saving…' : 'Save Changes'}</Button>;
+  return <Button type='submit' disabled={pending}>{pending ? 'Creating…' : 'Create Lot'}</Button>;
 }
 
 function FieldError({ messages }: { messages: string[] | undefined }) {
@@ -31,10 +22,9 @@ function FieldError({ messages }: { messages: string[] | undefined }) {
   return <p className='text-sm text-destructive'>{messages[0]}</p>;
 }
 
-export function EditLotForm({ lot, categories }: { lot: Lot; categories: CategoryOption[] }) {
+export function NewLotForm({ categories }: { categories: CategoryOption[] }) {
   const router = useRouter();
-  const boundAction = updateLot.bind(null, lot.id);
-  const [state, formAction] = useActionState(boundAction, {});
+  const [state, formAction] = useActionState(createLot, {});
 
   useEffect(() => {
     if (state.ok) router.push('/admin/lots');
@@ -44,22 +34,22 @@ export function EditLotForm({ lot, categories }: { lot: Lot; categories: Categor
     <form action={formAction} className='space-y-4'>
       {state.ok === false && !state.errors && (
         <p className='rounded border border-destructive p-2 text-sm text-destructive'>
-          Could not save the lot. Please try again.
+          Could not create the lot. Please try again.
         </p>
       )}
       <div className='space-y-1'>
         <Label htmlFor='title'>Title</Label>
-        <Input id='title' name='title' defaultValue={lot.title} />
+        <Input id='title' name='title' />
         <FieldError messages={state.errors?.title} />
       </div>
       <div className='space-y-1'>
         <Label htmlFor='description'>Description</Label>
-        <Textarea id='description' name='description' rows={4} defaultValue={lot.description} />
+        <Textarea id='description' name='description' rows={4} />
         <FieldError messages={state.errors?.description} />
       </div>
       <div className='space-y-1'>
         <Label htmlFor='categoryId'>Category</Label>
-        <Select name='categoryId' defaultValue={lot.categoryId}>
+        <Select name='categoryId'>
           <SelectTrigger id='categoryId'><SelectValue placeholder='Select a category' /></SelectTrigger>
           <SelectContent>
             {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
@@ -69,8 +59,8 @@ export function EditLotForm({ lot, categories }: { lot: Lot; categories: Categor
       </div>
       <div className='space-y-1'>
         <Label htmlFor='condition'>Condition</Label>
-        <Select name='condition' defaultValue={lot.condition}>
-          <SelectTrigger id='condition'><SelectValue /></SelectTrigger>
+        <Select name='condition'>
+          <SelectTrigger id='condition'><SelectValue placeholder='Select condition' /></SelectTrigger>
           <SelectContent>
             {LOT_CONDITIONS.map(c => <SelectItem key={c} value={c}>{c.replace('_', ' ')}</SelectItem>)}
           </SelectContent>
@@ -79,7 +69,7 @@ export function EditLotForm({ lot, categories }: { lot: Lot; categories: Categor
       </div>
       <div className='space-y-1'>
         <Label htmlFor='estimatedValue'>Estimated Value</Label>
-        <Input id='estimatedValue' name='estimatedValue' type='number' min={0} step={0.01} defaultValue={lot.estimatedValue} />
+        <Input id='estimatedValue' name='estimatedValue' type='number' min={0} step={0.01} />
         <FieldError messages={state.errors?.estimatedValue} />
       </div>
       <SubmitButton />

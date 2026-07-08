@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-export const LotCondition = z.enum(['EXCELLENT', 'VERY_GOOD', 'GOOD', 'FAIR']);
+// Mirrors apps/catalogue LotCondition — FAIR is not a valid catalogue condition
+export const LOT_CONDITIONS = ['NEW', 'EXCELLENT', 'VERY_GOOD', 'GOOD'] as const;
+
+export const LotCondition = z.enum(LOT_CONDITIONS);
 
 export const LotFormSchema = z.object({
   title: z.string().min(1, 'Title is required'),

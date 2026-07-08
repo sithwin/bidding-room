@@ -25,4 +25,12 @@ describe('LotFormSchema', () => {
   it('should_fail_when_conditionIsInvalid', () => {
     expect(LotFormSchema.safeParse({ ...valid, condition: 'PERFECT' }).success).toBe(false);
   });
+
+  it('should_pass_when_conditionIsNew', () => {
+    expect(LotFormSchema.safeParse({ ...valid, condition: 'NEW' }).success).toBe(true);
+  });
+
+  it('should_fail_when_conditionIsFair', () => {
+    expect(LotFormSchema.safeParse({ ...valid, condition: 'FAIR' }).success).toBe(false);
+  });
 });
