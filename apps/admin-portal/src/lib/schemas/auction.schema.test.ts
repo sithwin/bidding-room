@@ -41,3 +41,63 @@ describe('RescheduleAuctionSchema', () => {
     expect(RescheduleAuctionSchema.safeParse({ startAt: futureDate(2), endAt: futureDate(1) }).success).toBe(false);
   });
 });
+
+describe('ScheduleAuctionSchema — datetime-local input', () => {
+  const base = {
+    lotId: '3b8f4a2e-9c1d-4e5f-8a7b-6c5d4e3f2a1b',
+    reservePrice: 100,
+    minBidIncrement: 10,
+    autoExtendWindowMinutes: 3,
+    autoExtendDurationMinutes: 3,
+  };
+
+  it('accepts the exact format a datetime-local input emits and outputs full ISO', () => {
+    const result = ScheduleAuctionSchema.safeParse({
+      ...base,
+      startAt: '2026-07-09T14:30',
+      endAt: '2026-07-10T14:30',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.startAt).toBe(new Date('2026-07-09T14:30').toISOString());
+      expect(result.data.endAt).toBe(new Date('2026-07-10T14:30').toISOString());
+    }
+  });
+
+  it('still accepts full ISO strings', () => {
+    const result = ScheduleAuctionSchema.safeParse({
+      ...base,
+      startAt: '2026-07-09T14:30:00.000Z',
+      endAt: '2026-07-10T14:30:00.000Z',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an unparseable date', () => {
+    const result = ScheduleAuctionSchema.safeParse({
+      ...base,
+      startAt: 'not-a-date',
+      endAt: '2026-07-10T14:30',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects end before start (datetime-local format)', () => {
+    const result = ScheduleAuctionSchema.safeParse({
+      ...base,
+      startAt: '2026-07-10T14:30',
+      endAt: '2026-07-09T14:30',
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('RescheduleAuctionSchema — datetime-local input', () => {
+  it('accepts datetime-local values', () => {
+    const result = RescheduleAuctionSchema.safeParse({
+      startAt: '2026-07-09T09:00',
+      endAt: '2026-07-09T18:00',
+    });
+    expect(result.success).toBe(true);
+  });
+});
