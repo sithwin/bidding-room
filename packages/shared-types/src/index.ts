@@ -23,3 +23,4 @@ export type {
 } from './events/index.js';
 export { ROUTING_KEYS } from './events/index.js';
 export type { RoutingKey } from './events/index.js';
+export { envelope, listEnvelope } from './api/envelope.js';
