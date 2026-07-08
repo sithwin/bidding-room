@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createDb, Db } from './db';
+import { createTestDb } from '@carat-room/test-db';
+import { Db } from './db';
 import { PostgresSearchRepository } from './postgres-search-repository';
 import { PostgresLotRepository } from './postgres-lot-repository';
 import { Lot, LotCondition } from '../domain/lot';
@@ -12,7 +13,7 @@ describe('PostgresSearchRepository', () => {
   let lotRepo: PostgresLotRepository;
 
   beforeEach(async () => {
-    db = createDb(TEST_DB_URL);
+    db = createTestDb(TEST_DB_URL) as Db;
     searchRepo = new PostgresSearchRepository(db);
     lotRepo = new PostgresLotRepository(db);
     await db`DELETE FROM lot_images`;

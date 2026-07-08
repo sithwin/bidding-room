@@ -261,6 +261,9 @@ importers:
         specifier: ^10.0.0
         version: 10.0.0
     devDependencies:
+      '@carat-room/test-db':
+        specifier: workspace:*
+        version: link:../../packages/test-db
       '@carat-room/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
