@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createDb, Db } from './db';
+import { createTestDb } from '@carat-room/test-db';
+import { Db } from './db';
 import { PostgresFacetRepository } from './postgres-facet-repository';
 
 const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/catalogue_test';
@@ -12,7 +13,7 @@ describe('PostgresFacetRepository', () => {
   let repo: PostgresFacetRepository;
 
   beforeEach(async () => {
-    db = createDb(TEST_DB_URL);
+    db = createTestDb(TEST_DB_URL) as Db;
     repo = new PostgresFacetRepository(db);
     await db`DELETE FROM lot_images`;
     await db`DELETE FROM lots`;
