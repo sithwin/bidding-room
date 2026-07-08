@@ -105,7 +105,7 @@ apps/user-portal/
 **Interfaces:**
 - Produces: `envelope<T extends z.ZodTypeAny>(data: T)` and `listEnvelope<T extends z.ZodTypeAny>(item: T)` — Zod object schemas. `listEnvelope` yields `{ data: T[]; meta: { total: number; limit?: number; offset?: number; page?: number } }`. Task 2 builds on these.
 
-- [ ] **Step 1: Add zod and vitest to shared-types**
+- [x] **Step 1: Add zod and vitest to shared-types**
 
 In `packages/shared-types/package.json` add:
 
@@ -119,7 +119,7 @@ and to the existing `devDependencies` add `"vitest": "^1.6.0"`, and to `scripts`
 
 Note: shared-types compiles with `tsc` using `.js` extension imports (see `src/index.ts`) — follow that convention in every new file here.
 
-- [ ] **Step 2: Create `packages/shared-types/vitest.config.ts`**
+- [x] **Step 2: Create `packages/shared-types/vitest.config.ts`**
 
 ```ts
 import { defineConfig } from 'vitest/config';
@@ -132,7 +132,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 3: Write the failing test** — `packages/shared-types/src/api/envelope.test.ts`
+- [x] **Step 3: Write the failing test** — `packages/shared-types/src/api/envelope.test.ts`
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -173,12 +173,12 @@ describe('listEnvelope', () => {
 });
 ```
 
-- [ ] **Step 4: Run to verify failure**
+- [x] **Step 4: Run to verify failure**
 
 Run: `pnpm --filter @carat-room/shared-types exec vitest run src/api/envelope.test.ts`
 Expected: FAIL — cannot resolve `./envelope.js`.
 
-- [ ] **Step 5: Implement** — `packages/shared-types/src/api/envelope.ts`
+- [x] **Step 5: Implement** — `packages/shared-types/src/api/envelope.ts`
 
 ```ts
 import { z } from 'zod';
@@ -201,12 +201,12 @@ export const listEnvelope = <T extends z.ZodTypeAny>(item: T) =>
   });
 ```
 
-- [ ] **Step 6: Run to verify pass**
+- [x] **Step 6: Run to verify pass**
 
 Run: `pnpm --filter @carat-room/shared-types exec vitest run src/api/envelope.test.ts`
 Expected: 5 tests PASS.
 
-- [ ] **Step 7: Export from the package index**
+- [x] **Step 7: Export from the package index**
 
 Append to `packages/shared-types/src/index.ts`:
 
@@ -217,7 +217,7 @@ export { envelope, listEnvelope } from './api/envelope.js';
 Run: `pnpm --filter @carat-room/shared-types build`
 Expected: clean tsc build.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add packages/shared-types
@@ -239,7 +239,7 @@ git commit -m "feat(shared-types): add zod API envelope helpers"
 
 These shapes were read from `apps/catalogue/src/presentation/*.ts` and the domain/repository serialisations on 2026-07-08. If a router changed since, **re-read the router first** — the schema must match the code, not this plan.
 
-- [ ] **Step 1: Write the failing test** — `packages/shared-types/src/api/catalogue.test.ts`
+- [x] **Step 1: Write the failing test** — `packages/shared-types/src/api/catalogue.test.ts`
 
 ```ts
 import { describe, it, expect } from 'vitest';
@@ -296,12 +296,12 @@ describe('query builders', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `pnpm --filter @carat-room/shared-types exec vitest run src/api/catalogue.test.ts`
 Expected: FAIL — cannot resolve `./catalogue.js`.
 
-- [ ] **Step 3: Implement** — `packages/shared-types/src/api/catalogue.ts`
+- [x] **Step 3: Implement** — `packages/shared-types/src/api/catalogue.ts`
 
 ```ts
 import { z } from 'zod';
@@ -420,12 +420,12 @@ export function auctionsQuery(params: {
 }
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `pnpm --filter @carat-room/shared-types exec vitest run src/api/catalogue.test.ts`
 Expected: 6 tests PASS.
 
-- [ ] **Step 5: Export and build**
+- [x] **Step 5: Export and build**
 
 Append to `packages/shared-types/src/index.ts`:
 
@@ -442,7 +442,7 @@ export type { CatalogueLot, CatalogueLotImage, CatalogueAuction } from './api/ca
 Run: `pnpm --filter @carat-room/shared-types build` then `pnpm --filter @carat-room/shared-types test`
 Expected: clean build, all tests pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/shared-types
@@ -463,7 +463,7 @@ git commit -m "feat(shared-types): add catalogue API contract schemas and query 
 
 **How this catches drift:** a serialisation change in a router without a matching schema change now fails the catalogue's own suite; changing the schema instead surfaces every consumer through type errors and failing portal tests.
 
-- [ ] **Step 1: Add schema assertions to `catalogue-router.test.ts`**
+- [x] **Step 1: Add schema assertions to `catalogue-router.test.ts`**
 
 Add imports:
 
@@ -500,7 +500,7 @@ In `should_passAuctionIdFilter_when_auctionIdQueryProvided`, replace the request
 
 In the search success test (`should_return200WithResults_when_queryProvided`), parse the body with `lotSearchResponseSchema.parse(await res.json())` — the mocked `searchLots.execute` result must return items shaped like `lotSearchResultSchema` (id, title, thumbnailUrl, estimatedValue, categoryId) and a `total`; adjust the mock if it returns bare `{ items: [], total: 0 }` with lots-shaped items. Any `GET /api/categories` test likewise parses with `categoryListResponseSchema`.
 
-- [ ] **Step 2: Add schema assertions to `auction-router.test.ts`**
+- [x] **Step 2: Add schema assertions to `auction-router.test.ts`**
 
 Add imports:
 
@@ -516,7 +516,7 @@ In `should_return200WithAuctionsAndLotCounts`, replace the body parse with `auct
 
 In `should_return200WithAuction_when_auctionExists`, parse with `auctionResponseSchema.parse(await res.json())`.
 
-- [ ] **Step 3: Add schema assertion to `facets-router.test.ts`**
+- [x] **Step 3: Add schema assertion to `facets-router.test.ts`**
 
 Import `facetsResponseSchema` from `@carat-room/shared-types`; in the first test (`returns departments and auctions`), replace the raw `res.json()` cast with:
 
@@ -526,12 +526,12 @@ Import `facetsResponseSchema` from `@carat-room/shared-types`; in the first test
 
 and keep the existing `toEqual` assertions on `body.departments` / `body.auctions`.
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `pnpm --filter @carat-room/shared-types build` (schemas must be compiled first), then `pnpm --filter catalogue exec vitest run src/presentation`
 Expected: all presentation tests PASS. If any schema `parse` throws, the schema and the router disagree — fix the schema to match the router (reality wins) and note the discrepancy.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/catalogue/src/presentation
@@ -555,7 +555,7 @@ git commit -m "test(catalogue): enforce shared API contract schemas in router te
 
 **API caveat:** the `@electric-sql/pglite-socket` surface is young. After installing, open its README in `node_modules/@electric-sql/pglite-socket/README.md` and confirm the server class name and options match the code below; adapt if the package has renamed them. The behavioural contract (wire-protocol server on a localhost port backed by a PGlite instance) is what matters.
 
-- [ ] **Step 1: Create the package**
+- [x] **Step 1: Create the package**
 
 `packages/test-db/package.json`:
 
@@ -611,7 +611,7 @@ export default defineConfig({
 
 Run `pnpm install` from the repo root.
 
-- [ ] **Step 2: Create the fixture migration** — `packages/test-db/fixtures/001_fixture.sql`
+- [x] **Step 2: Create the fixture migration** — `packages/test-db/fixtures/001_fixture.sql`
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -625,7 +625,7 @@ CREATE TABLE widgets (
 
 (The fixture deliberately exercises `uuid-ossp` and `tsvector` — the two extensions the catalogue migrations need — so C17 is proven before Task 5.)
 
-- [ ] **Step 3: Write the failing test** — `packages/test-db/src/index.test.ts`
+- [x] **Step 3: Write the failing test** — `packages/test-db/src/index.test.ts`
 
 ```ts
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -664,12 +664,12 @@ describe('test-db', () => {
 });
 ```
 
-- [ ] **Step 4: Run to verify failure**
+- [x] **Step 4: Run to verify failure**
 
 Run: `pnpm --filter @carat-room/test-db exec vitest run`
 Expected: FAIL — cannot resolve `./index.js`.
 
-- [ ] **Step 5: Implement** — `packages/test-db/src/index.ts`
+- [x] **Step 5: Implement** — `packages/test-db/src/index.ts`
 
 ```ts
 import { readdirSync, readFileSync } from 'node:fs';
@@ -730,12 +730,12 @@ export function createTestDb(url: string): ReturnType<typeof postgres> {
 }
 ```
 
-- [ ] **Step 6: Run to verify pass**
+- [x] **Step 6: Run to verify pass**
 
 Run: `pnpm --filter @carat-room/test-db exec vitest run`
 Expected: 2 tests PASS. If `PGLiteSocketServer` fails to start or postgres.js cannot handshake, consult the pglite-socket README (see the API caveat above) — the fix is confined to `startTestDb`.
 
-- [ ] **Step 7: Build and commit**
+- [x] **Step 7: Build and commit**
 
 Run: `pnpm --filter @carat-room/test-db build`
 Expected: clean tsc build.
@@ -762,11 +762,11 @@ git commit -m "feat(test-db): add PGlite-backed embedded Postgres test harness"
 
 **Baseline:** these nine tests currently fail locally with `database "catalogue_test" does not exist` unless Docker Postgres is running. After this task they pass in a bare `pnpm turbo test`.
 
-- [ ] **Step 1: Add the dev dependency**
+- [x] **Step 1: Add the dev dependency**
 
 In `apps/catalogue/package.json` `devDependencies` add `"@carat-room/test-db": "workspace:*"`, then `pnpm install`.
 
-- [ ] **Step 2: Create `apps/catalogue/vitest.global-setup.ts`**
+- [x] **Step 2: Create `apps/catalogue/vitest.global-setup.ts`**
 
 ```ts
 import { join } from 'node:path';
@@ -787,7 +787,7 @@ export async function setup(): Promise<() => Promise<void>> {
 
 (If the catalogue package is ESM and `__dirname` is unavailable, derive it: `const dir = dirname(fileURLToPath(import.meta.url));` — match however `vitest.config.ts` resolves paths in this package.)
 
-- [ ] **Step 3: Wire it into `apps/catalogue/vitest.config.ts`**
+- [x] **Step 3: Wire it into `apps/catalogue/vitest.config.ts`**
 
 ```ts
 import { defineConfig } from 'vitest/config';
@@ -803,7 +803,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 4: Constrain repository test connections to a single connection**
+- [x] **Step 4: Constrain repository test connections to a single connection**
 
 The three `postgres-*-repository.test.ts` files each call `createDb(TEST_DB_URL)`. PGlite handles one connection; postgres.js defaults to a pool of 10. In each file, replace the `createDb` call with a direct single-connection client. Change (in all three files):
 
@@ -838,19 +838,19 @@ const TEST_DB_URL = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgr
 
 (This line already exists in each file — verify it reads `TEST_DATABASE_URL`, not a snapshot taken at import of a different name.)
 
-- [ ] **Step 5: Run the full catalogue suite**
+- [x] **Step 5: Run the full catalogue suite**
 
 Run: `pnpm --filter catalogue test`
 Expected: **all** tests pass with no Docker running — including the nine previously-red repository tests. If `CREATE EXTENSION "uuid-ossp"` fails, the PGlite extension wiring in Task 4 needs the extension name mapping checked (`uuid_ossp` must be registered so the quoted SQL name resolves).
 
 Known wrinkle: if env propagation from `globalSetup` to worker threads fails (tests still see the localhost:5432 fallback), switch the config to `pool: 'forks'` in `vitest.config.ts` — forked workers inherit `process.env` set during global setup.
 
-- [ ] **Step 6: Verify the external-DB path still works**
+- [x] **Step 6: Verify the external-DB path still works**
 
 Run: `$env:TEST_DATABASE_URL = 'postgres://postgres:postgres@localhost:5432/catalogue_test'; pnpm --filter catalogue exec vitest run src/infrastructure 2>$null; Remove-Item Env:TEST_DATABASE_URL`
 Expected: repository tests fail with connection errors (no Docker DB running) — proving the harness did NOT override the externally set URL. Do not commit anything from this step.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/catalogue pnpm-lock.yaml
@@ -870,11 +870,11 @@ git commit -m "test(catalogue): run repository tests against embedded PGlite wit
 - Consumes: `lotListResponseSchema`, `auctionListResponseSchema`, `auctionResponseSchema`, `CatalogueLot`, `CatalogueAuction` from `@carat-room/shared-types`.
 - Produces (used by Task 7): `parseLotList(json: unknown): { lots: CatalogueLot[]; total?: number }`, `parseAuctionList(json: unknown): CatalogueAuction[]`, `parseAuction(json: unknown): AuctionDetail | null`, plus the existing `primaryImageUrl(lot)` and `toLotCardProps(lot, fallbackAuctionId)` (signatures unchanged, now typed with the shared `CatalogueLot`).
 
-- [ ] **Step 1: Add the dependency**
+- [x] **Step 1: Add the dependency**
 
 In `apps/user-portal/package.json` `dependencies` add `"@carat-room/shared-types": "workspace:*"`, then `pnpm install` and `pnpm --filter @carat-room/shared-types build` (the portal imports the compiled dist).
 
-- [ ] **Step 2: Write the failing test** — `apps/user-portal/src/lib/catalogue.test.ts`
+- [x] **Step 2: Write the failing test** — `apps/user-portal/src/lib/catalogue.test.ts`
 
 ```ts
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -925,12 +925,12 @@ describe('toLotCardProps', () => {
 });
 ```
 
-- [ ] **Step 3: Run to verify failure**
+- [x] **Step 3: Run to verify failure**
 
 Run: `pnpm --filter user-portal exec vitest run src/lib/catalogue.test.ts`
 Expected: FAIL — `parseLotList` is not exported.
 
-- [ ] **Step 4: Rewrite `apps/user-portal/src/lib/catalogue.ts`**
+- [x] **Step 4: Rewrite `apps/user-portal/src/lib/catalogue.ts`**
 
 ```ts
 import {
@@ -1000,12 +1000,12 @@ export function lotsFromResponse(json: unknown): CatalogueLot[] {
 
 Keep the existing `CatalogueListResponse` type export for the same reason; Task 7 deletes both.
 
-- [ ] **Step 5: Run to verify pass**
+- [x] **Step 5: Run to verify pass**
 
 Run: `pnpm --filter user-portal exec vitest run src/lib/catalogue.test.ts` then the full suite `pnpm --filter user-portal test`
 Expected: new tests PASS; existing suite stays green via the transitional alias.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/user-portal pnpm-lock.yaml
@@ -1031,7 +1031,7 @@ git commit -m "feat(user-portal): parse catalogue responses through shared contr
 
 **Behaviour change (intentional):** the home page "Closing soon" grid stops expecting live-bid fields that don't exist and instead renders catalogue lots with estimates, consistent with the other grids. Live bids arrive with the future auction-engine read model.
 
-- [ ] **Step 1: Update the home page test first** — `apps/user-portal/src/app/page.test.tsx`
+- [x] **Step 1: Update the home page test first** — `apps/user-portal/src/app/page.test.tsx`
 
 Replace the `{ lots: [lot] }` fixture case with real-envelope fixtures. The full test file becomes:
 
@@ -1112,7 +1112,7 @@ describe('HomePage', () => {
 
 Run: `pnpm --filter user-portal exec vitest run src/app/page.test.tsx` — Expected: FAIL (home page still guards on `data.lots` and renders no lot cards from the real envelope).
 
-- [ ] **Step 2: Rewrite the home page fetchers** — `apps/user-portal/src/app/page.tsx`
+- [x] **Step 2: Rewrite the home page fetchers** — `apps/user-portal/src/app/page.tsx`
 
 Replace both fetcher functions and the lot grid mapping:
 
@@ -1149,7 +1149,7 @@ Note the old URL sent `status=open&sort=endAt` — params the router never read;
 
 Run: `pnpm --filter user-portal exec vitest run src/app/page.test.tsx` — Expected: PASS.
 
-- [ ] **Step 3: Convert `catalogue-lots.tsx` and its test**
+- [x] **Step 3: Convert `catalogue-lots.tsx` and its test**
 
 In `catalogue-lots.tsx`: replace the import of `CatalogueListResponse`/`lotsFromResponse` with `parseLotList` and build the SWR key with the query builder. The `sort` state stays UI-only (the backend does not sort yet — it is intentionally NOT in `lotsQuery`):
 
@@ -1189,7 +1189,7 @@ The "unexpected shape" test gains a `vi.spyOn(console, 'error').mockImplementati
 
 Run: `pnpm --filter user-portal exec vitest run "src/app/auctions/[auctionId]/catalogue-lots.test.tsx"` — Expected: PASS.
 
-- [ ] **Step 4: Convert `browse-client.tsx`**
+- [x] **Step 4: Convert `browse-client.tsx`**
 
 Replace the imports and query construction:
 
@@ -1222,7 +1222,7 @@ The grid mapping already uses `toLotCardProps(lot, 'catalogue')` — unchanged.
 
 Run: `pnpm --filter user-portal test` — Expected: suite green.
 
-- [ ] **Step 5: Convert the sale page and lot-detail client**
+- [x] **Step 5: Convert the sale page and lot-detail client**
 
 `auctions/[auctionId]/page.tsx` — replace the manual envelope unwrap with the parser:
 
@@ -1266,16 +1266,16 @@ import { parseLotList, toLotCardProps } from '@/lib/catalogue';
   }, [isLive, lot.auctionId, lot.id]);
 ```
 
-- [ ] **Step 6: Delete the transitional exports**
+- [x] **Step 6: Delete the transitional exports**
 
 Remove `lotsFromResponse` and the `CatalogueListResponse` type from `apps/user-portal/src/lib/catalogue.ts`. Run a grep to confirm no remaining imports: `grep -r "lotsFromResponse\|CatalogueListResponse" apps/user-portal/src` — Expected: no matches.
 
-- [ ] **Step 7: Full portal verification**
+- [x] **Step 7: Full portal verification**
 
 Run: `pnpm --filter user-portal test` then `pnpm --filter user-portal build`
 Expected: all tests pass; Next.js build (including TypeScript) clean.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/user-portal
@@ -1289,7 +1289,7 @@ git commit -m "refactor(user-portal): consume catalogue API exclusively through 
 **Files:**
 - Modify: `docs/superpowers/plans/2026-07-08-api-contracts-phase-1.md` (checkboxes)
 
-- [ ] **Step 1: Deliberate-drift smoke check (do not commit the drift)**
+- [x] **Step 1: Deliberate-drift smoke check (do not commit the drift)**
 
 In `apps/catalogue/src/presentation/auction-router.ts`, temporarily rename `lotCount` to `lot_count` in the list response mapping. Run:
 
@@ -1297,16 +1297,16 @@ In `apps/catalogue/src/presentation/auction-router.ts`, temporarily rename `lotC
 
 Revert the rename (`git checkout -- apps/catalogue/src/presentation/auction-router.ts`) and re-run to confirm green.
 
-- [ ] **Step 2: Whole-repo verification**
+- [x] **Step 2: Whole-repo verification**
 
 Run: `pnpm turbo build` then `pnpm turbo test` (no Docker running).
 Expected: all packages build; all suites pass — including catalogue repository tests on PGlite. Any red here is a Phase 1 defect; fix before proceeding.
 
-- [ ] **Step 3: Confirm scope boundaries**
+- [x] **Step 3: Confirm scope boundaries**
 
 Review this plan's own commits (`git log --oneline --stat` over the Task 1–7 commits): no changes outside `packages/shared-types`, `packages/test-db`, `apps/catalogue` (test files and vitest config only — no production `src` file may appear in this plan's catalogue commits), `apps/user-portal`, and this plan/spec. SSE endpoints (`/api/auctions/:lotId/stream`) remain schema-free (C20). Phases 2–4 are separate plans (C19).
 
-- [ ] **Step 4: Mark this plan complete and commit**
+- [x] **Step 4: Mark this plan complete and commit**
 
 Tick every checkbox in this file, then:
 
