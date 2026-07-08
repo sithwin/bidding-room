@@ -1,28 +1,41 @@
+import {
+  lotListResponseSchema, auctionListResponseSchema, auctionResponseSchema,
+  type CatalogueLot, type CatalogueAuction,
+} from '@carat-room/shared-types';
+import type { z } from 'zod';
 import type { LotCardProps } from '@/components/primitives/lot-card';
 
-// Shapes returned by the catalogue service — list responses use a { data, meta } envelope
-export interface CatalogueLotImage {
-  url: string;
-  thumbnailUrl: string;
-  displayOrder: number;
-  isPrimary: boolean;
+export type { CatalogueLot, CatalogueAuction };
+export type AuctionDetail = z.infer<typeof auctionResponseSchema>['data'];
+
+// Contract boundary: every catalogue response is parsed through the shared
+// schema. Drift logs and degrades to the fallback — pages render empty
+// states, never crash.
+export function parseLotList(json: unknown): { lots: CatalogueLot[]; total?: number } {
+  const parsed = lotListResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    console.error('Catalogue lot list failed contract validation', parsed.error.issues);
+    return { lots: [] };
+  }
+  return { lots: parsed.data.data, total: parsed.data.meta.total };
 }
 
-export interface CatalogueLot {
-  id: string;
-  auctionId: string | null;
-  title: string;
-  estimatedValue: number | null;
-  images: CatalogueLotImage[];
+export function parseAuctionList(json: unknown): CatalogueAuction[] {
+  const parsed = auctionListResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    console.error('Catalogue auction list failed contract validation', parsed.error.issues);
+    return [];
+  }
+  return parsed.data.data;
 }
 
-export interface CatalogueListResponse<T> {
-  data?: T[];
-  meta?: { total: number; limit: number; offset: number };
-}
-
-export function lotsFromResponse(response: CatalogueListResponse<CatalogueLot> | undefined): CatalogueLot[] {
-  return Array.isArray(response?.data) ? response.data : [];
+export function parseAuction(json: unknown): AuctionDetail | null {
+  const parsed = auctionResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    console.error('Catalogue auction failed contract validation', parsed.error.issues);
+    return null;
+  }
+  return parsed.data.data;
 }
 
 export function primaryImageUrl(lot: CatalogueLot): string | undefined {

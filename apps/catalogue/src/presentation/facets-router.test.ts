@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
+import { facetsResponseSchema } from '@carat-room/shared-types';
 import { FacetRepository } from '../domain/facet-repository';
 import { buildFacetsRouter } from './facets-router';
 
@@ -25,7 +26,7 @@ describe('facets-router', () => {
 
     const res = await app.request('/api/lots/facets');
     expect(res.status).toBe(200);
-    const body = await res.json() as { departments: { name: string; count: number }[]; auctions: { id: string; title: string }[] };
+    const body = facetsResponseSchema.parse(await res.json());
     expect(body.departments).toEqual([
       { name: 'Jewellery', count: 12 },
       { name: 'Watches', count: 5 },

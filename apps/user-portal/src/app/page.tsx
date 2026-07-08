@@ -1,27 +1,26 @@
 import { Header } from '@/components/layout/header';
 import { LotCard } from '@/components/primitives/lot-card';
 import Link from 'next/link';
+import { lotsQuery, auctionsQuery } from '@carat-room/shared-types';
+import { parseLotList, parseAuctionList, toLotCardProps, type CatalogueLot, type CatalogueAuction } from '@/lib/catalogue';
 
 export const revalidate = 60;
 
 const CATALOGUE_URL = process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002';
 
-async function getClosingSoonLots() {
+async function getClosingSoonLots(): Promise<CatalogueLot[]> {
   try {
-    const res = await fetch(`${CATALOGUE_URL}/api/lots?status=open&sort=endAt&limit=8`, { next: { revalidate: 60 } });
+    const res = await fetch(`${CATALOGUE_URL}/api/lots?${lotsQuery({ limit: 8 })}`, { next: { revalidate: 60 } });
     if (!res.ok) return [];
-    const data = await res.json() as { lots?: Array<{ id: string; auctionId: string; lotNumber: string; title: string; imageUrl: string; currentBid: number; currency: string; endAt: string }> };
-    return Array.isArray(data.lots) ? data.lots : [];
+    return parseLotList(await res.json()).lots;
   } catch { return []; }
 }
 
-async function getUpcomingAuctions() {
+async function getUpcomingAuctions(): Promise<CatalogueAuction[]> {
   try {
-    const res = await fetch(`${CATALOGUE_URL}/api/auctions?status=upcoming&limit=3`, { next: { revalidate: 60 } });
+    const res = await fetch(`${CATALOGUE_URL}/api/auctions?${auctionsQuery({ status: 'upcoming', limit: 3 })}`, { next: { revalidate: 60 } });
     if (!res.ok) return [];
-    // The catalogue service wraps list responses in a { data } envelope
-    const data = await res.json() as { data?: Array<{ id: string; title: string; saleDate: string | null; lotCount: number }> };
-    return Array.isArray(data.data) ? data.data : [];
+    return parseAuctionList(await res.json());
   } catch { return []; }
 }
 
@@ -47,7 +46,7 @@ export default async function HomePage() {
           <p className='font-sans text-mut text-sm'>No lots currently open.</p>
         ) : (
           <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-            {lots.map(lot => <LotCard key={lot.id} lotId={lot.id} auctionId={lot.auctionId} lotNumber={lot.lotNumber} title={lot.title} imageUrl={lot.imageUrl} currentBid={lot.currentBid} currency={lot.currency} endAt={lot.endAt} />)}
+            {lots.map(lot => <LotCard key={lot.id} {...toLotCardProps(lot, lot.auctionId ?? 'catalogue')} />)}
           </div>
         )}
       </section>
