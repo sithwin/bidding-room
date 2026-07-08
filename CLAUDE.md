@@ -261,5 +261,20 @@ When I correct you, or you catch yourself making a mistake before continuing, ad
 - Verify SQL column names against the migrations; a unit test asserting the query string contains the code's own column name proves nothing when both share the wrong assumption.
 - Never put SQL in a presentation-layer router — define a domain repository interface and an infrastructure implementation, even for small endpoints; the service already has that layering, so follow it.
 - When adding a migration, mirror its schema changes into `tests/db-init/init.sql` — the test DB bootstrap does not run service migrations, so it silently drifts.
+- A form must render an error slot for every field its schema validates, plus a general server-error message — an error that is returned but never displayed looks like a dead submit button.
+- Never ask users to type an entity ID — fetch the owning service's list and render a select; a free-text "UUID" input guarantees validation failures.
+- Every mutation action needs a reachable UI entry point, including from an empty state — a per-row "add child" button is useless when the list is empty; always provide a root-level "New" button.
+- `z.string().datetime()` rejects what `<input type='datetime-local'>` emits (`2026-07-09T14:30` — no seconds, no timezone); validate with the format the HTML control actually produces (`{ local: true }` or a transform) and unit-test the schema with a real sample value from the control.
+- Before writing a proxy route, grep the downstream service for the exact target path and pass the client of the service that owns it — a proxy to a non-existent endpoint compiles fine and fails only at runtime.
+- A fetch wrapper must check `res.ok` before trusting the body shape — parsing an error envelope as the success type moves the crash into rendering code.
+- Schema unit tests are not verification for a UI flow — before marking a frontend plan step complete, drive the actual flow in the browser (submit the form, click the menu) at least once.
+- A bug report names symptoms, not scope — after root-causing the reported items, audit the entire functional chain they live in (create → schedule → bid → close → invoice → fulfil); the worst breaks were adjacent to, not inside, the reported pages.
+- An asserted RabbitMQ queue with no binding consumes nothing and raises no error — queue bindings must be explicit and required (never optional parameters), and queue/exchange names must be diffed against `infra/rabbitmq/definitions.json`.
+- Event producers and consumers must both type their payloads against `@carat-room/shared-types` — an inline payload object on either side drifts silently (`finalAmount` vs `highestAmount` broke invoicing with zero errors logged).
+- Infra declarations are part of the contract: an exchange name in `definitions.json` that differs from the code constant (`platform.events` vs `carat.events`) means every pre-provisioned binding is dead.
+- Diff every service's `process.env` reads against its `docker-compose.yml` block — env-name drift (`AMQP_URL` vs `RABBITMQ_URL`) and wrong fallback hostnames (`auction-service` vs `auction-engine`) crash or isolate services only at deploy time.
+- SQL referencing a table proves nothing about the table existing — every table named in an INSERT/SELECT needs DDL in a migration and in `tests/db-init/init.sql`; `valuation_enquiries` had neither.
+- A service must not fabricate another service's numbers — never hard-code placeholder values (`pendingInvoices: 0`) in a cross-service response; report only what you own, aggregate at the composition point, and fail soft to `null` (rendered '—'), not to a fake zero.
+- A backend feature without a reachable UI entry point is not shipped — when adding a router, add the page and navigation link in the same plan, or the feature silently doesn't exist.
 
 
