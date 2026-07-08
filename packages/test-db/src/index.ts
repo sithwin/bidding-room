@@ -33,8 +33,18 @@ export async function startTestDb(options: { migrationsDir: string }): Promise<T
   const migrationFiles = readdirSync(options.migrationsDir)
     .filter(name => name.endsWith('.sql'))
     .sort();
-  for (const file of migrationFiles) {
-    await db.exec(readFileSync(join(options.migrationsDir, file), 'utf8'));
+
+  // If a migration fails partway through, the already-created PGlite instance
+  // must still be closed here — the caller never receives a handle to close
+  // it themselves, so leaving this uncaught would leak a WASM PGlite instance
+  // per failed boot.
+  try {
+    for (const file of migrationFiles) {
+      await db.exec(readFileSync(join(options.migrationsDir, file), 'utf8'));
+    }
+  } catch (error) {
+    await db.close();
+    throw error;
   }
 
   const port = await findFreePort();
