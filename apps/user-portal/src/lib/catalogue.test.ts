@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { z } from 'zod';
-import { lotListResponseSchema } from '@carat-room/shared-types';
-import { parseLotList, parseAuctionList, toLotCardProps } from './catalogue';
+import { lotListResponseSchema, auctionListResponseSchema, auctionResponseSchema } from '@carat-room/shared-types';
+import { parseLotList, parseAuctionList, parseAuction, toLotCardProps } from './catalogue';
 
 // Fixture typed against the real contract — drifts fail at compile time (C9)
 const lotFixture = {
@@ -10,6 +10,12 @@ const lotFixture = {
   images: [{ id: 'img-1', lotId: 'lot-1', url: '/x.jpg', thumbnailUrl: '/t.jpg', displayOrder: 0, isPrimary: true }],
   createdBy: null, createdAt: '2026-06-20T00:00:00.000Z', updatedAt: '2026-06-20T00:00:00.000Z',
 } satisfies z.infer<typeof lotListResponseSchema>['data'][number];
+
+const auctionFixture = {
+  id: 'auction-1', title: 'June Contemporary Jewellery', saleDate: '2026-06-20T00:00:00.000Z',
+  location: 'London', viewingDates: '2026-06-15 - 2026-06-19', status: 'upcoming',
+  createdAt: '2026-06-01T00:00:00.000Z', updatedAt: '2026-06-01T00:00:00.000Z',
+} satisfies z.infer<typeof auctionResponseSchema>['data'];
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -30,9 +36,39 @@ describe('parseLotList', () => {
 });
 
 describe('parseAuctionList', () => {
-  it('returns [] and logs on non-envelope input', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(parseAuctionList({ auctions: [] })).toEqual([]);
+  it('parses the real { data, meta } envelope', () => {
+    const catalogueAuctionFixture = {
+      id: 'auction-1', title: 'June Contemporary Jewellery', saleDate: '2026-06-20T00:00:00.000Z',
+      location: 'London', viewingDates: '2026-06-15 - 2026-06-19', status: 'open', lotCount: 42,
+    };
+    const result = parseAuctionList({ data: [catalogueAuctionFixture], meta: { total: 1, limit: 10, offset: 0 } });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('auction-1');
+    expect(result[0].lotCount).toBe(42);
+  });
+
+  it('returns the fallback and logs on a drifted shape, never throws', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = parseAuctionList({ auctions: [] });
+    expect(result).toEqual([]);
+    expect(errorSpy).toHaveBeenCalled();
+  });
+});
+
+describe('parseAuction', () => {
+  it('parses the real { data } envelope', () => {
+    const result = parseAuction({ data: auctionFixture });
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('auction-1');
+    expect(result?.title).toBe('June Contemporary Jewellery');
+    expect(result?.status).toBe('upcoming');
+  });
+
+  it('returns null and logs on a drifted shape, never throws', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = parseAuction({ auction: auctionFixture });
+    expect(result).toBeNull();
+    expect(errorSpy).toHaveBeenCalled();
   });
 });
 
