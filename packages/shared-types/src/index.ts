@@ -24,3 +24,10 @@ export type {
 export { ROUTING_KEYS } from './events/index.js';
 export type { RoutingKey } from './events/index.js';
 export { envelope, listEnvelope } from './api/envelope.js';
+export {
+  catalogueLotSchema, catalogueLotImageSchema, lotListResponseSchema, lotResponseSchema,
+  lotSearchResultSchema, lotSearchResponseSchema, categorySchema, categoryListResponseSchema,
+  auctionStatusSchema, catalogueAuctionSchema, auctionListResponseSchema, auctionResponseSchema,
+  facetsResponseSchema, lotsQuery, auctionsQuery,
+} from './api/catalogue.js';
+export type { CatalogueLot, CatalogueLotImage, CatalogueAuction } from './api/catalogue.js';
