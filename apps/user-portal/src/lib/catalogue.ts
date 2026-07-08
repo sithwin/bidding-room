@@ -8,12 +8,6 @@ import type { LotCardProps } from '@/components/primitives/lot-card';
 export type { CatalogueLot, CatalogueAuction };
 export type AuctionDetail = z.infer<typeof auctionResponseSchema>['data'];
 
-// Transitional shape kept for callers not yet converted to parseLotList (Task 7 removes this).
-export interface CatalogueListResponse<T> {
-  data?: T[];
-  meta?: { total: number; limit: number; offset: number };
-}
-
 // Contract boundary: every catalogue response is parsed through the shared
 // schema. Drift logs and degrades to the fallback — pages render empty
 // states, never crash.
@@ -42,11 +36,6 @@ export function parseAuction(json: unknown): AuctionDetail | null {
     return null;
   }
   return parsed.data.data;
-}
-
-// Transitional alias — removed in the consumer-conversion task (Task 7)
-export function lotsFromResponse(json: unknown): CatalogueLot[] {
-  return parseLotList(json).lots;
 }
 
 export function primaryImageUrl(lot: CatalogueLot): string | undefined {

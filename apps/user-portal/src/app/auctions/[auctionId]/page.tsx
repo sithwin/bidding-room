@@ -1,12 +1,11 @@
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
+import { parseAuction } from '@/lib/catalogue';
 import { CatalogueLots } from './catalogue-lots';
 
 export const revalidate = 30;
 
 const CATALOGUE_URL = process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002';
-
-type Auction = { id: string; title: string; saleDate: string | null; location: string | null; viewingDates: string | null };
 
 export default async function SaleCataloguePage({ params }: { params: Promise<{ auctionId: string }> }) {
   const { auctionId } = await params;
@@ -15,8 +14,7 @@ export default async function SaleCataloguePage({ params }: { params: Promise<{ 
   });
 
   if (!auctionRes.ok) notFound();
-  // The catalogue service wraps single resources in a { data } envelope
-  const { data: auction } = await auctionRes.json() as { data?: Auction };
+  const auction = parseAuction(await auctionRes.json());
   if (!auction) notFound();
 
   return (

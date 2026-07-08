@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { z } from 'zod';
+import { lotListResponseSchema } from '@carat-room/shared-types';
 import { CatalogueLots } from './catalogue-lots';
 
 // Mock useSWR
@@ -24,11 +26,11 @@ import useSWR from 'swr';
 
 // Mirrors the catalogue service's { data, meta } list envelope
 const mockLots = Array.from({ length: 3 }, (_, i) => ({
-  id: `lot-${i}`,
-  title: `Lot ${i + 1} Title`,
-  estimatedValue: 1000 * (i + 1),
+  id: `lot-${i}`, title: `Lot ${i + 1} Title`, description: null, auctionId: 'auction-1',
+  categoryId: null, condition: null, estimatedValue: 1000 * (i + 1),
   images: [{ id: `img-${i}`, lotId: `lot-${i}`, url: '/full.jpg', thumbnailUrl: '/thumb.jpg', displayOrder: 0, isPrimary: true }],
-}));
+  createdBy: null, createdAt: '2026-06-20T00:00:00.000Z', updatedAt: '2026-06-20T00:00:00.000Z',
+})) satisfies z.infer<typeof lotListResponseSchema>['data'];
 
 describe('CatalogueLots', () => {
   beforeEach(() => {
@@ -102,6 +104,7 @@ describe('CatalogueLots', () => {
   });
 
   it('does not crash when the response has an unexpected shape', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(useSWR).mockReturnValue({
       data: { unexpected: true },
       error: undefined,

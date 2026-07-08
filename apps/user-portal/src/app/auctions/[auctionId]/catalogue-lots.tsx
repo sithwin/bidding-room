@@ -4,7 +4,8 @@ import useSWR from 'swr';
 import { useFormatter } from 'next-intl';
 import { LotCard } from '@/components/primitives/lot-card';
 
-import { CatalogueListResponse, CatalogueLot, lotsFromResponse, toLotCardProps } from '@/lib/catalogue';
+import { lotsQuery } from '@carat-room/shared-types';
+import { parseLotList, toLotCardProps } from '@/lib/catalogue';
 
 type Sort = 'lotNumber' | 'endAt' | 'price';
 
@@ -16,14 +17,14 @@ export function CatalogueLots({ auctionId }: { auctionId: string }) {
   const [page, setPage] = useState(1);
   const format = useFormatter();
 
-  const { data, error } = useSWR<CatalogueListResponse<CatalogueLot>>(
-    `/api/catalogue/lots?auctionId=${auctionId}&sort=${sort}&limit=${PAGE_SIZE}&offset=${(page - 1) * PAGE_SIZE}`,
+  const { data, error } = useSWR<unknown>(
+    `/api/catalogue/lots?${lotsQuery({ auctionId, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE })}`,
     fetcher,
     { refreshInterval: 30000 },
   );
 
-  const lots = lotsFromResponse(data);
-  const total = data?.meta?.total;
+  // undefined = still loading — do not run it through the schema (it would log a spurious contract error)
+  const { lots, total } = data === undefined ? { lots: [], total: undefined } : parseLotList(data);
   const totalPages = Math.ceil((total ?? 0) / PAGE_SIZE);
 
   if (error) return <p className='font-sans text-sm text-mut'>Unable to load lots.</p>;

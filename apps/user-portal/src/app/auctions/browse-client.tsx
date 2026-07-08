@@ -6,7 +6,8 @@ import * as Slider from '@radix-ui/react-slider';
 import { Header } from '@/components/layout/header';
 import { LotCard } from '@/components/primitives/lot-card';
 
-import { CatalogueListResponse, CatalogueLot, lotsFromResponse, toLotCardProps } from '@/lib/catalogue';
+import { lotsQuery } from '@carat-room/shared-types';
+import { parseLotList, toLotCardProps } from '@/lib/catalogue';
 
 type Facets = { departments: Array<{ name: string; count: number }>; auctions: Array<{ id: string; title: string }> };
 
@@ -31,19 +32,21 @@ export function BrowseClient() {
   const statuses    = searchParams.getAll('status');
   const auctions    = searchParams.getAll('auction');
 
-  const lotsParams = new URLSearchParams({ sort, ...(q && { q }), ...(minPrice !== '0' && { minValue: minPrice }), ...(maxPrice !== '100000' && { maxValue: maxPrice }) });
+  const lotsParams = lotsQuery({
+    minValue: minPrice !== '0' ? Number(minPrice) : undefined,
+    maxValue: maxPrice !== '100000' ? Number(maxPrice) : undefined,
+    auctionId: auctions[0],
+  });
+  // Not yet supported by the catalogue API — kept in the URL so the UI state
+  // survives navigation; the proxy forwards and the router ignores them
+  if (q) lotsParams.set('q', q);
+  lotsParams.set('sort', sort);
   departments.forEach(d => lotsParams.append('department', d));
   statuses.forEach(s => lotsParams.append('status', s));
-  auctions.forEach(a => lotsParams.append('auctionId', a));
 
-  const { data, isLoading } = useSWR<CatalogueListResponse<CatalogueLot>>(
-    `/api/catalogue/lots?${lotsParams}`,
-    fetcher,
-    { refreshInterval: 15000 },
-  );
-
-  const lots = lotsFromResponse(data);
-  const total = data?.meta?.total;
+  const { data, isLoading } = useSWR<unknown>(`/api/catalogue/lots?${lotsParams}`, fetcher, { refreshInterval: 15000 });
+  // undefined = still loading — do not run it through the schema (it would log a spurious contract error)
+  const { lots, total } = data === undefined ? { lots: [], total: undefined } : parseLotList(data);
 
   const facetsParams = new URLSearchParams({ ...(q && { q }) });
   const { data: facets } = useSWR<Facets>(`/api/catalogue/facets?${facetsParams}`, fetcher, { revalidateOnFocus: false });

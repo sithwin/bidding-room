@@ -13,7 +13,8 @@ import { PhoneOtpInline } from '@/components/primitives/phone-otp-inline';
 import { useLotSse } from '@/hooks/use-lot-sse';
 import { useAuth } from '@/lib/auth-context';
 import { createApi } from '@/lib/api';
-import { CatalogueListResponse, CatalogueLot, lotsFromResponse, toLotCardProps } from '@/lib/catalogue';
+import { lotsQuery } from '@carat-room/shared-types';
+import { parseLotList, toLotCardProps } from '@/lib/catalogue';
 import Image from 'next/image';
 
 type Lot = {
@@ -68,10 +69,10 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
 
   // Fetch related lots (same collection) — exclude the lot being viewed
   useEffect(() => {
-    fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&limit=5`)
+    fetch(`/api/catalogue/lots?${lotsQuery({ auctionId: lot.auctionId, limit: 5 })}`)
       .then(r => r.json())
-      .then((d: CatalogueListResponse<CatalogueLot>) => setRelatedLots(
-        lotsFromResponse(d).filter(l => l.id !== lot.id).slice(0, 4).map(l => toLotCardProps(l, lot.auctionId)),
+      .then((d: unknown) => setRelatedLots(
+        parseLotList(d).lots.filter(l => l.id !== lot.id).slice(0, 4).map(l => toLotCardProps(l, lot.auctionId)),
       ))
       .catch(() => {});
   }, [lot.auctionId, lot.id]);
@@ -79,10 +80,10 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
   // Fetch "Up Next" lots (live mode only)
   useEffect(() => {
     if (!isLive) return;
-    fetch(`/api/catalogue/lots?auctionId=${lot.auctionId}&limit=3`)
+    fetch(`/api/catalogue/lots?${lotsQuery({ auctionId: lot.auctionId, limit: 3 })}`)
       .then(r => r.json())
-      .then((d: CatalogueListResponse<CatalogueLot>) => setNextLots(
-        lotsFromResponse(d).filter(l => l.id !== lot.id).slice(0, 2).map(l => toLotCardProps(l, lot.auctionId)),
+      .then((d: unknown) => setNextLots(
+        parseLotList(d).lots.filter(l => l.id !== lot.id).slice(0, 2).map(l => toLotCardProps(l, lot.auctionId)),
       ))
       .catch(() => {});
   }, [isLive, lot.auctionId, lot.id]);
