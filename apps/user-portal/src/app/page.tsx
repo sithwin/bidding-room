@@ -10,8 +10,8 @@ async function getClosingSoonLots() {
   try {
     const res = await fetch(`${CATALOGUE_URL}/api/lots?status=open&sort=endAt&limit=8`, { next: { revalidate: 60 } });
     if (!res.ok) return [];
-    const data = await res.json() as { lots: Array<{ id: string; auctionId: string; lotNumber: string; title: string; imageUrl: string; currentBid: number; currency: string; endAt: string }> };
-    return data.lots;
+    const data = await res.json() as { lots?: Array<{ id: string; auctionId: string; lotNumber: string; title: string; imageUrl: string; currentBid: number; currency: string; endAt: string }> };
+    return Array.isArray(data.lots) ? data.lots : [];
   } catch { return []; }
 }
 
@@ -19,8 +19,9 @@ async function getUpcomingAuctions() {
   try {
     const res = await fetch(`${CATALOGUE_URL}/api/auctions?status=upcoming&limit=3`, { next: { revalidate: 60 } });
     if (!res.ok) return [];
-    const data = await res.json() as { auctions: Array<{ id: string; title: string; saleDate: string; lotCount: number }> };
-    return data.auctions;
+    // The catalogue service wraps list responses in a { data } envelope
+    const data = await res.json() as { data?: Array<{ id: string; title: string; saleDate: string | null; lotCount: number }> };
+    return Array.isArray(data.data) ? data.data : [];
   } catch { return []; }
 }
 
@@ -59,9 +60,11 @@ export default async function HomePage() {
             <div className='flex flex-col md:flex-row gap-4'>
               {auctions.map(a => (
                 <div key={a.id} className='flex-1 bg-paper border border-[var(--line)] p-6'>
-                  <p className='font-sans text-xs text-gold uppercase tracking-wider mb-2'>
-                    {new Date(a.saleDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
+                  {a.saleDate && (
+                    <p className='font-sans text-xs text-gold uppercase tracking-wider mb-2'>
+                      {new Date(a.saleDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  )}
                   <p className='font-serif text-lg font-semibold text-ink mb-1'>{a.title}</p>
                   <p className='font-sans text-sm text-mut'>{a.lotCount} lots</p>
                 </div>

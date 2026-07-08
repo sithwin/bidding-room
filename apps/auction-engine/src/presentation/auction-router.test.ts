@@ -13,7 +13,6 @@ const jwtPayloadRef = vi.hoisted(() => ({
 
 vi.mock('@carat-room/shared-auth', () => ({
   authMiddleware: vi.fn().mockReturnValue(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (c: any, next: () => Promise<void>) => {
       c.set('jwtPayload', jwtPayloadRef.value);
       await next();
