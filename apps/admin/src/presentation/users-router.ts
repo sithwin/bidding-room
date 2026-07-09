@@ -11,7 +11,7 @@ async function proxy(fn: () => Promise<unknown>, c: Ctx): Promise<Response> {
   try {
     return c.json(await fn());
   } catch (err) {
-    if (err instanceof ServiceError) return c.json(err.body, err.status as 400 | 404 | 500);
+    if (err instanceof ServiceError) return c.json(err.body, err.status as 400 | 404 | 409 | 500);
     return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
   }
 }
@@ -25,6 +25,12 @@ export function buildUsersRouter(client: ServiceClient): Hono {
 
   r.get('/admin/api/users/:id', auth, async c =>
     proxy(() => client.get(`/api/users/${c.req.param('id')}`, tok(c)), c));
+
+  r.post('/admin/api/users', auth, async c =>
+    proxy(async () => client.post('/api/users', tok(c), await c.req.json()), c));
+
+  r.patch('/admin/api/users/:id', auth, async c =>
+    proxy(async () => client.patch(`/api/users/${c.req.param('id')}`, tok(c), await c.req.json()), c));
 
   r.patch('/admin/api/users/:id/suspend', auth, async c =>
     proxy(() => client.patch(`/api/users/${c.req.param('id')}/suspend`, tok(c), undefined), c));

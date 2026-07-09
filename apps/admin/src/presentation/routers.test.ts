@@ -162,6 +162,49 @@ describe('Users router', () => {
     expect(res.status).toBe(200);
     expect(mockClient.patch).toHaveBeenCalledWith('/api/users/user-1/suspend', 'admin-token', undefined);
   });
+
+  it('should_return200_when_creatingUser', async () => {
+    vi.mocked(mockClient.post).mockResolvedValue({ data: { id: 'user-1' } });
+    const app = new Hono().route('/', buildUsersRouter(mockClient));
+    const body = { email: 'new@example.com', firstName: 'New', lastName: 'User' };
+
+    const res = await app.request('/admin/api/users', {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockClient.post).toHaveBeenCalledWith('/api/users', 'admin-token', body);
+  });
+
+  it('should_return200_when_updatingUser', async () => {
+    vi.mocked(mockClient.patch).mockResolvedValue({ data: { id: 'user-1' } });
+    const app = new Hono().route('/', buildUsersRouter(mockClient));
+    const body = { firstName: 'Updated' };
+
+    const res = await app.request('/admin/api/users/user-1', {
+      method: 'PATCH',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockClient.patch).toHaveBeenCalledWith('/api/users/user-1', 'admin-token', body);
+  });
+
+  it('should_propagateStatusCode_when_creatingUserConflicts', async () => {
+    vi.mocked(mockClient.post).mockRejectedValue(new ServiceError(409, { error: { code: 'CONFLICT', message: 'Email already exists' } }));
+    const app = new Hono().route('/', buildUsersRouter(mockClient));
+
+    const res = await app.request('/admin/api/users', {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'dup@example.com', firstName: 'Dup', lastName: 'User' }),
+    });
+
+    expect(res.status).toBe(409);
+  });
 });
 
 describe('Invoices router', () => {
