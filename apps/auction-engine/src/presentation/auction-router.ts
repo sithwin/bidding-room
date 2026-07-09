@@ -7,6 +7,8 @@ import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
 import { GetDashboardStatsHandler } from '../application/get-dashboard-stats-handler';
+import { GetAuctionResultsHandler } from '../application/get-auction-results-handler';
+import { GetUnsoldLotsHandler } from '../application/get-unsold-lots-handler';
 import { PlaceBidCommandHandler } from '../application/place-bid-handler';
 import { ScheduleAuctionCommandHandler } from '../application/schedule-auction-handler';
 import { SseBroadcaster } from '../application/sse-broadcaster';
@@ -19,6 +21,8 @@ export interface AuctionRouterDeps {
   getLotStatus: GetLotStatusHandler;
   getBidHistory: GetBidHistoryHandler;
   getDashboardStats: GetDashboardStatsHandler;
+  getAuctionResults: GetAuctionResultsHandler;
+  getUnsoldLots: GetUnsoldLotsHandler;
   placeBidHandler: PlaceBidCommandHandler;
   scheduleAuctionHandler: ScheduleAuctionCommandHandler;
   sseBroadcaster: SseBroadcaster;
@@ -85,6 +89,23 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
   app.get('/api/reports/dashboard', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
     const stats = await deps.getDashboardStats.execute();
     return c.json({ data: stats });
+  });
+
+  app.get('/api/reports/results', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
+    const from = new Date(c.req.query('from') ?? '');
+    const to = new Date(c.req.query('to') ?? '');
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'from and to must be valid dates' } }, 400);
+    }
+    // 'to' is a date-only value from the UI; include the whole end day
+    to.setUTCHours(23, 59, 59, 999);
+    const rows = await deps.getAuctionResults.execute(from, to);
+    return c.json({ data: rows });
+  });
+
+  app.get('/api/reports/unsold', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
+    const rows = await deps.getUnsoldLots.execute();
+    return c.json({ data: rows });
   });
 
   app.post('/api/auctions', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {

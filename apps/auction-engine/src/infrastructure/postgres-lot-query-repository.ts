@@ -1,4 +1,11 @@
-import { BidRow, DashboardStats, LotQueryRepository, LotStatusRow } from '../application/lot-query-repository';
+import {
+  AuctionResultRow,
+  BidRow,
+  DashboardStats,
+  LotQueryRepository,
+  LotStatusRow,
+  UnsoldLotRow,
+} from '../application/lot-query-repository';
 import { Db } from './db';
 
 const ACTIVE_STATUSES = ['SCHEDULED', 'LIVE', 'CLOSING'];
@@ -86,6 +93,37 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
       pendingInvoices: 0,
       pendingFulfilments: 0,
     };
+  }
+
+  async findClosedResults(from: Date, to: Date): Promise<AuctionResultRow[]> {
+    const rows = await this.db`
+      SELECT lot_id, status, current_highest_bid, winner_user_id, updated_at
+      FROM lot_status
+      WHERE status IN ('SOLD', 'UNSOLD')
+        AND updated_at >= ${from}
+        AND updated_at <= ${to}
+      ORDER BY updated_at DESC
+    `;
+    return rows.map(r => ({
+      lotId: r['lot_id'] as string,
+      finalBid: r['current_highest_bid'] != null ? Number(r['current_highest_bid']) : null,
+      reserveMet: (r['status'] as string) === 'SOLD',
+      winnerUserId: (r['winner_user_id'] as string | null) ?? null,
+      closedAt: r['updated_at'] as Date,
+    }));
+  }
+
+  async findUnsoldLots(): Promise<UnsoldLotRow[]> {
+    const rows = await this.db`
+      SELECT lot_id, current_highest_bid
+      FROM lot_status
+      WHERE status = 'UNSOLD'
+      ORDER BY updated_at DESC
+    `;
+    return rows.map(r => ({
+      lotId: r['lot_id'] as string,
+      highestBid: r['current_highest_bid'] != null ? Number(r['current_highest_bid']) : null,
+    }));
   }
 }
 

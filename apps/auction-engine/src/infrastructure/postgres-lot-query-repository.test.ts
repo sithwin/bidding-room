@@ -1,15 +1,23 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import { createDb } from './db';
+import { describe, it, expect, afterEach, afterAll } from 'vitest';
+import { createTestDb } from '@carat-room/test-db';
+import { Db } from './db';
 import { PostgresProjectionHandler } from './postgres-projection-handler';
 import { PostgresLotQueryRepository } from './postgres-lot-query-repository';
 import { AuctionDomainEvent } from '../domain/auction-events';
 
-const db = createDb(process.env['TEST_DATABASE_URL'] ?? 'postgres://localhost/carat_auction_test');
+const TEST_DB_URL = process.env['TEST_DATABASE_URL'] ?? 'postgres://localhost/carat_auction_test';
+const db = createTestDb(TEST_DB_URL) as Db;
 const projectionHandler = new PostgresProjectionHandler(db);
 const queryRepo = new PostgresLotQueryRepository(db);
 
+afterAll(async () => {
+  await db.end();
+});
+
 const LOT_ID = 'lot-query-test-1';
 const LOT_ID_2 = 'lot-query-test-2';
+const LOT_ID_3 = 'lot-query-test-3';
+const LOT_ID_4 = 'lot-query-test-4';
 
 const SCHEDULED_EVENT: AuctionDomainEvent = {
   type: 'AuctionScheduled',
@@ -23,9 +31,11 @@ const SCHEDULED_EVENT: AuctionDomainEvent = {
   },
 };
 
+const ALL_LOT_IDS = [LOT_ID, LOT_ID_2, LOT_ID_3, LOT_ID_4];
+
 afterEach(async () => {
-  await db`DELETE FROM bids WHERE lot_id IN (${LOT_ID}, ${LOT_ID_2})`;
-  await db`DELETE FROM lot_status WHERE lot_id IN (${LOT_ID}, ${LOT_ID_2})`;
+  await db`DELETE FROM bids WHERE lot_id = ANY(${ALL_LOT_IDS})`;
+  await db`DELETE FROM lot_status WHERE lot_id = ANY(${ALL_LOT_IDS})`;
 });
 
 describe('PostgresLotQueryRepository', () => {
@@ -75,5 +85,79 @@ describe('PostgresLotQueryRepository', () => {
     expect(lotIds).toContain(LOT_ID);
     expect(lotIds).toContain(LOT_ID_2);
     expect(result.total).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should_returnOnlySoldAndUnsoldWithinRange_when_findingClosedResults', async () => {
+    // LOT_ID: closed SOLD, reserve met, has a winner
+    await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID, [
+      { type: 'BidPlaced', payload: { bid_id: 'bid-r-1', user_id: 'user-1', amount: 600, placed_at: '2026-06-20T11:00:00Z' } },
+      {
+        type: 'AuctionClosed',
+        payload: { highest_bid_id: 'bid-r-1', highest_amount: 600, reserve_met: true, winner_user_id: 'user-1' },
+      },
+    ]);
+
+    // LOT_ID_2: closed UNSOLD, reserve not met, no winner
+    await projectionHandler.handle(LOT_ID_2, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID_2, [
+      { type: 'AuctionClosed', payload: { highest_bid_id: null, highest_amount: 0, reserve_met: false, winner_user_id: null } },
+    ]);
+
+    // LOT_ID_3: still LIVE — must be excluded from closed results
+    await projectionHandler.handle(LOT_ID_3, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID_3, [{ type: 'AuctionStarted', payload: {} }]);
+
+    // LOT_ID_4: closed SOLD, but outside the queried date range — must be excluded
+    await projectionHandler.handle(LOT_ID_4, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID_4, [
+      { type: 'AuctionClosed', payload: { highest_bid_id: null, highest_amount: 700, reserve_met: true, winner_user_id: 'user-2' } },
+    ]);
+    await db`UPDATE lot_status SET updated_at = '2020-01-01T00:00:00Z' WHERE lot_id = ${LOT_ID_4}`;
+
+    const from = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const to = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const result = await queryRepo.findClosedResults(from, to);
+
+    const lotIds = result.map(r => r.lotId);
+    expect(lotIds).toContain(LOT_ID);
+    expect(lotIds).toContain(LOT_ID_2);
+    expect(lotIds).not.toContain(LOT_ID_3);
+    expect(lotIds).not.toContain(LOT_ID_4);
+
+    const soldRow = result.find(r => r.lotId === LOT_ID);
+    expect(soldRow?.reserveMet).toBe(true);
+    expect(soldRow?.finalBid).toBe(600);
+    expect(soldRow?.winnerUserId).toBe('user-1');
+
+    const unsoldRow = result.find(r => r.lotId === LOT_ID_2);
+    expect(unsoldRow?.reserveMet).toBe(false);
+    expect(unsoldRow?.winnerUserId).toBeNull();
+  });
+
+  it('should_returnOnlyUnsoldLots_when_findingUnsoldLots', async () => {
+    await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID, [
+      { type: 'AuctionClosed', payload: { highest_bid_id: null, highest_amount: 600, reserve_met: true, winner_user_id: 'user-1' } },
+    ]);
+
+    await projectionHandler.handle(LOT_ID_2, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID_2, [
+      { type: 'BidPlaced', payload: { bid_id: 'bid-u-1', user_id: 'user-2', amount: 250, placed_at: '2026-06-20T11:00:00Z' } },
+      { type: 'AuctionClosed', payload: { highest_bid_id: 'bid-u-1', highest_amount: 250, reserve_met: false, winner_user_id: null } },
+    ]);
+
+    await projectionHandler.handle(LOT_ID_3, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID_3, [{ type: 'AuctionStarted', payload: {} }]);
+
+    const result = await queryRepo.findUnsoldLots();
+
+    const lotIds = result.map(r => r.lotId);
+    expect(lotIds).toContain(LOT_ID_2);
+    expect(lotIds).not.toContain(LOT_ID);
+    expect(lotIds).not.toContain(LOT_ID_3);
+
+    const unsoldRow = result.find(r => r.lotId === LOT_ID_2);
+    expect(unsoldRow?.highestBid).toBe(250);
   });
 });

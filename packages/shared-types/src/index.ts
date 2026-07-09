@@ -31,3 +31,7 @@ export {
   facetsResponseSchema, lotsQuery, auctionsQuery,
 } from './api/catalogue.js';
 export type { CatalogueLot, CatalogueLotImage, CatalogueAuction } from './api/catalogue.js';
+export {
+  auctionResultRowSchema, auctionResultsResponseSchema, unsoldLotRowSchema, unsoldLotsResponseSchema,
+} from './api/auction-reports.js';
+export type { AuctionResultRow, UnsoldLotRow } from './api/auction-reports.js';

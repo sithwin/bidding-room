@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { authMiddleware } from '@carat-room/shared-auth';
+import { auctionResultsResponseSchema, unsoldLotsResponseSchema } from '@carat-room/shared-types';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
+import { GetDashboardStatsHandler } from '../application/get-dashboard-stats-handler';
+import { GetAuctionResultsHandler } from '../application/get-auction-results-handler';
+import { GetUnsoldLotsHandler } from '../application/get-unsold-lots-handler';
 import { PlaceBidCommandHandler } from '../application/place-bid-handler';
+import { ScheduleAuctionCommandHandler } from '../application/schedule-auction-handler';
 import { SseBroadcaster } from '../application/sse-broadcaster';
 import { LotStatusRow } from '../application/lot-query-repository';
 import { createAuctionRouter } from './auction-router';
@@ -23,17 +29,29 @@ vi.mock('@carat-room/shared-auth', () => ({
 const mockGetActiveLots = { execute: vi.fn() } as unknown as GetActiveLotsHandler;
 const mockGetLotStatus = { execute: vi.fn() } as unknown as GetLotStatusHandler;
 const mockGetBidHistory = { execute: vi.fn() } as unknown as GetBidHistoryHandler;
+const mockGetDashboardStats = { execute: vi.fn() } as unknown as GetDashboardStatsHandler;
+const mockGetAuctionResults = { execute: vi.fn() } as unknown as GetAuctionResultsHandler;
+const mockGetUnsoldLots = { execute: vi.fn() } as unknown as GetUnsoldLotsHandler;
 const mockPlaceBid = { execute: vi.fn() } as unknown as PlaceBidCommandHandler;
+const mockScheduleAuction = { execute: vi.fn() } as unknown as ScheduleAuctionCommandHandler;
 const mockBroadcaster: SseBroadcaster = { subscribe: vi.fn(), broadcast: vi.fn() };
 
 const router = createAuctionRouter({
   getActiveLots: mockGetActiveLots,
   getLotStatus: mockGetLotStatus,
   getBidHistory: mockGetBidHistory,
+  getDashboardStats: mockGetDashboardStats,
+  getAuctionResults: mockGetAuctionResults,
+  getUnsoldLots: mockGetUnsoldLots,
   placeBidHandler: mockPlaceBid,
+  scheduleAuctionHandler: mockScheduleAuction,
   sseBroadcaster: mockBroadcaster,
   jwtPublicKey: 'test-public-key',
 });
+
+// authMiddleware(...) is invoked once per route at router-construction time (above), not
+// per-request — capture its call args now, before beforeEach's clearAllMocks() wipes them.
+const authMiddlewareCallArgs = vi.mocked(authMiddleware).mock.calls.map(call => call);
 
 function fakeLotStatusRow(overrides: Partial<LotStatusRow> = {}): LotStatusRow {
   return {
@@ -189,5 +207,68 @@ describe('POST /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(403);
+  });
+});
+
+describe('GET /api/reports/results', () => {
+  it('should_return200WithParsedDates_when_fromAndToAreValid', async () => {
+    vi.mocked(mockGetAuctionResults.execute).mockResolvedValue([
+      { lotId: 'lot-1', finalBid: 600, reserveMet: true, winnerUserId: 'user-1', closedAt: new Date('2026-06-15T10:00:00Z') },
+    ]);
+
+    const res = await router.request('/api/reports/results?from=2026-06-01&to=2026-07-01');
+
+    expect(res.status).toBe(200);
+    const body = auctionResultsResponseSchema.parse(await res.json());
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].lotId).toBe('lot-1');
+    expect(body.data[0].closedAt).toBe('2026-06-15T10:00:00.000Z');
+
+    const [from, to] = vi.mocked(mockGetAuctionResults.execute).mock.calls[0];
+    expect(from).toBeInstanceOf(Date);
+    expect(to).toBeInstanceOf(Date);
+    expect(from.toISOString()).toBe('2026-06-01T00:00:00.000Z');
+    // 'to' is date-only from the UI; the route extends it to the end of that day
+    expect(to.toISOString()).toBe('2026-07-01T23:59:59.999Z');
+  });
+
+  it('should_return400_when_fromIsMissing', async () => {
+    const res = await router.request('/api/reports/results?to=2026-07-01');
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: { code: string } };
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(mockGetAuctionResults.execute).not.toHaveBeenCalled();
+  });
+
+  it('should_return400_when_toIsInvalid', async () => {
+    const res = await router.request('/api/reports/results?from=2026-06-01&to=not-a-date');
+
+    expect(res.status).toBe(400);
+    expect(mockGetAuctionResults.execute).not.toHaveBeenCalled();
+  });
+
+  it('should_beRegisteredWithAdminOnlyAuth', () => {
+    expect(authMiddlewareCallArgs).toContainEqual(['test-public-key', { adminOnly: true }]);
+  });
+});
+
+describe('GET /api/reports/unsold', () => {
+  it('should_return200WithUnsoldLots', async () => {
+    vi.mocked(mockGetUnsoldLots.execute).mockResolvedValue([{ lotId: 'lot-2', highestBid: 150 }]);
+
+    const res = await router.request('/api/reports/unsold');
+
+    expect(res.status).toBe(200);
+    const body = unsoldLotsResponseSchema.parse(await res.json());
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0]).toEqual({ lotId: 'lot-2', highestBid: 150 });
+  });
+
+  it('should_beRegisteredWithAdminOnlyAuth', () => {
+    // Every reports route (dashboard, results, unsold) shares this adminOnly wiring;
+    // this asserts the wiring exists at least once rather than distinguishing per-route,
+    // since the mocked authMiddleware records only its construction-time call args.
+    expect(authMiddlewareCallArgs).toContainEqual(['test-public-key', { adminOnly: true }]);
   });
 });

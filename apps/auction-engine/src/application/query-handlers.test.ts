@@ -8,6 +8,9 @@ const mockRepo: LotQueryRepository = {
   findLotStatus: vi.fn(),
   findBidHistory: vi.fn(),
   findActiveLots: vi.fn(),
+  getDashboardStats: vi.fn(),
+  findClosedResults: vi.fn(),
+  findUnsoldLots: vi.fn(),
 };
 
 function fakeLotStatusRow(overrides: Partial<LotStatusRow> = {}): LotStatusRow {
