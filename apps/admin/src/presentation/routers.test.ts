@@ -245,12 +245,92 @@ describe('Fulfilments + Reports routers', () => {
     expect(res.status).toBe(200);
   });
 
+});
+
+describe('Reports router', () => {
   it('should_return200_when_fetchingRevenueReport', async () => {
-    vi.mocked(mockClient.get).mockResolvedValue({ data: {} });
-    const app = new Hono().route('/', buildReportsRouter(mockClient));
+    const payment = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    const user = new ServiceClient('http://mock');
+    vi.mocked(payment.get).mockResolvedValue({ data: { byCurrency: { GBP: 100 } } });
+    const app = new Hono().route('/', buildReportsRouter({ auction: mockClient, payment, catalogue, user }));
 
     const res = await app.request('/admin/api/reports/revenue', { headers: authHeader() });
+    const body = await res.json();
 
     expect(res.status).toBe(200);
+    expect(payment.get).toHaveBeenCalledWith('/api/payments/reports/revenue', 'admin-token');
+    expect(body).toEqual({ data: { byCurrency: { GBP: 100 } } });
+  });
+
+  it('should_enrichAndSummarise_when_fetchingAuctionResults', async () => {
+    const auction = new ServiceClient('http://mock');
+    const payment = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    const user = new ServiceClient('http://mock');
+
+    vi.mocked(auction.get).mockResolvedValue({
+      data: [
+        { lotId: 'lot-1', finalBid: 1000, reserveMet: true, winnerUserId: 'u1', closedAt: '2026-06-15T10:00:00Z' },
+        { lotId: 'lot-2', finalBid: null, reserveMet: false, winnerUserId: null, closedAt: '2026-06-16T10:00:00Z' },
+      ],
+    });
+    vi.mocked(catalogue.get).mockImplementation(async (url: string) => {
+      if (url === '/api/categories') {
+        return { data: [{ id: 'cat-1', name: 'Rings' }] };
+      }
+      if (url === '/api/lots/lot-1') {
+        return { data: { title: 'Diamond Ring', categoryId: 'cat-1' } };
+      }
+      if (url === '/api/lots/lot-2') {
+        return { data: { title: 'Sapphire Necklace', categoryId: 'cat-1' } };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    });
+    vi.mocked(user.get).mockResolvedValue({ email: 'winner@example.com' });
+
+    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user }));
+
+    const res = await app.request('/admin/api/reports/auction-results?from=2026-06-01&to=2026-07-01', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(auction.get).toHaveBeenCalledWith('/api/reports/results?from=2026-06-01&to=2026-07-01', 'admin-token');
+    expect(body.data.rows).toEqual([
+      { lotTitle: 'Diamond Ring', categoryName: 'Rings', finalBid: 1000, reserveMet: true, winnerEmail: 'winner@example.com' },
+      { lotTitle: 'Sapphire Necklace', categoryName: 'Rings', finalBid: null, reserveMet: false, winnerEmail: null },
+    ]);
+    expect(body.data.summary).toEqual({ totalLots: 2, soldPercent: 50, totalValue: 1000 });
+  });
+
+  it('should_enrichUnsoldRows_when_fetchingUnsoldReport', async () => {
+    const auction = new ServiceClient('http://mock');
+    const payment = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    const user = new ServiceClient('http://mock');
+
+    vi.mocked(auction.get).mockResolvedValue({
+      data: [{ lotId: 'lot-3', highestBid: 250 }],
+    });
+    vi.mocked(catalogue.get).mockImplementation(async (url: string) => {
+      if (url === '/api/categories') {
+        return { data: [{ id: 'cat-2', name: 'Bags' }] };
+      }
+      if (url === '/api/lots/lot-3') {
+        return { data: { title: 'Leather Tote', categoryId: 'cat-2' } };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    });
+
+    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user }));
+
+    const res = await app.request('/admin/api/reports/unsold', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(auction.get).toHaveBeenCalledWith('/api/reports/unsold', 'admin-token');
+    expect(body.data).toEqual([
+      { id: 'lot-3', title: 'Leather Tote', categoryName: 'Bags', highestBid: 250 },
+    ]);
   });
 });
