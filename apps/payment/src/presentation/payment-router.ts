@@ -16,6 +16,8 @@ import { PaymentProfileRepository } from '../application/payment-profile-reposit
 import { StripeClient } from '../application/stripe-client';
 import { GetRevenueReportUseCase } from '../application/get-revenue-report-use-case';
 
+type AppEnv = { Variables: { jwtPayload: JwtPayload } };
+
 interface RouterDeps {
   getInvoice: Pick<GetInvoiceUseCase, 'execute'>;
   listInvoices: Pick<ListInvoicesUseCase, 'execute'>;
@@ -49,8 +51,8 @@ function toInvoiceDto(invoice: Invoice) {
   };
 }
 
-export function buildPaymentRouter(deps: RouterDeps): Hono {
-  const router = new Hono();
+export function buildPaymentRouter(deps: RouterDeps): Hono<AppEnv> {
+  const router = new Hono<AppEnv>();
   const adminOnly = authMiddleware(deps.jwtPublicKey, { adminOnly: true });
 
   router.get('/api/payments/invoices', adminOnly, async (c) => {

@@ -45,7 +45,7 @@ export class StripeAdapter implements StripeClient {
     return {
       id: event.id,
       type: event.type,
-      data: { object: event.data.object as Record<string, unknown> },
+      data: { object: event.data.object as unknown as Record<string, unknown> },
     };
   }
 

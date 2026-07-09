@@ -1,3 +1,4 @@
+import type { JSONValue } from 'postgres';
 import { Invoice, InvoiceStatus } from '../domain/invoice';
 import { InvoiceRepository } from '../domain/invoice-repository';
 import { Db } from './db';
@@ -98,7 +99,7 @@ export class PostgresInvoiceRepository implements InvoiceRepository {
         ${params.invoiceId},
         ${params.stripeEventId},
         ${params.eventType},
-        ${this.db.json(params.payload as Record<string, unknown>)}
+        ${this.db.json(params.payload as unknown as JSONValue)}
       )
     `;
   }
