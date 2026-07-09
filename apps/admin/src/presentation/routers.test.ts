@@ -231,7 +231,7 @@ describe('Invoices router', () => {
   });
 });
 
-describe('Fulfilments + Reports routers', () => {
+describe('Fulfilments router', () => {
   it('should_return200_when_dispatchingFulfilment', async () => {
     vi.mocked(mockClient.patch).mockResolvedValue({ data: { id: 'ful-1' } });
     const app = new Hono().route('/', buildFulfilmentsRouter({ shipping: mockClient, catalogue: mockClient, user: mockClient }));
