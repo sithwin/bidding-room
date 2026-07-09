@@ -34,4 +34,4 @@ export type { CatalogueLot, CatalogueLotImage, CatalogueAuction } from './api/ca
 export {
   auctionResultRowSchema, auctionResultsResponseSchema, unsoldLotRowSchema, unsoldLotsResponseSchema,
 } from './api/auction-reports.js';
-export type { AuctionResultRow, UnsoldLotRow } from './api/auction-reports.js';
+export type { AuctionResultReportRow, UnsoldLotReportRow } from './api/auction-reports.js';

@@ -135,6 +135,39 @@ describe('PostgresLotQueryRepository', () => {
     expect(unsoldRow?.winnerUserId).toBeNull();
   });
 
+  it('should_includeBoundaryTimestamps_when_findingClosedResults', async () => {
+    // LOT_ID: closed SOLD with updated_at exactly equal to `from` — must be included (>=)
+    await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID, [
+      { type: 'BidPlaced', payload: { bid_id: 'bid-b-1', user_id: 'user-1', amount: 600, placed_at: '2026-06-20T11:00:00Z' } },
+      {
+        type: 'AuctionClosed',
+        payload: { highest_bid_id: 'bid-b-1', highest_amount: 600, reserve_met: true, winner_user_id: 'user-1' },
+      },
+    ]);
+
+    // LOT_ID_2: closed SOLD with updated_at exactly equal to `to` — must be included (<=)
+    await projectionHandler.handle(LOT_ID_2, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID_2, [
+      { type: 'BidPlaced', payload: { bid_id: 'bid-b-2', user_id: 'user-2', amount: 700, placed_at: '2026-06-20T11:00:00Z' } },
+      {
+        type: 'AuctionClosed',
+        payload: { highest_bid_id: 'bid-b-2', highest_amount: 700, reserve_met: true, winner_user_id: 'user-2' },
+      },
+    ]);
+
+    const from = new Date('2026-06-20T09:00:00Z');
+    const to = new Date('2026-06-20T15:00:00Z');
+    await db`UPDATE lot_status SET updated_at = ${from.toISOString()} WHERE lot_id = ${LOT_ID}`;
+    await db`UPDATE lot_status SET updated_at = ${to.toISOString()} WHERE lot_id = ${LOT_ID_2}`;
+
+    const result = await queryRepo.findClosedResults(from, to);
+
+    const lotIds = result.map(r => r.lotId);
+    expect(lotIds).toContain(LOT_ID);
+    expect(lotIds).toContain(LOT_ID_2);
+  });
+
   it('should_returnOnlyUnsoldLots_when_findingUnsoldLots', async () => {
     await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
     await projectionHandler.handle(LOT_ID, [

@@ -20,5 +20,5 @@ export const unsoldLotRowSchema = z.object({
 
 export const unsoldLotsResponseSchema = envelope(z.array(unsoldLotRowSchema));
 
-export type AuctionResultRow = z.infer<typeof auctionResultRowSchema>;
-export type UnsoldLotRow = z.infer<typeof unsoldLotRowSchema>;
+export type AuctionResultReportRow = z.infer<typeof auctionResultRowSchema>;
+export type UnsoldLotReportRow = z.infer<typeof unsoldLotRowSchema>;
