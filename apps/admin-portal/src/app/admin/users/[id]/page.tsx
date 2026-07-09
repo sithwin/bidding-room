@@ -9,7 +9,7 @@ interface UserDetail {
   id: string;
   email: string;
   status: string;
-  country: string;
+  country: string | null;
   phoneVerified: boolean;
   emailVerified: boolean;
   registeredAt: string;
