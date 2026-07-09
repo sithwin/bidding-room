@@ -75,6 +75,10 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,10 +92,11 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/catalogue
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
-      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      R2_BUCKET: ${R2_BUCKET_NAME}
     depends_on:
       postgres:
         condition: service_healthy
@@ -104,8 +109,10 @@ services:
     image: ghcr.io/the-carat-room/auction-engine:latest
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/auction_engine
-      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -121,10 +128,15 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/payments
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -153,6 +165,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/shipping
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -170,7 +183,11 @@ services:
       AUCTION_ENGINE_URL: http://auction-engine:3003
       PAYMENT_SERVICE_URL: http://payment-service:3004
       SHIPPING_SERVICE_URL: http://shipping-service:3006
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      ADMIN_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/admin
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     ports:

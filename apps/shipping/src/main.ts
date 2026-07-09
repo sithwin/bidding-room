@@ -19,12 +19,12 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
-  const amqpUrl = process.env.AMQP_URL;
+  const amqpUrl = process.env.RABBITMQ_URL;
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const port = Number(process.env.PORT ?? 3006);
 
   if (!databaseUrl || !amqpUrl || !jwtPublicKey) {
-    throw new Error('Missing required environment variables: DATABASE_URL, AMQP_URL, JWT_PUBLIC_KEY');
+    throw new Error('Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PUBLIC_KEY');
   }
 
   const db = createDb(databaseUrl);
