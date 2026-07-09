@@ -43,7 +43,7 @@ async function main(): Promise<void> {
   const app = new Hono();
   app.route('/', buildLotsRouter(catalogue));
   app.route('/', buildCategoriesRouter(catalogue));
-  app.route('/', buildAuctionsRouter(auction));
+  app.route('/', buildAuctionsRouter({ auction, catalogue }));
   app.route('/', buildUsersRouter(user));
   app.route('/', buildInvoicesRouter({ payment, catalogue, user }));
   app.route('/', buildFulfilmentsRouter({ shipping, catalogue, user }));

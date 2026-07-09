@@ -118,7 +118,7 @@ describe('Categories router', () => {
 describe('Auctions router', () => {
   it('should_return200_when_schedulingAuction', async () => {
     vi.mocked(mockClient.post).mockResolvedValue({ data: { lotId: 'lot-1' } });
-    const app = new Hono().route('/', buildAuctionsRouter(mockClient));
+    const app = new Hono().route('/', buildAuctionsRouter({ auction: mockClient, catalogue: mockClient }));
 
     const res = await app.request('/admin/api/auctions', {
       method: 'POST',
@@ -129,13 +129,67 @@ describe('Auctions router', () => {
     expect(res.status).toBe(200);
   });
 
-  it('should_return200_when_listingAuctions', async () => {
-    vi.mocked(mockClient.get).mockResolvedValue({ data: [] });
-    const app = new Hono().route('/', buildAuctionsRouter(mockClient));
+  it('should_return200WithEnrichedLotTitleAndCurrentBid_when_listingAuctions', async () => {
+    const auction = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    vi.mocked(auction.get).mockResolvedValue({
+      data: [{ lotId: 'lot-1', status: 'LIVE', currentHighestBid: 250, bidCount: 3, endAt: '2026-07-01T12:00:00Z' }],
+    });
+    vi.mocked(catalogue.get).mockResolvedValue({ data: { title: 'Diamond Ring' } });
+    const app = new Hono().route('/', buildAuctionsRouter({ auction, catalogue }));
 
     const res = await app.request('/admin/api/auctions', { headers: authHeader() });
+    const body = await res.json();
 
     expect(res.status).toBe(200);
+    expect(auction.get).toHaveBeenCalledWith('/api/auctions', 'admin-token');
+    expect(catalogue.get).toHaveBeenCalledWith('/api/lots/lot-1', 'admin-token');
+    expect(body.data).toEqual([
+      { lotId: 'lot-1', lotTitle: 'Diamond Ring', status: 'LIVE', currentBid: 250, bidCount: 3, endAt: '2026-07-01T12:00:00Z' },
+    ]);
+  });
+
+  it('should_return200WithLotTitleNull_when_catalogueLookupFails', async () => {
+    const auction = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    vi.mocked(auction.get).mockResolvedValue({
+      data: [{ lotId: 'lot-1', status: 'LIVE', currentHighestBid: null, bidCount: 0, endAt: '2026-07-01T12:00:00Z' }],
+    });
+    vi.mocked(catalogue.get).mockRejectedValue(new ServiceError(404, { error: { code: 'NOT_FOUND' } }));
+    const app = new Hono().route('/', buildAuctionsRouter({ auction, catalogue }));
+
+    const res = await app.request('/admin/api/auctions', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data[0].lotTitle).toBeNull();
+    expect(body.data[0].currentBid).toBeNull();
+  });
+
+  it('should_return200WithEmbeddedBids_when_fetchingAuctionDetail', async () => {
+    const auction = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    vi.mocked(auction.get).mockImplementation(async (url: string) => {
+      if (url === '/api/auctions/lot-1') {
+        return { data: { lotId: 'lot-1', status: 'LIVE', currentHighestBid: 250, bidCount: 1, endAt: '2026-07-01T12:00:00Z' } };
+      }
+      if (url === '/api/auctions/lot-1/bids?pageSize=100') {
+        return { data: [{ id: 'bid-1', userId: 'user-1', amount: 250, placedAt: '2026-07-01T11:00:00Z' }] };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    });
+    vi.mocked(catalogue.get).mockResolvedValue({ data: { title: 'Diamond Ring' } });
+    const app = new Hono().route('/', buildAuctionsRouter({ auction, catalogue }));
+
+    const res = await app.request('/admin/api/auctions/lot-1', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(auction.get).toHaveBeenCalledWith('/api/auctions/lot-1/bids?pageSize=100', 'admin-token');
+    expect(body.data.lotTitle).toBe('Diamond Ring');
+    expect(body.data.bids).toEqual([
+      { id: 'bid-1', userId: 'user-1', amount: 250, placedAt: '2026-07-01T11:00:00Z' },
+    ]);
   });
 });
 
