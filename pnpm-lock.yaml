@@ -54,6 +54,9 @@ importers:
         specifier: ^3.4.4
         version: 3.4.9
     devDependencies:
+      '@carat-room/test-db':
+        specifier: workspace:*
+        version: link:../../packages/test-db
       '@carat-room/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig

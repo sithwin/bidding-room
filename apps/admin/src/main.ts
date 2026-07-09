@@ -51,6 +51,8 @@ async function main(): Promise<void> {
   app.route('/', buildEnquiriesRouter({
     submitEnquiry: (input) => submitEnquiry.execute(input),
     r2,
+    listEnquiries: (filter) => enquiryRepo.findAll(filter),
+    updateEnquiryStatus: (id, status) => enquiryRepo.updateStatus(id, status),
   }));
 
   serve({ fetch: app.fetch, port: PORT }, () => {
