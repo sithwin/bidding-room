@@ -72,6 +72,8 @@ describe('PostgresLotQueryRepository', () => {
     expect(result.bids[0].amount).toBe(200);
     expect(result.bids[1].amount).toBe(100);
     expect(result.bids[0]).not.toHaveProperty('user_id');
+    expect(result.bids[0].userId).toBe('user-2');
+    expect(result.bids[1].userId).toBe('user-1');
   });
 
   it('should_includeScheduledAndLiveLots_when_findingActiveLots', async () => {

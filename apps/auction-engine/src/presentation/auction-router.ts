@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { v4 as uuidv4 } from 'uuid';
-import { authMiddleware } from '@carat-room/shared-auth';
+import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
 import type { JwtPayload } from '@carat-room/shared-auth';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
@@ -58,9 +58,21 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
     const page = Math.max(1, Number(c.req.query('page') ?? '1'));
     const pageSize = Math.min(100, Math.max(1, Number(c.req.query('pageSize') ?? '20')));
     const result = await deps.getBidHistory.execute({ lotId, page, pageSize });
+
+    const authHeader = c.req.header('Authorization')?.replace('Bearer ', '');
+    let isAdminCaller = false;
+    if (authHeader) {
+      try {
+        isAdminCaller = (await verifyJwt(authHeader, deps.jwtPublicKey)).role === 'ADMIN';
+      } catch {
+        isAdminCaller = false;
+      }
+    }
+
     return c.json({
       data: result.bids.map(b => ({
         id: b.id,
+        ...(isAdminCaller ? { userId: b.userId } : {}),
         amount: b.amount,
         placedAt: b.placedAt.toISOString(),
       })),

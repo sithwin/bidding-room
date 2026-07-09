@@ -30,7 +30,7 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
   ): Promise<{ bids: BidRow[]; total: number }> {
     const [rows, countRows] = await Promise.all([
       this.db`
-        SELECT id, amount, placed_at
+        SELECT id, user_id, amount, placed_at
         FROM bids
         WHERE lot_id = ${lotId}
         ORDER BY placed_at DESC
@@ -41,6 +41,7 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
     return {
       bids: rows.map(r => ({
         id: r['id'] as string,
+        userId: r['user_id'] as string,
         amount: Number(r['amount']),
         placedAt: r['placed_at'] as Date,
       })),

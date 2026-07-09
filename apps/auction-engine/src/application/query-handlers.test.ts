@@ -54,7 +54,7 @@ describe('GetLotStatusHandler', () => {
 
 describe('GetBidHistoryHandler', () => {
   it('should_calculateOffsetFromPage_when_executing', async () => {
-    const fakeBids: BidRow[] = [{ id: 'bid-1', amount: 200, placedAt: new Date() }];
+    const fakeBids: BidRow[] = [{ id: 'bid-1', userId: 'user-1', amount: 200, placedAt: new Date() }];
     vi.mocked(mockRepo.findBidHistory).mockResolvedValue({ bids: fakeBids, total: 1 });
     const handler = new GetBidHistoryHandler(mockRepo);
 

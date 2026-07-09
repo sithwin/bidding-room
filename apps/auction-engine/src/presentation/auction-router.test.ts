@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { authMiddleware } from '@carat-room/shared-auth';
+import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
 import { auctionResultsResponseSchema, unsoldLotsResponseSchema } from '@carat-room/shared-types';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
@@ -24,6 +24,7 @@ vi.mock('@carat-room/shared-auth', () => ({
       await next();
     },
   ),
+  verifyJwt: vi.fn(),
 }));
 
 const mockGetActiveLots = { execute: vi.fn() } as unknown as GetActiveLotsHandler;
@@ -108,7 +109,7 @@ describe('GET /api/auctions/:lotId', () => {
 describe('GET /api/auctions/:lotId/bids', () => {
   it('should_return200WithBidHistory_when_bidsExist', async () => {
     vi.mocked(mockGetBidHistory.execute).mockResolvedValue({
-      bids: [{ id: 'bid-1', amount: 200, placedAt: new Date('2026-06-20T11:00:00Z') }],
+      bids: [{ id: 'bid-1', userId: 'user-1', amount: 200, placedAt: new Date('2026-06-20T11:00:00Z') }],
       total: 1,
     });
 
@@ -119,6 +120,64 @@ describe('GET /api/auctions/:lotId/bids', () => {
     expect(body.data[0].amount).toBe(200);
     expect(body.data[0]).not.toHaveProperty('userId');
     expect(body.meta.total).toBe(1);
+  });
+
+  it('should_includeUserId_when_callerHasValidAdminToken', async () => {
+    vi.mocked(mockGetBidHistory.execute).mockResolvedValue({
+      bids: [{ id: 'bid-1', userId: 'user-1', amount: 200, placedAt: new Date('2026-06-20T11:00:00Z') }],
+      total: 1,
+    });
+    vi.mocked(verifyJwt).mockResolvedValue({
+      userId: 'admin-1',
+      email: 'admin@example.com',
+      verificationStatus: 'APPROVED_BIDDER',
+      role: 'ADMIN',
+    });
+
+    const res = await router.request('/api/auctions/lot-1/bids', {
+      headers: { Authorization: 'Bearer admin-token' },
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { data: { userId?: string }[] };
+    expect(body.data[0].userId).toBe('user-1');
+  });
+
+  it('should_excludeUserId_when_callerTokenIsNotAdmin', async () => {
+    vi.mocked(mockGetBidHistory.execute).mockResolvedValue({
+      bids: [{ id: 'bid-1', userId: 'user-1', amount: 200, placedAt: new Date('2026-06-20T11:00:00Z') }],
+      total: 1,
+    });
+    vi.mocked(verifyJwt).mockResolvedValue({
+      userId: 'buyer-1',
+      email: 'buyer@example.com',
+      verificationStatus: 'APPROVED_BIDDER',
+      role: 'BUYER',
+    });
+
+    const res = await router.request('/api/auctions/lot-1/bids', {
+      headers: { Authorization: 'Bearer buyer-token' },
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { data: { userId?: string }[] };
+    expect(body.data[0]).not.toHaveProperty('userId');
+  });
+
+  it('should_excludeUserId_when_tokenIsInvalid', async () => {
+    vi.mocked(mockGetBidHistory.execute).mockResolvedValue({
+      bids: [{ id: 'bid-1', userId: 'user-1', amount: 200, placedAt: new Date('2026-06-20T11:00:00Z') }],
+      total: 1,
+    });
+    vi.mocked(verifyJwt).mockRejectedValue(new Error('invalid token'));
+
+    const res = await router.request('/api/auctions/lot-1/bids', {
+      headers: { Authorization: 'Bearer bad-token' },
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json() as { data: { userId?: string }[] };
+    expect(body.data[0]).not.toHaveProperty('userId');
   });
 });
 

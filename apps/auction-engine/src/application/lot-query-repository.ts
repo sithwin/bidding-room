@@ -10,6 +10,7 @@ export interface LotStatusRow {
 
 export interface BidRow {
   id: string;
+  userId: string;
   amount: number;
   placedAt: Date;
 }
