@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import { adminApi } from '@/lib/admin-api';
+import { Button } from '@/components/ui/button';
 import { UsersTable, type UserSummary } from './_table';
 
 export default async function UsersPage({ searchParams }: { searchParams: Promise<{ status?: string; search?: string }> }) {
@@ -11,7 +13,12 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className='space-y-4'>
-      <h1 className='text-2xl font-semibold'>Users</h1>
+      <div className='flex items-center justify-between'>
+        <h1 className='text-2xl font-semibold'>Users</h1>
+        <Button asChild>
+          <Link href='/admin/users/new'>New User</Link>
+        </Button>
+      </div>
       <UsersTable data={res.data} />
     </div>
   );
