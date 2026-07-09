@@ -102,4 +102,14 @@ export class PostgresInvoiceRepository implements InvoiceRepository {
       )
     `;
   }
+
+  async sumPaidAmountByCurrency(): Promise<Record<string, number>> {
+    const rows = await this.db`
+      SELECT currency, SUM(amount)::float AS total
+      FROM invoices
+      WHERE status = 'PAID'
+      GROUP BY currency
+    `;
+    return Object.fromEntries(rows.map(r => [r['currency'] as string, Number(r['total'])]));
+  }
 }

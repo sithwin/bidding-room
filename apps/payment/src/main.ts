@@ -19,6 +19,7 @@ import { ExpireInvoiceUseCase } from './application/expire-invoice-use-case';
 import { CreateSetupIntentUseCase } from './application/create-setup-intent.use-case';
 import { ConfirmSetupIntentUseCase } from './application/confirm-setup-intent.use-case';
 import { PaySavedCardUseCase } from './application/pay-saved-card.use-case';
+import { GetRevenueReportUseCase } from './application/get-revenue-report-use-case';
 import { PostgresPaymentProfileRepository } from './infrastructure/postgres-payment-profile-repository';
 import { buildPaymentRouter } from './presentation/payment-router';
 
@@ -80,6 +81,7 @@ async function main(): Promise<void> {
   const paySavedCardUseCase = new PaySavedCardUseCase(
     invoiceRepository, paymentProfileRepository, stripeAdapter, publish,
   );
+  const getRevenueReportUseCase = new GetRevenueReportUseCase(invoiceRepository);
 
   const eventSubscriber = new EventSubscriber(amqp);
   await startAuctionClosedConsumer(eventSubscriber, createInvoiceUseCase);
@@ -106,6 +108,7 @@ async function main(): Promise<void> {
     createSetupIntent: createSetupIntentUseCase,
     confirmSetupIntent: confirmSetupIntentUseCase,
     paySavedCard: paySavedCardUseCase,
+    getRevenueReport: getRevenueReportUseCase,
     profileRepo: paymentProfileRepository,
     stripe: stripeAdapter,
     jwtPublicKey: JWT_PUBLIC_KEY,

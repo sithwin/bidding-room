@@ -8,6 +8,7 @@ import { CreateCheckoutSessionUseCase } from './create-checkout-session-use-case
 import { HandleWebhookUseCase } from './handle-webhook-use-case';
 import { CreateInvoiceUseCase } from './create-invoice-use-case';
 import { ExpireInvoiceUseCase } from './expire-invoice-use-case';
+import { GetRevenueReportUseCase } from './get-revenue-report-use-case';
 
 function buildInvoice(overrides: Partial<ConstructorParameters<typeof Invoice>[0]> = {}): Invoice {
   return new Invoice({
@@ -26,13 +27,27 @@ function buildInvoice(overrides: Partial<ConstructorParameters<typeof Invoice>[0
   });
 }
 
+// Invoices `save()`d through the fake below, used so `sumPaidAmountByCurrency`
+// can be a faithful fake (sums stored PAID invoices) rather than a `{}` stub.
+let savedInvoices: Invoice[] = [];
+
 const mockRepo: InvoiceRepository = {
   findById: vi.fn(),
   findAll: vi.fn(),
   findByLotId: vi.fn(),
-  save: vi.fn(),
+  save: vi.fn(async (invoice: Invoice) => {
+    savedInvoices.push(invoice);
+  }),
   isPaymentEventProcessed: vi.fn(),
   savePaymentEvent: vi.fn(),
+  sumPaidAmountByCurrency: vi.fn(async () => {
+    const byCurrency: Record<string, number> = {};
+    for (const invoice of savedInvoices) {
+      if (invoice.status !== InvoiceStatus.Paid) continue;
+      byCurrency[invoice.currency] = (byCurrency[invoice.currency] ?? 0) + invoice.amount;
+    }
+    return byCurrency;
+  }),
 };
 
 const mockStripe: StripeClient = {
@@ -54,6 +69,21 @@ const mockPublish = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
+  savedInvoices = [];
+});
+
+describe('GetRevenueReportUseCase', () => {
+  it('should_sumPaidInvoicesByCurrency_when_paidInvoicesExist', async () => {
+    await mockRepo.save(buildInvoice({ id: 'inv-paid-1', currency: 'GBP', amount: 500, status: InvoiceStatus.Paid }));
+    await mockRepo.save(buildInvoice({ id: 'inv-paid-2', currency: 'GBP', amount: 300, status: InvoiceStatus.Paid }));
+    await mockRepo.save(buildInvoice({ id: 'inv-paid-3', currency: 'USD', amount: 200, status: InvoiceStatus.Paid }));
+    await mockRepo.save(buildInvoice({ id: 'inv-unpaid', currency: 'GBP', amount: 999, status: InvoiceStatus.AwaitingPayment }));
+    const useCase = new GetRevenueReportUseCase(mockRepo);
+
+    const result = await useCase.execute();
+
+    expect(result.byCurrency).toEqual({ GBP: 800, USD: 200 });
+  });
 });
 
 describe('GetInvoiceUseCase', () => {

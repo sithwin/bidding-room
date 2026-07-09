@@ -12,4 +12,5 @@ export interface InvoiceRepository {
     eventType: string;
     payload: unknown;
   }): Promise<void>;
+  sumPaidAmountByCurrency(): Promise<Record<string, number>>;
 }

@@ -8,21 +8,30 @@ import { HandleWebhookUseCase } from '../application/handle-webhook-use-case';
 import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use-case';
 import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.use-case';
 import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
+import { GetRevenueReportUseCase } from '../application/get-revenue-report-use-case';
+import { revenueReportResponseSchema } from '@carat-room/shared-types';
+
+let currentRole = 'BUYER';
 
 vi.mock('@carat-room/shared-auth', () => ({
-  authMiddleware: vi.fn().mockReturnValue(
-    async (
-      c: { set: (k: string, v: unknown) => void },
-      next: () => Promise<void>,
-    ) => {
-      c.set('jwtPayload', {
-        userId: 'user-1',
-        role: 'BUYER',
-        email: 'test@example.com',
-        verificationStatus: 'APPROVED_BIDDER',
-      });
-      await next();
-    },
+  authMiddleware: vi.fn().mockImplementation(
+    (_key: string, options?: { adminOnly?: boolean }) =>
+      async (
+        c: { set: (k: string, v: unknown) => void; json: (body: unknown, status: number) => unknown },
+        next: () => Promise<void>,
+      ) => {
+        if (options?.adminOnly && currentRole !== 'ADMIN') {
+          return c.json({ error: { code: 'FORBIDDEN', message: 'Admins only' } }, 403);
+        }
+        c.set('jwtPayload', {
+          userId: 'user-1',
+          role: currentRole,
+          email: 'test@example.com',
+          verificationStatus: 'APPROVED_BIDDER',
+        });
+        await next();
+        return undefined;
+      },
   ),
 }));
 
@@ -52,6 +61,7 @@ const mockHandleWebhook = { execute: vi.fn() } as unknown as HandleWebhookUseCas
 const mockCreateSetupIntent = { execute: vi.fn() } as unknown as CreateSetupIntentUseCase;
 const mockConfirmSetupIntent = { execute: vi.fn() } as unknown as ConfirmSetupIntentUseCase;
 const mockPaySavedCard = { execute: vi.fn() } as unknown as PaySavedCardUseCase;
+const mockGetRevenueReport = { execute: vi.fn() } as unknown as GetRevenueReportUseCase;
 const mockProfileRepo = { findByUserId: vi.fn(), save: vi.fn() };
 const mockStripe = { retrievePaymentMethod: vi.fn() };
 
@@ -59,6 +69,7 @@ let app: Hono;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  currentRole = 'BUYER';
   app = new Hono().route('/', buildPaymentRouter({
     getInvoice: mockGetInvoice,
     listInvoices: mockListInvoices,
@@ -70,10 +81,32 @@ beforeEach(() => {
     createSetupIntent: mockCreateSetupIntent,
     confirmSetupIntent: mockConfirmSetupIntent,
     paySavedCard: mockPaySavedCard,
+    getRevenueReport: mockGetRevenueReport,
     profileRepo: mockProfileRepo as never,
     stripe: mockStripe,
     jwtPublicKey: 'test-public-key',
   }));
+});
+
+describe('GET /api/payments/reports/revenue', () => {
+  it('should_return200WithByCurrency_when_adminRequests', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockGetRevenueReport.execute).mockResolvedValue({ byCurrency: { GBP: 1500 } });
+
+    const res = await app.request('/api/payments/reports/revenue');
+
+    expect(res.status).toBe(200);
+    const body = revenueReportResponseSchema.parse(await res.json());
+    expect(body.data.byCurrency['GBP']).toBe(1500);
+  });
+
+  it('should_return403_when_nonAdminRequests', async () => {
+    currentRole = 'BUYER';
+
+    const res = await app.request('/api/payments/reports/revenue');
+
+    expect(res.status).toBe(403);
+  });
 });
 
 describe('GET /api/payments/invoices/:id', () => {

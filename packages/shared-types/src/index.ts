@@ -35,3 +35,5 @@ export {
   auctionResultRowSchema, auctionResultsResponseSchema, unsoldLotRowSchema, unsoldLotsResponseSchema,
 } from './api/auction-reports.js';
 export type { AuctionResultReportRow, UnsoldLotReportRow } from './api/auction-reports.js';
+export { revenueReportSchema, revenueReportResponseSchema } from './api/payment-reports.js';
+export type { RevenueReport } from './api/payment-reports.js';

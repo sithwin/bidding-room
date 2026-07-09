@@ -14,6 +14,7 @@ import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.u
 import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
 import { PaymentProfileRepository } from '../application/payment-profile-repository';
 import { StripeClient } from '../application/stripe-client';
+import { GetRevenueReportUseCase } from '../application/get-revenue-report-use-case';
 
 interface RouterDeps {
   getInvoice: Pick<GetInvoiceUseCase, 'execute'>;
@@ -21,6 +22,7 @@ interface RouterDeps {
   cancelInvoice: Pick<CancelInvoiceUseCase, 'execute'>;
   extendInvoiceDueDate: Pick<ExtendInvoiceDueDateUseCase, 'execute'>;
   invoiceRepo: Pick<InvoiceRepository, 'findById'>;
+  getRevenueReport: Pick<GetRevenueReportUseCase, 'execute'>;
   createCheckoutSession: Pick<CreateCheckoutSessionUseCase, 'execute'>;
   handleWebhook: Pick<HandleWebhookUseCase, 'execute'>;
   createSetupIntent: Pick<CreateSetupIntentUseCase, 'execute'>;
@@ -54,6 +56,13 @@ export function buildPaymentRouter(deps: RouterDeps): Hono {
   router.get('/api/payments/invoices', adminOnly, async (c) => {
     const invoices = await deps.listInvoices.execute({ status: c.req.query('status') });
     return c.json({ data: invoices.map(toInvoiceDto) });
+  });
+
+  // Registered ahead of the /api/payments/invoices/:id parameterised route so
+  // it can never be shadowed, even though the segments differ today.
+  router.get('/api/payments/reports/revenue', adminOnly, async (c) => {
+    const report = await deps.getRevenueReport.execute();
+    return c.json({ data: report });
   });
 
   router.get('/api/payments/invoices/:id', authMiddleware(deps.jwtPublicKey), async (c) => {
