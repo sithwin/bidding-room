@@ -21,6 +21,8 @@ import { ListUsersUseCase } from './application/list-users.use-case';
 import { SuspendUserUseCase } from './application/suspend-user.use-case';
 import { ReinstateUserUseCase } from './application/reinstate-user.use-case';
 import { ApproveUserUseCase } from './application/approve-user.use-case';
+import { AdminCreateUserUseCase } from './application/admin-create-user.use-case';
+import { AdminUpdateUserUseCase } from './application/admin-update-user.use-case';
 import { buildUserRouter } from './presentation/user-router';
 import { buildAdminUsersRouter } from './presentation/admin-users-router';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
@@ -92,6 +94,8 @@ async function main(): Promise<void> {
     suspendUser:   new SuspendUserUseCase(userRepo),
     reinstateUser: new ReinstateUserUseCase(userRepo),
     approveUser:   new ApproveUserUseCase(userRepo),
+    adminCreateUser: new AdminCreateUserUseCase(userRepo, tokenRepo, passwordService, publisher),
+    adminUpdateUser: new AdminUpdateUserUseCase(userRepo),
   }, jwtPublicKey));
 
   serve({ fetch: app.fetch, port });
