@@ -1053,16 +1053,16 @@ git commit -m "feat(user-auth): admin POST /api/users and PATCH /api/users/:id r
 - Consumes: Task 5 endpoints on the user client.
 - Produces (consumed by Task 7/8): `POST /admin/api/users` and `PATCH /admin/api/users/:id` — bodies passed through verbatim, responses passed through including error envelopes and status codes.
 
-- [ ] **Step 1: Write failing proxy tests**
+- [x] **Step 1: Write failing proxy tests**
 
 In `apps/admin/src/presentation/routers.test.ts`, add cases asserting that `POST /admin/api/users` calls `client.post('/api/users', token, body)` and returns the upstream body, and that `PATCH /admin/api/users/:id` calls `client.patch('/api/users/u1', token, body)`. Follow the file's existing mock style for the other users routes.
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm turbo test --filter=admin`
 Expected: new tests FAIL (404).
 
-- [ ] **Step 3: Implement the proxy routes**
+- [x] **Step 3: Implement the proxy routes**
 
 In `apps/admin/src/presentation/users-router.ts`, after the GET routes:
 
@@ -1076,12 +1076,12 @@ r.patch('/admin/api/users/:id', auth, async c =>
 
 Add `409` to the proxy's status union if the `ServiceError` cast (`err.status as 400 | 404 | 500`) does not already include it: `err.status as 400 | 404 | 409 | 500`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pnpm turbo test --filter=admin && pnpm turbo build --filter=admin`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/admin/src/presentation/users-router.ts apps/admin/src/presentation/routers.test.ts
