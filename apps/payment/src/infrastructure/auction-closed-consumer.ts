@@ -14,7 +14,7 @@ export async function startAuctionClosedConsumer(
   createInvoiceUseCase: CreateInvoiceUseCase,
 ): Promise<void> {
   await subscriber.subscribe<AuctionClosedPayload>(
-    'payment.auction-closed',
+    'payment.auction.closed',
     async (event: AuctionClosedPayload) => {
       if (!event.reserveMet || !event.winnerUserId) {
         return;
@@ -26,5 +26,6 @@ export async function startAuctionClosedConsumer(
         currency: event.currency,
       });
     },
+    'auction.closed',
   );
 }

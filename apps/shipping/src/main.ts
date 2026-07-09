@@ -44,10 +44,11 @@ async function main(): Promise<void> {
   const paymentReceivedHandler = new PaymentReceivedHandler(createFulfilment);
 
   await subscriber.subscribe<PaymentReceivedPayload>(
-    'shipping.payment-received',
+    'shipping.payment.received',
     async (payload) => {
       await paymentReceivedHandler.handle(payload);
     },
+    'payment.received',
   );
 
   const app = new Hono<AppEnv>();
