@@ -1,13 +1,8 @@
 import { EventSubscriber } from '@carat-room/shared-events';
+import type { AuctionClosedPayload } from '@carat-room/shared-types';
 import { CreateInvoiceUseCase } from '../application/create-invoice-use-case';
 
-interface AuctionClosedPayload {
-  lotId: string;
-  winnerUserId: string | null;
-  highestAmount: number;
-  currency: string;
-  reserveMet: boolean;
-}
+const DEFAULT_CURRENCY = process.env['DEFAULT_CURRENCY'] ?? 'AUD';
 
 export async function startAuctionClosedConsumer(
   subscriber: EventSubscriber,
@@ -16,14 +11,14 @@ export async function startAuctionClosedConsumer(
   await subscriber.subscribe<AuctionClosedPayload>(
     'payment.auction.closed',
     async (event: AuctionClosedPayload) => {
-      if (!event.reserveMet || !event.winnerUserId) {
+      if (!event.reserveMet || !event.winnerUserId || event.highestAmount == null) {
         return;
       }
       await createInvoiceUseCase.execute({
         lotId: event.lotId,
         winnerUserId: event.winnerUserId,
         amount: event.highestAmount,
-        currency: event.currency,
+        currency: DEFAULT_CURRENCY,
       });
     },
     'auction.closed',

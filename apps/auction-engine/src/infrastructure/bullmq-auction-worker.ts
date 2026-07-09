@@ -4,6 +4,7 @@ import { CloseAuctionCommandHandler } from '../application/close-auction-handler
 import { AuctionEventPublisher } from '../application/auction-event-publisher';
 import { SseBroadcaster } from '../application/sse-broadcaster';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
+import { LotQueryRepository } from '../application/lot-query-repository';
 
 const QUEUE_NAME = 'auction-timers';
 
@@ -26,6 +27,7 @@ export class BullMQAuctionWorker {
     private readonly getLotStatusHandler: GetLotStatusHandler,
     private readonly publisher: AuctionEventPublisher,
     private readonly sseBroadcaster: SseBroadcaster,
+    private readonly queryRepository: LotQueryRepository,
   ) {
     this.worker = new Worker(QUEUE_NAME, this.process.bind(this), { connection: redis });
   }
@@ -55,9 +57,11 @@ export class BullMQAuctionWorker {
       case 'closing-soon': {
         const status = await this.getLotStatusHandler.execute(lotId);
         if (status) {
+          const activeBidderIds = await this.queryRepository.findBidderIds(lotId);
           await this.publisher.publishAuctionClosingSoon({
             lotId,
             endAt: status.endAt.toISOString(),
+            activeBidderIds,
           });
         }
         break;

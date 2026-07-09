@@ -38,6 +38,8 @@ export class PlaceBidCommandHandler {
       const agg = AuctionAggregate.create(command.lotId);
       stored.forEach(e => agg.applyStored(e));
 
+      const previousHighestBidderId = agg.highestBidUserId;
+
       const result = agg.placeBid({
         bidId: command.bidId,
         userId: command.userId,
@@ -56,8 +58,8 @@ export class PlaceBidCommandHandler {
         bidId: command.bidId,
         userId: command.userId,
         amount: command.amount,
-        bidCount: agg.bidCount,
-        endAt: agg.endAt.toISOString(),
+        previousHighestBidderId,
+        placedAt: command.placedAt.toISOString(),
       });
 
       if (result.timerExtended && this.timerScheduler) {

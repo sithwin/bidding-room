@@ -76,6 +76,7 @@ async function main(): Promise<void> {
     getLotStatusHandler,
     auctionPublisher,
     sseBroadcaster,
+    queryRepository,
   );
 
   const jwtPublicKey = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n');

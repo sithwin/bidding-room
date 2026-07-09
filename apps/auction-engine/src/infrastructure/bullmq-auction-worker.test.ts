@@ -6,6 +6,7 @@ import { CloseAuctionCommandHandler } from '../application/close-auction-handler
 import { AuctionEventPublisher } from '../application/auction-event-publisher';
 import { SseBroadcaster } from '../application/sse-broadcaster';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
+import { LotQueryRepository } from '../application/lot-query-repository';
 
 vi.mock('bullmq');
 
@@ -23,6 +24,15 @@ const mockBroadcaster: SseBroadcaster = {
   subscribe: vi.fn(),
   broadcast: vi.fn(),
 };
+const mockQueryRepository = {
+  findLotStatus: vi.fn(),
+  findBidHistory: vi.fn(),
+  findActiveLots: vi.fn(),
+  getDashboardStats: vi.fn(),
+  findClosedResults: vi.fn(),
+  findUnsoldLots: vi.fn(),
+  findBidderIds: vi.fn().mockResolvedValue(['user-1', 'user-2']),
+} as unknown as LotQueryRepository;
 
 const REDIS = { host: 'localhost', port: 6379 };
 
@@ -38,7 +48,7 @@ describe('BullMQAuctionWorker', () => {
   });
 
   it('should_callStartHandler_when_startAuctionJobProcessed', async () => {
-    new BullMQAuctionWorker(REDIS, mockStartHandler, mockCloseHandler, mockGetLotStatus, mockPublisher, mockBroadcaster);
+    new BullMQAuctionWorker(REDIS, mockStartHandler, mockCloseHandler, mockGetLotStatus, mockPublisher, mockBroadcaster, mockQueryRepository);
 
     await capturedProcessor({ name: 'start-auction', data: { lotId: 'lot-1' } });
 
@@ -55,7 +65,7 @@ describe('BullMQAuctionWorker', () => {
       winnerUserId: 'user-1',
       updatedAt: new Date(),
     });
-    new BullMQAuctionWorker(REDIS, mockStartHandler, mockCloseHandler, mockGetLotStatus, mockPublisher, mockBroadcaster);
+    new BullMQAuctionWorker(REDIS, mockStartHandler, mockCloseHandler, mockGetLotStatus, mockPublisher, mockBroadcaster, mockQueryRepository);
 
     await capturedProcessor({ name: 'close-auction', data: { lotId: 'lot-1' } });
 
@@ -77,13 +87,15 @@ describe('BullMQAuctionWorker', () => {
       winnerUserId: null,
       updatedAt: new Date(),
     });
-    new BullMQAuctionWorker(REDIS, mockStartHandler, mockCloseHandler, mockGetLotStatus, mockPublisher, mockBroadcaster);
+    new BullMQAuctionWorker(REDIS, mockStartHandler, mockCloseHandler, mockGetLotStatus, mockPublisher, mockBroadcaster, mockQueryRepository);
 
     await capturedProcessor({ name: 'closing-soon', data: { lotId: 'lot-1' } });
 
+    expect(mockQueryRepository.findBidderIds).toHaveBeenCalledWith('lot-1');
     expect(mockPublisher.publishAuctionClosingSoon).toHaveBeenCalledWith({
       lotId: 'lot-1',
       endAt: '2026-06-20T12:00:00.000Z',
+      activeBidderIds: ['user-1', 'user-2'],
     });
   });
 });

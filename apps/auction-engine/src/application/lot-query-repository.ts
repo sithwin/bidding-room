@@ -42,4 +42,5 @@ export interface LotQueryRepository {
   getDashboardStats(): Promise<DashboardStats>;
   findClosedResults(from: Date, to: Date): Promise<AuctionResultRow[]>;
   findUnsoldLots(): Promise<UnsoldLotRow[]>;
+  findBidderIds(lotId: string): Promise<string[]>;
 }

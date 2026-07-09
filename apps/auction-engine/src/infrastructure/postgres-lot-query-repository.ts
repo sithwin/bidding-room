@@ -126,6 +126,13 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
       highestBid: r['current_highest_bid'] != null ? Number(r['current_highest_bid']) : null,
     }));
   }
+
+  async findBidderIds(lotId: string): Promise<string[]> {
+    const rows = await this.db`
+      SELECT DISTINCT user_id FROM bids WHERE lot_id = ${lotId}
+    `;
+    return rows.map(r => r['user_id'] as string);
+  }
 }
 
 function mapLotStatusRow(r: Record<string, unknown>): LotStatusRow {

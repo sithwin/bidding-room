@@ -195,4 +195,26 @@ describe('PostgresLotQueryRepository', () => {
     const unsoldRow = result.find(r => r.lotId === LOT_ID_2);
     expect(unsoldRow?.highestBid).toBe(250);
   });
+
+  it('should_returnDistinctBidderIds_when_lotHasMultipleBidsFromSameUser', async () => {
+    await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+    await projectionHandler.handle(LOT_ID, [
+      { type: 'BidPlaced', payload: { bid_id: 'bid-d-1', user_id: 'user-1', amount: 100, placed_at: '2026-06-20T11:00:00Z' } },
+      { type: 'BidPlaced', payload: { bid_id: 'bid-d-2', user_id: 'user-2', amount: 150, placed_at: '2026-06-20T11:01:00Z' } },
+      { type: 'BidPlaced', payload: { bid_id: 'bid-d-3', user_id: 'user-1', amount: 200, placed_at: '2026-06-20T11:02:00Z' } },
+    ]);
+
+    const result = await queryRepo.findBidderIds(LOT_ID);
+
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(expect.arrayContaining(['user-1', 'user-2']));
+  });
+
+  it('should_returnEmptyArray_when_lotHasNoBids', async () => {
+    await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+
+    const result = await queryRepo.findBidderIds(LOT_ID);
+
+    expect(result).toEqual([]);
+  });
 });
