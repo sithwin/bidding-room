@@ -10,3 +10,11 @@ export const revenueReportSchema = z.object({
 export const revenueReportResponseSchema = envelope(revenueReportSchema);
 
 export type RevenueReport = z.infer<typeof revenueReportSchema>;
+
+export const pendingInvoiceCountSchema = z.object({
+  count: z.number(),
+});
+
+export const pendingInvoiceCountResponseSchema = envelope(pendingInvoiceCountSchema);
+
+export type PendingInvoiceCount = z.infer<typeof pendingInvoiceCountSchema>;

@@ -124,4 +124,22 @@ describe('PostgresInvoiceRepository', () => {
 
     expect(result).toEqual({});
   });
+
+  it('should_countAwaitingPaymentInvoices_when_someInvoicesAwaitPayment', async () => {
+    await repo.save(buildInvoice({ id: INVOICE_ID, status: InvoiceStatus.AwaitingPayment }));
+    await repo.save(buildInvoice({ id: INVOICE_ID_2, lotId: LOT_ID_XYZ, status: InvoiceStatus.AwaitingPayment }));
+    await repo.save(buildInvoice({ id: INVOICE_ID_3, status: InvoiceStatus.Paid }));
+
+    const count = await repo.countAwaitingPayment();
+
+    expect(count).toBe(2);
+  });
+
+  it('should_countZero_when_noInvoicesAwaitPayment', async () => {
+    await repo.save(buildInvoice({ id: INVOICE_ID, status: InvoiceStatus.Paid }));
+
+    const count = await repo.countAwaitingPayment();
+
+    expect(count).toBe(0);
+  });
 });

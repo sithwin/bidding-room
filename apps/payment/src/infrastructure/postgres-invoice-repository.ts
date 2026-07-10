@@ -113,4 +113,11 @@ export class PostgresInvoiceRepository implements InvoiceRepository {
     `;
     return Object.fromEntries(rows.map(r => [r['currency'] as string, Number(r['total'])]));
   }
+
+  async countAwaitingPayment(): Promise<number> {
+    const rows = await this.db`
+      SELECT COUNT(*)::int AS count FROM invoices WHERE status = 'AWAITING_PAYMENT'
+    `;
+    return rows[0]['count'] as number;
+  }
 }

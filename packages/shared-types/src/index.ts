@@ -35,5 +35,10 @@ export {
   auctionResultRowSchema, auctionResultsResponseSchema, unsoldLotRowSchema, unsoldLotsResponseSchema,
 } from './api/auction-reports.js';
 export type { AuctionResultReportRow, UnsoldLotReportRow } from './api/auction-reports.js';
-export { revenueReportSchema, revenueReportResponseSchema } from './api/payment-reports.js';
-export type { RevenueReport } from './api/payment-reports.js';
+export {
+  revenueReportSchema, revenueReportResponseSchema,
+  pendingInvoiceCountSchema, pendingInvoiceCountResponseSchema,
+} from './api/payment-reports.js';
+export type { RevenueReport, PendingInvoiceCount } from './api/payment-reports.js';
+export { pendingFulfilmentCountSchema, pendingFulfilmentCountResponseSchema } from './api/shipping-reports.js';
+export type { PendingFulfilmentCount } from './api/shipping-reports.js';

@@ -15,6 +15,7 @@ import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
 import { PaymentProfileRepository } from '../application/payment-profile-repository';
 import { StripeClient } from '../application/stripe-client';
 import { GetRevenueReportUseCase } from '../application/get-revenue-report-use-case';
+import { GetPendingInvoiceCountUseCase } from '../application/get-pending-invoice-count-use-case';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
@@ -25,6 +26,7 @@ interface RouterDeps {
   extendInvoiceDueDate: Pick<ExtendInvoiceDueDateUseCase, 'execute'>;
   invoiceRepo: Pick<InvoiceRepository, 'findById'>;
   getRevenueReport: Pick<GetRevenueReportUseCase, 'execute'>;
+  getPendingInvoiceCount: Pick<GetPendingInvoiceCountUseCase, 'execute'>;
   createCheckoutSession: Pick<CreateCheckoutSessionUseCase, 'execute'>;
   handleWebhook: Pick<HandleWebhookUseCase, 'execute'>;
   createSetupIntent: Pick<CreateSetupIntentUseCase, 'execute'>;
@@ -65,6 +67,13 @@ export function buildPaymentRouter(deps: RouterDeps): Hono<AppEnv> {
   router.get('/api/payments/reports/revenue', adminOnly, async (c) => {
     const report = await deps.getRevenueReport.execute();
     return c.json({ data: report });
+  });
+
+  // Registered ahead of the /api/payments/invoices/:id parameterised route so
+  // it can never be shadowed, even though the segments differ today.
+  router.get('/api/payments/reports/pending-count', adminOnly, async (c) => {
+    const { count } = await deps.getPendingInvoiceCount.execute();
+    return c.json({ data: { count } });
   });
 
   router.get('/api/payments/invoices/:id', authMiddleware(deps.jwtPublicKey), async (c) => {

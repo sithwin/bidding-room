@@ -9,7 +9,8 @@ import { CreateSetupIntentUseCase } from '../application/create-setup-intent.use
 import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.use-case';
 import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
 import { GetRevenueReportUseCase } from '../application/get-revenue-report-use-case';
-import { revenueReportResponseSchema } from '@carat-room/shared-types';
+import { GetPendingInvoiceCountUseCase } from '../application/get-pending-invoice-count-use-case';
+import { revenueReportResponseSchema, pendingInvoiceCountResponseSchema } from '@carat-room/shared-types';
 
 let currentRole = 'BUYER';
 
@@ -62,6 +63,7 @@ const mockCreateSetupIntent = { execute: vi.fn() } as unknown as CreateSetupInte
 const mockConfirmSetupIntent = { execute: vi.fn() } as unknown as ConfirmSetupIntentUseCase;
 const mockPaySavedCard = { execute: vi.fn() } as unknown as PaySavedCardUseCase;
 const mockGetRevenueReport = { execute: vi.fn() } as unknown as GetRevenueReportUseCase;
+const mockGetPendingInvoiceCount = { execute: vi.fn() } as unknown as GetPendingInvoiceCountUseCase;
 const mockProfileRepo = { findByUserId: vi.fn(), save: vi.fn() };
 const mockStripe = { retrievePaymentMethod: vi.fn() };
 
@@ -82,6 +84,7 @@ beforeEach(() => {
     confirmSetupIntent: mockConfirmSetupIntent,
     paySavedCard: mockPaySavedCard,
     getRevenueReport: mockGetRevenueReport,
+    getPendingInvoiceCount: mockGetPendingInvoiceCount,
     profileRepo: mockProfileRepo as never,
     stripe: mockStripe,
     jwtPublicKey: 'test-public-key',
@@ -104,6 +107,27 @@ describe('GET /api/payments/reports/revenue', () => {
     currentRole = 'BUYER';
 
     const res = await app.request('/api/payments/reports/revenue');
+
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('GET /api/payments/reports/pending-count', () => {
+  it('should_return200WithCount_when_adminRequests', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockGetPendingInvoiceCount.execute).mockResolvedValue({ count: 3 });
+
+    const res = await app.request('/api/payments/reports/pending-count');
+
+    expect(res.status).toBe(200);
+    const body = pendingInvoiceCountResponseSchema.parse(await res.json());
+    expect(body.data.count).toBe(3);
+  });
+
+  it('should_return403_when_nonAdminRequests', async () => {
+    currentRole = 'BUYER';
+
+    const res = await app.request('/api/payments/reports/pending-count');
 
     expect(res.status).toBe(403);
   });

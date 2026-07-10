@@ -18,8 +18,6 @@ export interface BidRow {
 export interface DashboardStats {
   activeAuctions: number;
   endingSoon: number;
-  pendingInvoices: number;
-  pendingFulfilments: number;
 }
 
 export interface AuctionResultRow {

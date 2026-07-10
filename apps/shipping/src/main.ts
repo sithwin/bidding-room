@@ -63,6 +63,7 @@ async function main(): Promise<void> {
     chooseCollect,
     markDispatched,
     markCollected,
+    countPendingFulfilments: () => repo.countByStatuses(['PENDING_CHOICE', 'PENDING_DISPATCH']),
   }));
 
   serve({ fetch: app.fetch, port }, () => {

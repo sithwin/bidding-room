@@ -13,4 +13,5 @@ export interface InvoiceRepository {
     payload: unknown;
   }): Promise<void>;
   sumPaidAmountByCurrency(): Promise<Record<string, number>>;
+  countAwaitingPayment(): Promise<number>;
 }

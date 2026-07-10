@@ -91,8 +91,6 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
     return {
       activeAuctions: activeRows[0]['count'] as number,
       endingSoon: endingSoonRows[0]['count'] as number,
-      pendingInvoices: 0,
-      pendingFulfilments: 0,
     };
   }
 

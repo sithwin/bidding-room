@@ -20,6 +20,7 @@ import { CreateSetupIntentUseCase } from './application/create-setup-intent.use-
 import { ConfirmSetupIntentUseCase } from './application/confirm-setup-intent.use-case';
 import { PaySavedCardUseCase } from './application/pay-saved-card.use-case';
 import { GetRevenueReportUseCase } from './application/get-revenue-report-use-case';
+import { GetPendingInvoiceCountUseCase } from './application/get-pending-invoice-count-use-case';
 import { PostgresPaymentProfileRepository } from './infrastructure/postgres-payment-profile-repository';
 import { buildPaymentRouter } from './presentation/payment-router';
 
@@ -82,6 +83,7 @@ async function main(): Promise<void> {
     invoiceRepository, paymentProfileRepository, stripeAdapter, publish,
   );
   const getRevenueReportUseCase = new GetRevenueReportUseCase(invoiceRepository);
+  const getPendingInvoiceCountUseCase = new GetPendingInvoiceCountUseCase(invoiceRepository);
 
   const eventSubscriber = new EventSubscriber(amqp);
   await startAuctionClosedConsumer(eventSubscriber, createInvoiceUseCase);
@@ -109,6 +111,7 @@ async function main(): Promise<void> {
     confirmSetupIntent: confirmSetupIntentUseCase,
     paySavedCard: paySavedCardUseCase,
     getRevenueReport: getRevenueReportUseCase,
+    getPendingInvoiceCount: getPendingInvoiceCountUseCase,
     profileRepo: paymentProfileRepository,
     stripe: stripeAdapter,
     jwtPublicKey: JWT_PUBLIC_KEY,

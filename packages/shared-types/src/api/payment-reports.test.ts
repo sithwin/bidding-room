@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { revenueReportResponseSchema } from './payment-reports.js';
+import { revenueReportResponseSchema, pendingInvoiceCountResponseSchema } from './payment-reports.js';
 
 describe('revenueReportResponseSchema', () => {
   it('should_parseRevenueReportEnvelope', () => {
@@ -15,5 +15,16 @@ describe('revenueReportResponseSchema', () => {
 
   it('should_rejectMissingData', () => {
     expect(revenueReportResponseSchema.safeParse({ byCurrency: { GBP: 1500 } }).success).toBe(false);
+  });
+});
+
+describe('pendingInvoiceCountResponseSchema', () => {
+  it('should_parsePendingInvoiceCountEnvelope', () => {
+    const parsed = pendingInvoiceCountResponseSchema.parse({ data: { count: 4 } });
+    expect(parsed.data.count).toBe(4);
+  });
+
+  it('should_rejectMissingData', () => {
+    expect(pendingInvoiceCountResponseSchema.safeParse({ count: 4 }).success).toBe(false);
   });
 });

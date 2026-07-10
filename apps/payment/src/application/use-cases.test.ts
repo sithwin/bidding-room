@@ -9,6 +9,7 @@ import { HandleWebhookUseCase } from './handle-webhook-use-case';
 import { CreateInvoiceUseCase } from './create-invoice-use-case';
 import { ExpireInvoiceUseCase } from './expire-invoice-use-case';
 import { GetRevenueReportUseCase } from './get-revenue-report-use-case';
+import { GetPendingInvoiceCountUseCase } from './get-pending-invoice-count-use-case';
 
 function buildInvoice(overrides: Partial<ConstructorParameters<typeof Invoice>[0]> = {}): Invoice {
   return new Invoice({
@@ -48,6 +49,9 @@ const mockRepo: InvoiceRepository = {
     }
     return byCurrency;
   }),
+  countAwaitingPayment: vi.fn(async () =>
+    savedInvoices.filter(invoice => invoice.status === InvoiceStatus.AwaitingPayment).length,
+  ),
 };
 
 const mockStripe: StripeClient = {
@@ -83,6 +87,19 @@ describe('GetRevenueReportUseCase', () => {
     const result = await useCase.execute();
 
     expect(result.byCurrency).toEqual({ GBP: 800, USD: 200 });
+  });
+});
+
+describe('GetPendingInvoiceCountUseCase', () => {
+  it('should_countAwaitingPaymentInvoices_when_someInvoicesAwaitPayment', async () => {
+    await mockRepo.save(buildInvoice({ id: 'inv-awaiting-1', status: InvoiceStatus.AwaitingPayment }));
+    await mockRepo.save(buildInvoice({ id: 'inv-awaiting-2', status: InvoiceStatus.AwaitingPayment }));
+    await mockRepo.save(buildInvoice({ id: 'inv-paid', status: InvoiceStatus.Paid }));
+    const useCase = new GetPendingInvoiceCountUseCase(mockRepo);
+
+    const result = await useCase.execute();
+
+    expect(result.count).toBe(2);
   });
 });
 
