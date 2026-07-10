@@ -129,6 +129,22 @@ describe('Auctions router', () => {
     expect(res.status).toBe(200);
   });
 
+  it('should_return409_when_schedulingInactiveLot', async () => {
+    const auction = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    vi.mocked(catalogue.get).mockResolvedValue({ data: { id: 'lot-1', status: 'INACTIVE' } });
+    const app = new Hono().route('/', buildAuctionsRouter({ auction, catalogue }));
+
+    const res = await app.request('/admin/api/auctions', {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lotId: 'lot-1', startAt: '2026-07-01T10:00:00Z', endAt: '2026-07-01T12:00:00Z', reservePrice: 500, minBidIncrement: 10, autoExtendWindowMinutes: 3, autoExtendDurationMinutes: 3 }),
+    });
+
+    expect(res.status).toBe(409);
+    expect(auction.post).not.toHaveBeenCalled();
+  });
+
   it('should_return200WithEnrichedLotTitleAndCurrentBid_when_listingAuctions', async () => {
     const auction = new ServiceClient('http://mock');
     const catalogue = new ServiceClient('http://mock');

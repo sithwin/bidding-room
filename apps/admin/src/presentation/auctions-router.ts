@@ -65,8 +65,23 @@ export function buildAuctionsRouter(clients: Clients): Hono {
       return { data: { ...(await toSummary(detail.data, token)), bids: bids.data } };
     }, c));
 
-  r.post('/admin/api/auctions', auth, async c =>
-    proxy(async () => auction.post('/api/auctions', tok(c), await c.req.json()), c));
+  r.post('/admin/api/auctions', auth, async c => {
+    const token = tok(c);
+    const body = await c.req.json() as { lotId?: string };
+    if (body.lotId) {
+      try {
+        const lotRes = await catalogue.get<{ data: { status: string } }>(`/api/lots/${body.lotId}`, token);
+        if (lotRes?.data?.status === 'INACTIVE') {
+          return c.json({ error: { code: 'LOT_INACTIVE', message: 'Cannot schedule an auction for an inactive lot' } }, 409);
+        }
+      } catch (err) {
+        if (!(err instanceof ServiceError)) throw err;
+        // Lot lookup failing (e.g. catalogue down) must not silently block scheduling — fall through to the proxy,
+        // which will surface its own error if the lot truly doesn't exist.
+      }
+    }
+    return proxy(async () => auction.post('/api/auctions', token, body), c);
+  });
 
   r.patch('/admin/api/auctions/:lotId/reschedule', auth, async c =>
     proxy(async () => auction.patch(`/api/auctions/${c.req.param('lotId')}/reschedule`, tok(c), await c.req.json()), c));
