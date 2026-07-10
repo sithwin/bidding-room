@@ -119,6 +119,11 @@ ALTER TABLE lots
 CREATE INDEX IF NOT EXISTS lots_auction_id_idx ON lots(auction_id);
 CREATE INDEX IF NOT EXISTS lots_department_idx ON lots(department);
 
+-- Migration 003: lot status (mirrors apps/catalogue/migrations/003)
+ALTER TABLE lots
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'ACTIVE'
+    CHECK (status IN ('ACTIVE', 'INACTIVE'));
+
 -- ── Auction engine ────────────────────────────────────────────────────────────
 \c auction_test
 
