@@ -50,6 +50,47 @@ describe('PostgresLotRepository', () => {
     expect(found!.images).toHaveLength(0);
   });
 
+  it('should_defaultStatusToActive_when_notProvidedOnSave', async () => {
+    const lot = new Lot({
+      id: '33333333-3333-3333-3333-333333333333',
+      title: 'Unstatused Lot',
+      description: null,
+      categoryId: null,
+      condition: LotCondition.Good,
+      estimatedValue: 500,
+      images: [],
+      createdBy: null,
+      createdAt: new Date('2026-06-20T00:00:00Z'),
+      updatedAt: new Date('2026-06-20T00:00:00Z'),
+    });
+
+    await repo.save(lot);
+    const found = await repo.findById(lot.id);
+
+    expect(found!.status).toBe('ACTIVE');
+  });
+
+  it('should_persistInactiveStatus_when_saveThenFindById', async () => {
+    const lot = new Lot({
+      id: '44444444-4444-4444-4444-444444444444',
+      title: 'Withdrawn Lot',
+      description: null,
+      categoryId: null,
+      condition: LotCondition.Good,
+      estimatedValue: 500,
+      status: 'INACTIVE',
+      images: [],
+      createdBy: null,
+      createdAt: new Date('2026-06-20T00:00:00Z'),
+      updatedAt: new Date('2026-06-20T00:00:00Z'),
+    });
+
+    await repo.save(lot);
+    const found = await repo.findById(lot.id);
+
+    expect(found!.status).toBe('INACTIVE');
+  });
+
   it('should_saveThenFindById_when_lotHasImages', async () => {
     const images: LotImage[] = [
       {

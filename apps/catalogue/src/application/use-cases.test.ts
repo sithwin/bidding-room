@@ -7,6 +7,7 @@ import { CreateCategoryUseCase } from './create-category-use-case';
 import { RenameCategoryUseCase } from './rename-category-use-case';
 import { DeleteCategoryUseCase } from './delete-category-use-case';
 import { ConfirmImageUploadUseCase } from './confirm-image-upload-use-case';
+import { CreateLotUseCase } from './create-lot-use-case';
 import { Lot, LotCondition } from '../domain/lot';
 import { Category } from '../domain/category';
 import { LotRepository, PaginatedResult } from '../domain/lot-repository';
@@ -75,6 +76,26 @@ describe('ListLotsUseCase', () => {
 
     expect(result.total).toBe(1);
     expect(result.items).toHaveLength(1);
+  });
+});
+
+describe('CreateLotUseCase', () => {
+  it('should_defaultStatusToActive_when_notProvided', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn(), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+
+    await new CreateLotUseCase(mockRepo).execute({ title: 'Diamond Ring' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.status).toBe('ACTIVE');
+  });
+
+  it('should_useProvidedStatus_when_given', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn(), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+
+    await new CreateLotUseCase(mockRepo).execute({ title: 'Diamond Ring', status: 'INACTIVE' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.status).toBe('INACTIVE');
   });
 });
 
