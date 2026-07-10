@@ -28,7 +28,7 @@ export {
   catalogueLotSchema, catalogueLotImageSchema, lotListResponseSchema, lotResponseSchema,
   lotSearchResultSchema, lotSearchResponseSchema, categorySchema, categoryListResponseSchema,
   auctionStatusSchema, catalogueAuctionSchema, auctionListResponseSchema, auctionResponseSchema,
-  facetsResponseSchema, lotsQuery, auctionsQuery,
+  facetsResponseSchema, lotsQuery, auctionsQuery, lotActiveStatusSchema, LOT_ACTIVE_STATUSES,
 } from './api/catalogue.js';
 export type { CatalogueLot, CatalogueLotImage, CatalogueAuction } from './api/catalogue.js';
 export {
