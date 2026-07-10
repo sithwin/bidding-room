@@ -306,8 +306,9 @@ describe('Reports router', () => {
     const payment = new ServiceClient('http://mock');
     const catalogue = new ServiceClient('http://mock');
     const user = new ServiceClient('http://mock');
+    const shipping = new ServiceClient('http://mock');
     vi.mocked(payment.get).mockResolvedValue({ data: { byCurrency: { GBP: 100 } } });
-    const app = new Hono().route('/', buildReportsRouter({ auction: mockClient, payment, catalogue, user }));
+    const app = new Hono().route('/', buildReportsRouter({ auction: mockClient, payment, catalogue, user, shipping }));
 
     const res = await app.request('/admin/api/reports/revenue', { headers: authHeader() });
     const body = await res.json();
@@ -343,7 +344,8 @@ describe('Reports router', () => {
     });
     vi.mocked(user.get).mockResolvedValue({ email: 'winner@example.com' });
 
-    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user }));
+    const shipping = new ServiceClient('http://mock');
+    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user, shipping }));
 
     const res = await app.request('/admin/api/reports/auction-results?from=2026-06-01&to=2026-07-01', { headers: authHeader() });
     const body = await res.json();
@@ -376,7 +378,8 @@ describe('Reports router', () => {
       throw new Error(`unexpected url: ${url}`);
     });
 
-    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user }));
+    const shipping = new ServiceClient('http://mock');
+    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user, shipping }));
 
     const res = await app.request('/admin/api/reports/unsold', { headers: authHeader() });
     const body = await res.json();
@@ -386,5 +389,58 @@ describe('Reports router', () => {
     expect(body.data).toEqual([
       { id: 'lot-3', title: 'Leather Tote', categoryName: 'Bags', highestBid: 250 },
     ]);
+  });
+
+  it('should_return200WithFourNumbers_when_allServicesHealthy', async () => {
+    const auction = new ServiceClient('http://mock');
+    const payment = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    const user = new ServiceClient('http://mock');
+    const shipping = new ServiceClient('http://mock');
+
+    vi.mocked(auction.get).mockResolvedValue({ data: { activeAuctions: 5, endingSoon: 2 } });
+    vi.mocked(payment.get).mockResolvedValue({ data: { count: 7 } });
+    vi.mocked(shipping.get).mockResolvedValue({ data: { count: 3 } });
+
+    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user, shipping }));
+
+    const res = await app.request('/admin/api/reports/dashboard', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(auction.get).toHaveBeenCalledWith('/api/reports/dashboard', 'admin-token');
+    expect(payment.get).toHaveBeenCalledWith('/api/payments/reports/pending-count', 'admin-token');
+    expect(shipping.get).toHaveBeenCalledWith('/api/shipping/fulfilments/pending-count', 'admin-token');
+    expect(body.data).toEqual({
+      activeAuctions: 5,
+      endingSoon: 2,
+      pendingInvoices: 7,
+      pendingFulfilments: 3,
+    });
+  });
+
+  it('should_returnPendingInvoicesNull_when_paymentServiceUnreachable', async () => {
+    const auction = new ServiceClient('http://mock');
+    const payment = new ServiceClient('http://mock');
+    const catalogue = new ServiceClient('http://mock');
+    const user = new ServiceClient('http://mock');
+    const shipping = new ServiceClient('http://mock');
+
+    vi.mocked(auction.get).mockResolvedValue({ data: { activeAuctions: 5, endingSoon: 2 } });
+    vi.mocked(payment.get).mockRejectedValue(new ServiceError(500, { error: { code: 'INTERNAL_ERROR' } }));
+    vi.mocked(shipping.get).mockResolvedValue({ data: { count: 3 } });
+
+    const app = new Hono().route('/', buildReportsRouter({ auction, payment, catalogue, user, shipping }));
+
+    const res = await app.request('/admin/api/reports/dashboard', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data).toEqual({
+      activeAuctions: 5,
+      endingSoon: 2,
+      pendingInvoices: null,
+      pendingFulfilments: 3,
+    });
   });
 });

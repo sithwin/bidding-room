@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gavel, Clock, FileText, Package } from 'lucide-react';
 
 interface DashboardStats {
-  activeAuctions: number;
-  endingSoon: number;
-  pendingInvoices: number;
-  pendingFulfilments: number;
+  activeAuctions: number | null;
+  endingSoon: number | null;
+  pendingInvoices: number | null;
+  pendingFulfilments: number | null;
 }
 
 export default async function DashboardPage() {
@@ -31,7 +31,7 @@ export default async function DashboardPage() {
               <Icon className='h-4 w-4 text-muted-foreground' />
             </CardHeader>
             <CardContent>
-              <p className='text-3xl font-bold'>{value}</p>
+              <p className='text-3xl font-bold'>{value ?? '—'}</p>
             </CardContent>
           </Card>
         ))}

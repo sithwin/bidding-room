@@ -39,15 +39,42 @@ interface Clients {
   payment: ServiceClient;
   catalogue: ServiceClient;
   user: ServiceClient;
+  shipping: ServiceClient;
 }
+
+const countOrNull = async (
+  fetchCount: () => Promise<{ data: { count: number } }>,
+): Promise<number | null> => {
+  try {
+    return (await fetchCount()).data.count;
+  } catch {
+    return null;
+  }
+};
 
 export function buildReportsRouter(clients: Clients): Hono {
   const r = new Hono();
   const auth = authMiddleware(jwtPublicKey, { adminOnly: true });
-  const { auction, payment, catalogue, user } = clients;
+  const { auction, payment, catalogue, user, shipping } = clients;
 
   r.get('/admin/api/reports/dashboard', auth, async c =>
-    proxy(() => auction.get('/api/reports/dashboard', tok(c)), c));
+    proxy(async () => {
+      const token = tok(c);
+      const [engineStats, pendingInvoices, pendingFulfilments] = await Promise.all([
+        auction.get<{ data: { activeAuctions: number; endingSoon: number } }>('/api/reports/dashboard', token)
+          .then(res => res.data).catch(() => null),
+        countOrNull(() => payment.get('/api/payments/reports/pending-count', token) as Promise<{ data: { count: number } }>),
+        countOrNull(() => shipping.get('/api/shipping/fulfilments/pending-count', token) as Promise<{ data: { count: number } }>),
+      ]);
+      return {
+        data: {
+          activeAuctions: engineStats?.activeAuctions ?? null,
+          endingSoon: engineStats?.endingSoon ?? null,
+          pendingInvoices,
+          pendingFulfilments,
+        },
+      };
+    }, c));
 
   r.get('/admin/api/reports/auction-results', auth, async c =>
     proxy(async () => {

@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   app.route('/', buildUsersRouter(user));
   app.route('/', buildInvoicesRouter({ payment, catalogue, user }));
   app.route('/', buildFulfilmentsRouter({ shipping, catalogue, user }));
-  app.route('/', buildReportsRouter({ auction, payment, catalogue, user }));
+  app.route('/', buildReportsRouter({ auction, payment, catalogue, user, shipping }));
   app.route('/', buildEnquiriesRouter({
     submitEnquiry: (input) => submitEnquiry.execute(input),
     r2,
