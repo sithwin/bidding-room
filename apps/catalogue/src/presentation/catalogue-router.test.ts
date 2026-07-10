@@ -47,6 +47,16 @@ describe('GET /api/lots/:id', () => {
     expect(body.data.id).toBe('lot-1');
   });
 
+  it('should_includeStatus_when_lotExists', async () => {
+    const useCases = buildUseCases({ getLot: { execute: vi.fn().mockResolvedValue(buildLot()) } });
+    const app = new Hono().route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1');
+
+    const body = lotResponseSchema.parse(await res.json());
+    expect(body.data.status).toBe('ACTIVE');
+  });
+
   it('should_return404_when_lotDoesNotExist', async () => {
     const app = new Hono().route('/', buildCatalogueRouter(buildUseCases()));
 
