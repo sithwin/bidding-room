@@ -8,6 +8,7 @@ CREATE DATABASE auction_test;
 CREATE DATABASE payment_test;
 CREATE DATABASE shipping_test;
 CREATE DATABASE notification_test;
+CREATE DATABASE admin_test;
 
 -- ── User service ─────────────────────────────────────────────────────────────
 \c user_test
@@ -234,3 +235,23 @@ CREATE TABLE IF NOT EXISTS notification_log (
 
 CREATE INDEX idx_notification_log_user_id ON notification_log(user_id);
 CREATE INDEX idx_notification_log_created_at ON notification_log(created_at);
+
+-- ── Admin service ──────────────────────────────────────────────────────────────
+-- Not currently part of docker-compose.test.yml's integration harness (admin-service
+-- has no entry there); mirrored here per repo convention so the DB exists the moment
+-- admin joins that stack, and to keep this file in sync with apps/admin/migrations/.
+\c admin_test
+
+CREATE TABLE valuation_enquiries (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category     TEXT NOT NULL,
+  artist_maker TEXT,
+  description  TEXT NOT NULL,
+  photo_keys   TEXT[] NOT NULL DEFAULT '{}',
+  name         TEXT NOT NULL,
+  email        TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW','RESPONDED','CLOSED')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX valuation_enquiries_status_idx ON valuation_enquiries (status, created_at DESC);

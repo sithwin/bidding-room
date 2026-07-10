@@ -36,66 +36,66 @@ Branch: `fix/admin-portal-bug-fixes`. PR #3 (API contracts phase 1) merged upstr
 ## Coverage Checklist (from docs/bugs-report.md + root-cause diagnosis)
 
 Bug 1 — Lots: can't create a new lot
-- [ ] C1.1 Category chosen from a dropdown populated from `/admin/api/categories` (not a free-text UUID input) — Task 2
-- [ ] C1.2 Validation errors rendered for description, categoryId, condition, estimatedValue (not only title) — Task 2
-- [ ] C1.3 Backend/server error (`state.error`) rendered as a general form message — Task 2
-- [ ] C1.4 Same fixes applied to the edit-lot form (same defects) — Task 2
-- [ ] C1.5 Condition options match the catalogue contract (`NEW/EXCELLENT/VERY_GOOD/GOOD` — FAIR removed, NEW added) in both forms and `lot.schema.ts` — Task 2
+- [x] C1.1 Category chosen from a dropdown populated from `/admin/api/categories` (not a free-text UUID input) — Task 2
+- [x] C1.2 Validation errors rendered for description, categoryId, condition, estimatedValue (not only title) — Task 2
+- [x] C1.3 Backend/server error (`state.error`) rendered as a general form message — Task 2
+- [x] C1.4 Same fixes applied to the edit-lot form (same defects) — Task 2
+- [x] C1.5 Condition options match the catalogue contract (`NEW/EXCELLENT/VERY_GOOD/GOOD` — FAIR removed, NEW added) in both forms and `lot.schema.ts` — Task 2
 
 Bug 2 — Users: no create button, can't edit (scope decision: full create + edit)
-- [ ] C2.1 Domain: `User.changeEmail()` method — Task 4
-- [ ] C2.2 User Service: `AdminCreateUserUseCase` (email, password, role, optional country; email-uniqueness; publishes `user.registered`) — Task 4
-- [ ] C2.3 User Service: `AdminUpdateUserUseCase` (email and/or country; email-uniqueness) — Task 4
-- [ ] C2.4 User Service routes: `POST /api/users` and `PATCH /api/users/:id` (admin-only) — Task 5
-- [ ] C2.5 Admin Service proxy routes: `POST /admin/api/users`, `PATCH /admin/api/users/:id` — Task 6
-- [ ] C2.6 Portal: "New User" button on users list + `/admin/users/new` form (all error slots) — Task 7
-- [ ] C2.7 Portal: edit form (email, country) on user detail page — Task 8
+- [x] C2.1 Domain: `User.changeEmail()` method — Task 4
+- [x] C2.2 User Service: `AdminCreateUserUseCase` (email, password, role, optional country; email-uniqueness; publishes `user.registered`) — Task 4
+- [x] C2.3 User Service: `AdminUpdateUserUseCase` (email and/or country; email-uniqueness) — Task 4
+- [x] C2.4 User Service routes: `POST /api/users` and `PATCH /api/users/:id` (admin-only) — Task 5
+- [x] C2.5 Admin Service proxy routes: `POST /admin/api/users`, `PATCH /admin/api/users/:id` — Task 6
+- [x] C2.6 Portal: "New User" button on users list + `/admin/users/new` form (all error slots) — Task 7
+- [x] C2.7 Portal: edit form (email, country) on user detail page — Task 8
 
 Bug 3 — Categories: no button to create a category
-- [ ] C3.1 Root-level "New Category" button + inline name/slug form, usable when the tree is empty — Task 3
-- [ ] C3.2 `createCategory` failures surfaced to the user (currently swallowed) — Task 3
-- [ ] C3.3 Categories page consumes the real **flat** contract (`categoryListResponseSchema`) and builds the tree from `parentId` — the current `children`-shaped interface crashes on nested data — Task 3
+- [x] C3.1 Root-level "New Category" button + inline name/slug form, usable when the tree is empty — Task 3
+- [x] C3.2 `createCategory` failures surfaced to the user (currently swallowed) — Task 3
+- [x] C3.3 Categories page consumes the real **flat** contract (`categoryListResponseSchema`) and builds the tree from `parentId` — the current `children`-shaped interface crashes on nested data — Task 3
 
 Bug 4 — Auctions: "invalid start date and end date"
-- [ ] C4.1 Schedule/reschedule schemas accept `datetime-local` values (`2026-07-09T14:30`) and transform to full ISO — Task 1
-- [ ] C4.2 Schema unit tests use a real `datetime-local` sample value — Task 1
-- [ ] C4.3 End-after-start refinement still enforced — Task 1
+- [x] C4.1 Schedule/reschedule schemas accept `datetime-local` values (`2026-07-09T14:30`) and transform to full ISO — Task 1
+- [x] C4.2 Schema unit tests use a real `datetime-local` sample value — Task 1
+- [x] C4.3 End-after-start refinement still enforced — Task 1
 
 Bug 5 — Reports: errors when clicking the reports menu
-- [ ] C5.1 Auction Engine: `GET /api/reports/results?from&to` over `lot_status` (SOLD/UNSOLD in range) — Task 9
-- [ ] C5.2 Auction Engine: `GET /api/reports/unsold` (status UNSOLD) — Task 9
-- [ ] C5.3 Payment Service: `GET /api/payments/reports/revenue` (paid invoices summed by currency) — Task 10
-- [ ] C5.4 Admin Service reports router aggregates with the correct clients and paths; enriches lotTitle/categoryName/winnerEmail; computes results summary — Task 11
-- [ ] C5.5 `main.ts` passes `{ auction, payment, catalogue, user }` to the reports router — Task 11
-- [ ] C5.6 Reports page fetcher checks `res.ok`; SWR error state rendered; shape guards on `data.data` — Task 12
-- [ ] C5.7 Unsold tab drops the Reserve column (reserve price is deliberately never stored in the read model — spec deviation, noted) and tolerates null `highestBid` — Task 12
+- [x] C5.1 Auction Engine: `GET /api/reports/results?from&to` over `lot_status` (SOLD/UNSOLD in range) — Task 9
+- [x] C5.2 Auction Engine: `GET /api/reports/unsold` (status UNSOLD) — Task 9
+- [x] C5.3 Payment Service: `GET /api/payments/reports/revenue` (paid invoices summed by currency) — Task 10
+- [x] C5.4 Admin Service reports router aggregates with the correct clients and paths; enriches lotTitle/categoryName/winnerEmail; computes results summary — Task 11
+- [x] C5.5 `main.ts` passes `{ auction, payment, catalogue, user }` to the reports router — Task 11
+- [x] C5.6 Reports page fetcher checks `res.ok`; SWR error state rendered; shape guards on `data.data` — Task 12
+- [x] C5.7 Unsold tab drops the Reserve column (reserve price is deliberately never stored in the read model — spec deviation, noted) and tolerates null `highestBid` — Task 12
 
 Flow audit — latent defects found in the same functional chain (not in the bug report, but they block "schedule and manage an auction" end-to-end)
-- [ ] C7.1 Auctions list shows lot titles and current bids (engine returns `currentHighestBid` and no title; table renders `lotTitle`/`currentBid` → blank/— today) — Task 14
-- [ ] C7.2 Auction detail page no longer crashes (`auction.bids` is undefined; engine detail response has no `bids`) and live stats show the real current bid — Task 14
-- [ ] C7.3 Schedule Auction works without a `?lotId=` query param: lot picker on the form + rendered `lotId` error (today the header button's path fails silently) — Task 15
-- [ ] C7.4 Admins can see bidder user ids in bid history via an authorised path (engine deliberately omits `userId` publicly) — Task 14
+- [x] C7.1 Auctions list shows lot titles and current bids (engine returns `currentHighestBid` and no title; table renders `lotTitle`/`currentBid` → blank/— today) — Task 14
+- [x] C7.2 Auction detail page no longer crashes (`auction.bids` is undefined; engine detail response has no `bids`) and live stats show the real current bid — Task 14
+- [x] C7.3 Schedule Auction works without a `?lotId=` query param: lot picker on the form + rendered `lotId` error (today the header button's path fails silently) — Task 15
+- [x] C7.4 Admins can see bidder user ids in bid history via an authorised path (engine deliberately omits `userId` publicly) — Task 14
 
 Event backbone + deployment (full-functionality audit — blockers: invoices and fulfilments are never created today)
-- [ ] C8.1 `EventSubscriber.subscribe` requires a routing key (optional binding was the root cause of dead consumers) — Task 16
-- [ ] C8.2 Payment consumer bound to `auction.closed` with queue name `payment.auction.closed`; shipping consumer bound to `payment.received` with queue name `shipping.payment.received` — Task 16
-- [ ] C8.3 `infra/rabbitmq/definitions.json` exchange corrected `platform.events` → `carat.events` — Task 16
-- [ ] C8.4 Auction engine publishes `auction.closed`, `auction.bid.placed`, `auction.closing.soon` payloads typed against `@carat-room/shared-types` (adds `highestAmount`, `highestBidId`, `closedAt`, `previousHighestBidderId`, `placedAt`, `activeBidderIds`) — Task 17
-- [ ] C8.5 Payment consumer reads the shared `AuctionClosedPayload` and applies the platform default currency **AUD** (`DEFAULT_CURRENCY` env, fallback `'AUD'`) — Task 17
-- [ ] C8.6 Shipping service reads `RABBITMQ_URL` (not `AMQP_URL`); compose gives shipping `JWT_PUBLIC_KEY` — Task 18
-- [ ] C8.7 Admin service reads `AUCTION_ENGINE_URL` with fallback `http://auction-engine:3003` (compose name); compose gives admin-service `RABBITMQ_URL`, `ADMIN_DATABASE_URL` — Task 18
+- [x] C8.1 `EventSubscriber.subscribe` requires a routing key (optional binding was the root cause of dead consumers) — Task 16
+- [x] C8.2 Payment consumer bound to `auction.closed` with queue name `payment.auction.closed`; shipping consumer bound to `payment.received` with queue name `shipping.payment.received` — Task 16
+- [x] C8.3 `infra/rabbitmq/definitions.json` exchange corrected `platform.events` → `carat.events` — Task 16
+- [x] C8.4 Auction engine publishes `auction.closed`, `auction.bid.placed`, `auction.closing.soon` payloads typed against `@carat-room/shared-types` (adds `highestAmount`, `highestBidId`, `closedAt`, `previousHighestBidderId`, `placedAt`, `activeBidderIds`) — Task 17
+- [x] C8.5 Payment consumer reads the shared `AuctionClosedPayload` and applies the platform default currency **AUD** (`DEFAULT_CURRENCY` env, fallback `'AUD'`) — Task 17
+- [x] C8.6 Shipping service reads `RABBITMQ_URL` (not `AMQP_URL`); compose gives shipping `JWT_PUBLIC_KEY` — Task 18
+- [x] C8.7 Admin service reads `AUCTION_ENGINE_URL` with fallback `http://auction-engine:3003` (compose name); compose gives admin-service `RABBITMQ_URL`, `ADMIN_DATABASE_URL` — Task 18
 
 Small-issue fixes promoted to "now" (user decision 2026-07-09)
-- [ ] C9.1 `valuation_enquiries` table actually exists (blocker found during scoping: no DDL anywhere — public submissions crash) + mirrored into `tests/db-init/init.sql` — Task 19
-- [ ] C9.2 Enquiries admin: list/detail/status endpoints in the admin service (statuses NEW / RESPONDED / CLOSED) — Task 19
-- [ ] C9.3 Enquiries admin UI: `/admin/enquiries` page + sidebar entry — Task 19
-- [ ] C9.4 Payment: pending-invoice count endpoint; Shipping: pending-fulfilment count endpoint — Task 20
-- [ ] C9.5 Dashboard aggregation moves to the admin service (engine reports only what it owns); portal shows '—' for a count whose service is down instead of a fake 0 — Task 20
+- [x] C9.1 `valuation_enquiries` table actually exists (blocker found during scoping: no DDL anywhere — public submissions crash) + mirrored into `tests/db-init/init.sql` — Task 19
+- [x] C9.2 Enquiries admin: list/detail/status endpoints in the admin service (statuses NEW / RESPONDED / CLOSED) — Task 19
+- [x] C9.3 Enquiries admin UI: `/admin/enquiries` page + sidebar entry — Task 19
+- [x] C9.4 Payment: pending-invoice count endpoint; Shipping: pending-fulfilment count endpoint — Task 20
+- [x] C9.5 Dashboard aggregation moves to the admin service (engine reports only what it owns); portal shows '—' for a count whose service is down instead of a fake 0 — Task 20
 
 Cross-cutting
-- [ ] C6.1 Browser-drive every fixed flow before completion (Lesson: schema tests are not verification) — Task 13 (runs LAST, after Tasks 14–20)
-- [ ] C6.2 Tick off `docs/bugs-report.md` items and commit — Task 13
-- [ ] C6.3 Known issue recorded, not fixed here: dashboard `pendingInvoices`/`pendingFulfilments` are hard-coded to 0 in `get-dashboard-stats` (needs payment/shipping count endpoints — raise as its own piece of work)
+- [x] C6.1 Browser-drive every fixed flow before completion (Lesson: schema tests are not verification) — Task 13 (runs LAST, after Tasks 14–20)
+- [x] C6.2 Tick off `docs/bugs-report.md` items and commit — Task 13
+- [x] C6.3 Known issue recorded, not fixed here: dashboard `pendingInvoices`/`pendingFulfilments` are hard-coded to 0 in `get-dashboard-stats` (needs payment/shipping count endpoints — raise as its own piece of work)
 
 ---
 
@@ -111,7 +111,7 @@ Cross-cutting
 
 **Root cause recap:** `<input type='datetime-local'>` submits `2026-07-09T14:30` (no seconds/timezone); `z.string().datetime()` rejects it, so every submission fails with "Invalid start date"/"Invalid end date". The auction engine accepts any `Date`-parseable string, so the fix is frontend-only.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Add to `apps/admin-portal/src/lib/schemas/auction.schema.test.ts` (keep existing tests):
 
@@ -177,12 +177,12 @@ describe('RescheduleAuctionSchema — datetime-local input', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify the new ones fail**
+- [x] **Step 2: Run tests to verify the new ones fail**
 
 Run: `pnpm turbo test --filter=admin-portal -- auction.schema`
 Expected: new tests FAIL ("Invalid start date"), pre-existing tests pass.
 
-- [ ] **Step 3: Implement the schema fix**
+- [x] **Step 3: Implement the schema fix**
 
 Replace the contents of `apps/admin-portal/src/lib/schemas/auction.schema.ts`:
 
@@ -228,12 +228,12 @@ export type ScheduleAuctionValues = z.infer<typeof ScheduleAuctionSchema>;
 export type RescheduleAuctionValues = z.infer<typeof RescheduleAuctionSchema>;
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pnpm turbo test --filter=admin-portal -- auction.schema`
 Expected: PASS (all).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/schemas/auction.schema.ts apps/admin-portal/src/lib/schemas/auction.schema.test.ts
@@ -258,7 +258,7 @@ git commit -m "fix(admin-portal): accept datetime-local values when scheduling a
   - `categoryOptions(flat: FlatCategory[]): CategoryOption[]` where `CategoryOption = { id: string; label: string }` (label is the `'Parent / Child'` breadcrumb built by following `parentId`).
   - `buildCategoryTree(flat: FlatCategory[]): CategoryTreeNode[]` where `CategoryTreeNode = FlatCategory & { children: CategoryTreeNode[] }` (ordered by `displayOrder`).
 
-- [ ] **Step 1: Write failing tests for the category helpers**
+- [x] **Step 1: Write failing tests for the category helpers**
 
 Create `apps/admin-portal/src/lib/categories.test.ts` (input is the catalogue's real **flat** shape):
 
@@ -296,12 +296,12 @@ describe('buildCategoryTree', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `pnpm turbo test --filter=admin-portal -- categories`
 Expected: FAIL — module `./categories` not found.
 
-- [ ] **Step 3: Implement the helpers**
+- [x] **Step 3: Implement the helpers**
 
 Create `apps/admin-portal/src/lib/categories.ts` (types derive from the shared contract schema — Lesson: declare a service's response types once):
 
@@ -347,12 +347,12 @@ export function categoryOptions(flat: FlatCategory[]): CategoryOption[] {
 
 (Verify `categorySchema` is exported from the package root `@carat-room/shared-types` — it is re-exported via `packages/shared-types/src/index.ts`; if only the sub-path is exported, import from the documented public entry point.)
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pnpm turbo test --filter=admin-portal -- categories`
 Expected: PASS.
 
-- [ ] **Step 5: Extract the new-lot form into a client component with full error rendering**
+- [x] **Step 5: Extract the new-lot form into a client component with full error rendering**
 
 Create `apps/admin-portal/src/app/admin/lots/new/_new-lot-form.tsx` (content moved from the current `page.tsx`, with a category `Select`, an error line under every field, and a general server-error message):
 
@@ -439,7 +439,7 @@ export function NewLotForm({ categories }: { categories: CategoryOption[] }) {
 }
 ```
 
-- [ ] **Step 6: Convert the new-lot page to a server component that fetches categories**
+- [x] **Step 6: Convert the new-lot page to a server component that fetches categories**
 
 Replace `apps/admin-portal/src/app/admin/lots/new/page.tsx` (parse through the shared contract schema — an `as` cast validates nothing):
 
@@ -462,7 +462,7 @@ export default async function NewLotPage() {
 }
 ```
 
-- [ ] **Step 6b: Align `lot.schema.ts` with the catalogue condition enum**
+- [x] **Step 6b: Align `lot.schema.ts` with the catalogue condition enum**
 
 In `apps/admin-portal/src/lib/schemas/lot.schema.ts` replace:
 
@@ -479,7 +479,7 @@ export const LotCondition = z.enum(['NEW', 'EXCELLENT', 'VERY_GOOD', 'GOOD']);
 
 and update `lot.schema.test.ts`: a test asserting `'NEW'` parses and `'FAIR'` is rejected.
 
-- [ ] **Step 7: Apply the same fixes to the edit form**
+- [x] **Step 7: Apply the same fixes to the edit form**
 
 Modify `apps/admin-portal/src/app/admin/lots/[id]/_edit-form.tsx`:
 - Add prop `categories: CategoryOption[]` (import from `@/lib/categories`).
@@ -489,12 +489,12 @@ Modify `apps/admin-portal/src/app/admin/lots/[id]/_edit-form.tsx`:
 
 Modify `apps/admin-portal/src/app/admin/lots/[id]/page.tsx`: fetch categories exactly as in Step 6 (`categoryListResponseSchema.parse` + `categoryOptions`) alongside the existing lot fetch, and pass `categories={categories}` to `<EditLotForm />`.
 
-- [ ] **Step 8: Verify build and tests**
+- [x] **Step 8: Verify build and tests**
 
 Run: `pnpm turbo build --filter=admin-portal && pnpm turbo test --filter=admin-portal`
 Expected: build succeeds, tests PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/admin-portal/src/lib/categories.ts apps/admin-portal/src/lib/categories.test.ts apps/admin-portal/src/app/admin/lots
@@ -515,7 +515,7 @@ git commit -m "fix(admin-portal): category dropdown and full error rendering on 
 
 **Root cause recap:** the only create entry point is a per-node "+" (add child), so an empty tree can never gain its first category and top-level categories cannot be created; `createCategory`'s `{ ok: false, error }` result is ignored. **Additionally (upstream contract fact):** the page's local `Category` interface assumes a `children` field the catalogue never returns — the flat list must be parsed with `categoryListResponseSchema` and nested via `buildCategoryTree`, otherwise `category.children.length` throws as soon as any category exists.
 
-- [ ] **Step 0: Fix the page's contract**
+- [x] **Step 0: Fix the page's contract**
 
 Replace `apps/admin-portal/src/app/admin/categories/page.tsx` (drop the local tree-shaped `Category` interface):
 
@@ -540,7 +540,7 @@ export default async function CategoriesPage() {
 
 In `category-tree.tsx`, delete the local `Category` interface and use `CategoryTreeNode` from `@/lib/categories` throughout (`interface CategoryNodeProps { category: CategoryTreeNode; depth: number }`).
 
-- [ ] **Step 1: Extract a reusable inline create form and add the root button**
+- [x] **Step 1: Extract a reusable inline create form and add the root button**
 
 In `apps/admin-portal/src/components/category-tree.tsx`:
 
@@ -612,12 +612,12 @@ export function CategoryTree({ categories }: { categories: Category[] }) {
 }
 ```
 
-- [ ] **Step 2: Verify build and tests**
+- [x] **Step 2: Verify build and tests**
 
 Run: `pnpm turbo build --filter=admin-portal && pnpm turbo test --filter=admin-portal`
 Expected: build succeeds, tests PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/admin-portal/src/components/category-tree.tsx
@@ -642,7 +642,7 @@ git commit -m "fix(admin-portal): root-level New Category button with surfaced e
   - `AdminCreateUserUseCase.execute(dto: { email: string; password: string; role: 'BUYER' | 'ADMIN'; country?: string }): Promise<{ id: string }>` — throws `Error('Email already registered')` on duplicate.
   - `AdminUpdateUserUseCase.execute(id: string, dto: { email?: string; country?: string }): Promise<void>` — throws `Error('User not found')` / `Error('Email already registered')`.
 
-- [ ] **Step 1: Write failing domain test**
+- [x] **Step 1: Write failing domain test**
 
 Add to `apps/user-auth/src/domain/user.test.ts`:
 
@@ -658,12 +658,12 @@ describe('changeEmail', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `pnpm turbo test --filter=user-auth -- user.test`
 Expected: FAIL — `changeEmail is not a function`.
 
-- [ ] **Step 3: Implement `changeEmail`**
+- [x] **Step 3: Implement `changeEmail`**
 
 In `apps/user-auth/src/domain/user.ts`, after `updateProfile`:
 
@@ -674,12 +674,12 @@ changeEmail(email: string): void {
 }
 ```
 
-- [ ] **Step 4: Run domain tests to verify they pass**
+- [x] **Step 4: Run domain tests to verify they pass**
 
 Run: `pnpm turbo test --filter=user-auth -- user.test`
 Expected: PASS.
 
-- [ ] **Step 5: Write failing use-case tests**
+- [x] **Step 5: Write failing use-case tests**
 
 Create `apps/user-auth/src/application/admin-user.use-cases.test.ts`. Follow the mock style of `use-cases.test.ts` (in-memory fakes / `vi.fn()`):
 
@@ -761,12 +761,12 @@ describe('AdminUpdateUserUseCase', () => {
 });
 ```
 
-- [ ] **Step 6: Run to verify they fail**
+- [x] **Step 6: Run to verify they fail**
 
 Run: `pnpm turbo test --filter=user-auth -- admin-user.use-cases`
 Expected: FAIL — modules not found.
 
-- [ ] **Step 7: Implement the use cases**
+- [x] **Step 7: Implement the use cases**
 
 Create `apps/user-auth/src/application/admin-create-user.use-case.ts`:
 
@@ -862,12 +862,12 @@ export class AdminUpdateUserUseCase {
 }
 ```
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `pnpm turbo test --filter=user-auth`
 Expected: PASS (all).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/user-auth/src/domain/user.ts apps/user-auth/src/domain/user.test.ts apps/user-auth/src/application/admin-create-user.use-case.ts apps/user-auth/src/application/admin-update-user.use-case.ts apps/user-auth/src/application/admin-user.use-cases.test.ts
@@ -891,7 +891,7 @@ git commit -m "feat(user-auth): admin create and update user use cases"
 
 Note: `buildUserRouter` is also mounted at `/api/users` (registration is `POST /api/users/register`), so `POST /` on the admin router does not clash — verify with the route test in Step 1.
 
-- [ ] **Step 1: Write failing router tests**
+- [x] **Step 1: Write failing router tests**
 
 In the file that already tests `buildAdminUsersRouter`, add (adapting to its existing fake-use-case setup):
 
@@ -952,12 +952,12 @@ describe('PATCH /:id', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm turbo test --filter=user-auth`
 Expected: new tests FAIL (404 route not found / missing use cases).
 
-- [ ] **Step 3: Implement the routes**
+- [x] **Step 3: Implement the routes**
 
 In `apps/user-auth/src/presentation/admin-users-router.ts`:
 
@@ -1029,12 +1029,12 @@ adminUpdateUser: new AdminUpdateUserUseCase(userRepo),
 
 (match the actual variable names in `main.ts` for repo/service/publisher instances).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `pnpm turbo test --filter=user-auth && pnpm turbo build --filter=user-auth`
 Expected: PASS, build clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/user-auth/src
@@ -1104,7 +1104,7 @@ git commit -m "feat(admin): proxy user create and update to the user service"
 - Consumes: `adminApi.post/patch` (`@/lib/admin-api`), Task 6 proxy routes.
 - Produces (consumed by Task 8): `CreateUserSchema`, `UpdateUserSchema`, and server actions `createUser(_prev: ActionState, formData: FormData): Promise<ActionState>` / `updateUser(id: string, _prev: ActionState, formData: FormData): Promise<ActionState>` with `ActionState = { ok?: boolean; errors?: Record<string, string[] | undefined>; [key: string]: unknown }` (same shape as `lots/_actions.ts`).
 
-- [ ] **Step 1: Write failing schema tests**
+- [x] **Step 1: Write failing schema tests**
 
 Add to `apps/admin-portal/src/lib/schemas/user.schema.test.ts`:
 
@@ -1141,12 +1141,12 @@ describe('UpdateUserSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `pnpm turbo test --filter=admin-portal -- user.schema`
 Expected: FAIL — schemas not exported.
 
-- [ ] **Step 3: Implement the schemas**
+- [x] **Step 3: Implement the schemas**
 
 Append to `apps/admin-portal/src/lib/schemas/user.schema.ts`:
 
@@ -1172,12 +1172,12 @@ export type CreateUserValues = z.infer<typeof CreateUserSchema>;
 export type UpdateUserValues = z.infer<typeof UpdateUserSchema>;
 ```
 
-- [ ] **Step 4: Run schema tests to verify they pass**
+- [x] **Step 4: Run schema tests to verify they pass**
 
 Run: `pnpm turbo test --filter=admin-portal -- user.schema`
 Expected: PASS.
 
-- [ ] **Step 5: Write failing action tests, then implement the actions**
+- [x] **Step 5: Write failing action tests, then implement the actions**
 
 Create `apps/admin-portal/src/app/admin/users/_actions.test.ts` following the mock style of `apps/admin-portal/src/app/admin/lots/_actions.test.ts` (mock `@/lib/admin-api` and `next/cache`), covering: validation failure returns `{ ok: false, errors }`; success posts to `/admin/api/users` and returns `{ ok: true, id }`; `AdminApiError` returns `{ ok: false, error }`. Run it, see it fail, then create `apps/admin-portal/src/app/admin/users/_actions.ts`:
 
@@ -1234,7 +1234,7 @@ export async function updateUser(id: string, _prev: ActionState, formData: FormD
 
 Run: `pnpm turbo test --filter=admin-portal -- users` — expected PASS.
 
-- [ ] **Step 6: Create the New User page**
+- [x] **Step 6: Create the New User page**
 
 Create `apps/admin-portal/src/app/admin/users/new/page.tsx` (client form, every field gets an error slot plus a general server-error line — duplicate-email errors from the backend surface via `state.error`):
 
@@ -1310,7 +1310,7 @@ export default function NewUserPage() {
 }
 ```
 
-- [ ] **Step 7: Add the "New User" button to the list page**
+- [x] **Step 7: Add the "New User" button to the list page**
 
 In `apps/admin-portal/src/app/admin/users/page.tsx`, mirror the lots page header:
 
@@ -1330,7 +1330,7 @@ and replace the `<h1>` line with:
 </div>
 ```
 
-- [ ] **Step 8: Verify build and tests, then commit**
+- [x] **Step 8: Verify build and tests, then commit**
 
 Run: `pnpm turbo build --filter=admin-portal && pnpm turbo test --filter=admin-portal`
 Expected: PASS.
@@ -1352,7 +1352,7 @@ git commit -m "feat(admin-portal): new user page and create action"
 - Consumes: `updateUser` from Task 7; `UserDetail` shape already defined in the detail page (`{ id, email, status, country, phoneVerified, emailVerified, registeredAt }`).
 - Produces: `EditUserForm({ user }: { user: { id: string; email: string; country: string | null } })`.
 
-- [ ] **Step 1: Create the edit form**
+- [x] **Step 1: Create the edit form**
 
 Create `apps/admin-portal/src/app/admin/users/[id]/_edit-form.tsx` (same pattern as `lots/[id]/_edit-form.tsx`):
 
@@ -1405,11 +1405,11 @@ export function EditUserForm({ user }: { user: { id: string; email: string; coun
 }
 ```
 
-- [ ] **Step 2: Render it on the detail page**
+- [x] **Step 2: Render it on the detail page**
 
 In `apps/admin-portal/src/app/admin/users/[id]/page.tsx`, import `EditUserForm` and add `<EditUserForm user={user} />` after the existing `<dl>` block. While in the file, replace the padded suspend reason `'Suspended by admin.      '` with `'Suspended by an administrator.'` (Boy Scout Rule — the trailing spaces only exist to satisfy the schema's 10-character minimum; the replacement satisfies it honestly).
 
-- [ ] **Step 3: Verify build and tests, then commit**
+- [x] **Step 3: Verify build and tests, then commit**
 
 Run: `pnpm turbo build --filter=admin-portal && pnpm turbo test --filter=admin-portal`
 Expected: PASS.
@@ -1437,7 +1437,7 @@ git commit -m "feat(admin-portal): edit user form on the user detail page"
   - `GET /api/reports/results?from=<ISO>&to=<ISO>` (adminOnly) → `{ data: AuctionResultRow[] }` where `AuctionResultRow = { lotId: string; finalBid: number | null; reserveMet: boolean; winnerUserId: string | null; closedAt: string }`.
   - `GET /api/reports/unsold` (adminOnly) → `{ data: UnsoldLotRow[] }` where `UnsoldLotRow = { lotId: string; highestBid: number | null }`.
 
-- [ ] **Step 1: Add types and repository methods to the application interface**
+- [x] **Step 1: Add types and repository methods to the application interface**
 
 In `apps/auction-engine/src/application/lot-query-repository.ts`:
 
@@ -1463,14 +1463,14 @@ findClosedResults(from: Date, to: Date): Promise<AuctionResultRow[]>;
 findUnsoldLots(): Promise<UnsoldLotRow[]>;
 ```
 
-- [ ] **Step 2: Write failing repository tests**
+- [x] **Step 2: Write failing repository tests**
 
 Extend `apps/auction-engine/src/infrastructure/postgres-lot-query-repository.test.ts` following its existing fake-`Db` style: seed `lot_status` rows with statuses `SOLD`, `UNSOLD`, `LIVE`; assert `findClosedResults` returns only SOLD/UNSOLD rows inside the range with `reserveMet` true only for SOLD, and `findUnsoldLots` returns only UNSOLD rows.
 
 Run: `pnpm turbo test --filter=auction-engine -- postgres-lot-query-repository`
 Expected: FAIL — methods missing.
 
-- [ ] **Step 3: Implement the SQL**
+- [x] **Step 3: Implement the SQL**
 
 In `apps/auction-engine/src/infrastructure/postgres-lot-query-repository.ts`:
 
@@ -1509,12 +1509,12 @@ async findUnsoldLots(): Promise<UnsoldLotRow[]> {
 
 (Column names verified against `apps/auction-engine/migrations/001_create_auction_engine.sql`; statuses verified against `postgres-projection-handler.ts` which writes `'SOLD'`/`'UNSOLD'` on `AuctionClosed`.)
 
-- [ ] **Step 4: Run repository tests to verify they pass**
+- [x] **Step 4: Run repository tests to verify they pass**
 
 Run: `pnpm turbo test --filter=auction-engine -- postgres-lot-query-repository`
 Expected: PASS.
 
-- [ ] **Step 5: Add the handlers**
+- [x] **Step 5: Add the handlers**
 
 Create `apps/auction-engine/src/application/get-auction-results-handler.ts`:
 
@@ -1544,7 +1544,7 @@ export class GetUnsoldLotsHandler {
 }
 ```
 
-- [ ] **Step 6: Write failing router tests, then add the routes**
+- [x] **Step 6: Write failing router tests, then add the routes**
 
 Extend `apps/auction-engine/src/presentation/auction-router.test.ts` (existing fake-deps style): `GET /api/reports/results?from=2026-06-01&to=2026-07-01` with an admin token returns `{ data: [...] }` and passes parsed `Date`s to the handler; missing/invalid `from`/`to` returns 400; `GET /api/reports/unsold` returns `{ data: [...] }`; both reject non-admin tokens. Run to see them fail, then in `auction-router.ts` (next to the dashboard route), add deps `getAuctionResults: GetAuctionResultsHandler` and `getUnsoldLots: GetUnsoldLotsHandler` and:
 
@@ -1569,12 +1569,12 @@ app.get('/api/reports/unsold', authMiddleware(deps.jwtPublicKey, { adminOnly: tr
 
 In `apps/auction-engine/src/main.ts`, construct both handlers with the existing `PostgresLotQueryRepository` instance and add them to the router deps.
 
-- [ ] **Step 7: Run all auction-engine tests and build**
+- [x] **Step 7: Run all auction-engine tests and build**
 
 Run: `pnpm turbo test --filter=auction-engine && pnpm turbo build --filter=auction-engine`
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/auction-engine/src
@@ -1596,7 +1596,7 @@ git commit -m "feat(auction-engine): auction results and unsold lots report endp
 - Consumes: `invoices` table (`amount NUMERIC`, `currency TEXT`, `status` incl. `'PAID'` — verified against `apps/payment/migrations/001_create_payment.sql`).
 - Produces (consumed by Task 11): `GET /api/payments/reports/revenue` (adminOnly) → `{ data: { byCurrency: Record<string, number> } }`.
 
-- [ ] **Step 1: Add the repository method**
+- [x] **Step 1: Add the repository method**
 
 In `apps/payment/src/domain/invoice-repository.ts` add to the interface:
 
@@ -1604,14 +1604,14 @@ In `apps/payment/src/domain/invoice-repository.ts` add to the interface:
 sumPaidAmountByCurrency(): Promise<Record<string, number>>;
 ```
 
-- [ ] **Step 2: Write a failing repository test**
+- [x] **Step 2: Write a failing repository test**
 
 Extend `apps/payment/src/infrastructure/postgres-invoice-repository.test.ts` in its existing style: rows `[{ currency: 'GBP', total: 1500 }, { currency: 'USD', total: 200 }]` from the fake Db produce `{ GBP: 1500, USD: 200 }`.
 
 Run: `pnpm turbo test --filter=payment -- postgres-invoice-repository`
 Expected: FAIL — method missing. (Any in-memory/fake implementations of `InvoiceRepository` in other tests must also gain the method — Liskov: implement it faithfully, e.g. sum over the fake's stored invoices, not a stub returning `{}`.)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `apps/payment/src/infrastructure/postgres-invoice-repository.ts`:
 
@@ -1645,7 +1645,7 @@ export class GetRevenueReportUseCase {
 }
 ```
 
-- [ ] **Step 4: Write a failing router test, then add the route**
+- [x] **Step 4: Write a failing router test, then add the route**
 
 Extend `apps/payment/src/presentation/payment-router.test.ts`: `GET /api/payments/reports/revenue` with an admin token returns `{ data: { byCurrency: { GBP: 1500 } } }`; non-admin gets 403. Run to see it fail, then in `payment-router.ts` (with the other `adminOnly` routes):
 
@@ -1658,7 +1658,7 @@ router.get('/api/payments/reports/revenue', adminOnly, async (c) => {
 
 Wire `getRevenueReport: new GetRevenueReportUseCase(invoiceRepo)` in `apps/payment/src/main.ts` (match the existing deps object).
 
-- [ ] **Step 5: Run all payment tests and build, then commit**
+- [x] **Step 5: Run all payment tests and build, then commit**
 
 Run: `pnpm turbo test --filter=payment && pnpm turbo build --filter=payment`
 Expected: PASS.
@@ -1686,7 +1686,7 @@ git commit -m "feat(payment): revenue-by-currency report endpoint"
   - `GET /admin/api/reports/unsold` → `{ data: Array<{ id: string; title: string | null; categoryName: string | null; highestBid: number | null }> }`
   - `GET /admin/api/reports/dashboard` → unchanged passthrough to the auction client.
 
-- [ ] **Step 1: Extend enrichment helpers**
+- [x] **Step 1: Extend enrichment helpers**
 
 In `apps/admin/src/presentation/enrichment.ts` add (same fail-soft style as the existing helpers):
 
@@ -1725,7 +1725,7 @@ export async function fetchCategoryNameMap(
 }
 ```
 
-- [ ] **Step 2: Write failing router tests**
+- [x] **Step 2: Write failing router tests**
 
 In `apps/admin/src/presentation/routers.test.ts`, add reports cases with fake clients:
 - `GET /admin/api/reports/auction-results?from=2026-06-01&to=2026-07-01`: auction client returns two rows (one SOLD with finalBid 1000/winner `u1`, one UNSOLD with finalBid null); catalogue returns lot titles/categoryIds and the category tree; user returns an email for `u1`. Assert the response has `rows` with `lotTitle`, `categoryName`, `winnerEmail` filled and `summary = { totalLots: 2, soldPercent: 50, totalValue: 1000 }`.
@@ -1734,7 +1734,7 @@ In `apps/admin/src/presentation/routers.test.ts`, add reports cases with fake cl
 
 Run: `pnpm turbo test --filter=admin` — expected FAIL.
 
-- [ ] **Step 3: Rewrite the router**
+- [x] **Step 3: Rewrite the router**
 
 Replace `buildReportsRouter` in `apps/admin/src/presentation/reports-router.ts`:
 
@@ -1846,7 +1846,7 @@ export function buildReportsRouter(clients: Clients): Hono {
 }
 ```
 
-- [ ] **Step 4: Fix the wiring**
+- [x] **Step 4: Fix the wiring**
 
 In `apps/admin/src/main.ts` line ~50, replace:
 
@@ -1860,7 +1860,7 @@ with:
 app.route('/', buildReportsRouter({ auction, payment, catalogue, user }));
 ```
 
-- [ ] **Step 5: Run tests and build, then commit**
+- [x] **Step 5: Run tests and build, then commit**
 
 Run: `pnpm turbo test --filter=admin && pnpm turbo build --filter=admin`
 Expected: PASS.
@@ -1881,7 +1881,7 @@ git commit -m "fix(admin): aggregate reports across auction, payment, catalogue 
 - Consumes: Task 11 response shapes via the `/api/admin/[...path]` proxy route.
 - Produces: a Reports page that shows an error message instead of crashing when any tab's request fails.
 
-- [ ] **Step 1: Replace the fetcher and add error states**
+- [x] **Step 1: Replace the fetcher and add error states**
 
 In `apps/admin-portal/src/app/admin/reports/page.tsx`:
 
@@ -1912,7 +1912,7 @@ function LoadError() {
 - `UnsoldLot` becomes `{ id: string; title: string | null; categoryName: string | null; highestBid: number | null }`; **remove the Reserve column** (reserve price is deliberately never stored in the auction read model — spec deviation approved in this plan); the Highest Bid cell renders `(row.original.highestBid ?? 0).toLocaleString()`.
 - Replace `data?.data.rows ?? []` with `data?.data?.rows ?? []`, `data?.data.summary` with `data?.data?.summary`, and `data.data.byCurrency` with `data?.data?.byCurrency ?? {}` (RevenueTab keeps its loading state via `if (!data && !error)`).
 
-- [ ] **Step 2: Verify build and tests, then commit**
+- [x] **Step 2: Verify build and tests, then commit**
 
 Run: `pnpm turbo build --filter=admin-portal && pnpm turbo test --filter=admin-portal`
 Expected: PASS.
@@ -1930,12 +1930,12 @@ git commit -m "fix(admin-portal): reports page handles request failures instead 
 - Modify: `docs/bugs-report.md` (tick fixed items)
 - Modify: `docs/superpowers/plans/2026-07-09-admin-portal-bug-fixes.md` (tick checklist)
 
-- [ ] **Step 1: Full build, tests and lint**
+- [x] **Step 1: Full build, tests and lint**
 
 Run: `pnpm turbo build && pnpm turbo test && pnpm lint`
 Expected: all green (lint includes the Clean Architecture layer checks).
 
-- [ ] **Step 2: Browser-drive every fixed flow** (Lesson: schema tests are not verification — drive the actual flow)
+- [x] **Step 2: Browser-drive every fixed flow** (Lesson: schema tests are not verification — drive the actual flow)
 
 With Docker Compose infrastructure and all services running (`docker compose up -d`, `pnpm turbo dev`), log into the admin portal and verify each flow end-to-end:
 
@@ -1949,7 +1949,7 @@ With Docker Compose infrastructure and all services running (`docker compose up 
 8. **Dashboard (Task 20):** all four cards show real numbers; stop the payment service and reload → Pending Invoices shows '—', the other cards keep their values.
 9. **Money path end-to-end (Tasks 16–18):** with all services up via Docker Compose, schedule a short auction, place a winning bid above reserve as a verified buyer, let it close → an invoice appears in the admin Invoices list with currency AUD; complete a Stripe test-mode payment → a fulfilment appears in the Fulfilments list; the RabbitMQ management UI (localhost:15672) shows the `payment.auction.closed` and `shipping.payment.received` queues bound to `carat.events` and consuming.
 
-- [ ] **Step 3: Update the bug report and commit**
+- [x] **Step 3: Update the bug report and commit**
 
 Mark each fixed item in `docs/bugs-report.md` (and fix its "Aution" → "Auction" typo — Boy Scout Rule), tick all checklist items in this plan, then:
 
@@ -1979,7 +1979,7 @@ git commit -m "chore: mark admin-portal bug-fix plan tasks complete"
   - `GET /admin/api/auctions/:lotId` → `{ data: { lotId; lotTitle: string | null; status; currentBid: number | null; bidCount; endAt; bids: Array<{ id; userId: string | null; amount; placedAt }> } }`
   - Engine `GET /api/auctions/:lotId/bids` with an ADMIN bearer token → bid rows include `userId`; without one, `userId` is omitted (privacy rule preserved for public callers).
 
-- [ ] **Step 1: Engine — failing repository test, then include `user_id` in bid history**
+- [x] **Step 1: Engine — failing repository test, then include `user_id` in bid history**
 
 Extend the `findBidHistory` test to assert rows carry `userId`. Then in `lot-query-repository.ts` change `BidRow` to:
 
@@ -2003,7 +2003,7 @@ userId: r['user_id'] as string,
 
 Run: `pnpm turbo test --filter=auction-engine -- postgres-lot-query-repository` — PASS.
 
-- [ ] **Step 2: Engine — failing router test, then conditional `userId` serialisation**
+- [x] **Step 2: Engine — failing router test, then conditional `userId` serialisation**
 
 Router tests: bids response includes `userId` when the request carries a valid ADMIN token; excludes it otherwise. Then in `auction-router.ts` `GET /api/auctions/:lotId/bids`:
 
@@ -2041,7 +2041,7 @@ git add apps/auction-engine/src
 git commit -m "feat(auction-engine): expose bidder ids in bid history to admin callers"
 ```
 
-- [ ] **Step 3: Admin Service — failing proxy tests, then enrich list and detail**
+- [x] **Step 3: Admin Service — failing proxy tests, then enrich list and detail**
 
 Tests: `GET /admin/api/auctions` maps engine rows to `{ lotId, lotTitle, status, currentBid, endAt }` using the catalogue client; `GET /admin/api/auctions/:lotId` embeds `bids` fetched from `/api/auctions/:lotId/bids?pageSize=100`. Then rewrite the two GET routes in `apps/admin/src/presentation/auctions-router.ts`:
 
@@ -2096,7 +2096,7 @@ export function buildAuctionsRouter(clients: Clients): Hono {
 
 Update `apps/admin/src/main.ts`: `buildAuctionsRouter({ auction, catalogue })`.
 
-- [ ] **Step 4: Portal — align remaining types**
+- [x] **Step 4: Portal — align remaining types**
 
 - `apps/admin-portal/src/app/admin/auctions/[lotId]/page.tsx`: drop `autoExtendWindowMinutes`/`autoExtendDurationMinutes` from `AuctionDetail` (never returned, never rendered); `lotTitle` becomes `string | null`, heading renders `auction.lotTitle ?? auction.lotId`.
 - `apps/admin-portal/src/app/admin/auctions/[lotId]/_bids-table.tsx`: `userId` becomes `string | null` (`userId?: string` from the engine when the proxy token isn't admin — it always is here, but guard anyway); cell renders `row.original.userId ?? '—'`.
@@ -2121,7 +2121,7 @@ git commit -m "fix(admin): enrich auction list and detail so the portal contract
 - Consumes: `adminApi.get<{ data: Lot[] }>('/admin/api/lots')` (`Lot = { id, title, categoryName, status, createdAt }` from `lots/_table.tsx`); `scheduleAuction` action (unchanged); `searchParams` for the pre-selected lot.
 - Produces: `ScheduleAuctionForm({ lots, preselectedLotId }: { lots: Array<{ id: string; title: string }>; preselectedLotId?: string })`.
 
-- [ ] **Step 1: Move the form to a client component with a lot Select**
+- [x] **Step 1: Move the form to a client component with a lot Select**
 
 Create `_schedule-form.tsx`: copy the current form body, then
 - replace the hidden `lotId` input + `LotIdInput`/`Suspense` with a visible Select:
@@ -2141,7 +2141,7 @@ Create `_schedule-form.tsx`: copy the current form body, then
 
 - add the `FieldError` helper and render it for **every** field (`lotId`, `startAt`, `endAt`, `reservePrice`, `minBidIncrement`, `autoExtendWindowMinutes`, `autoExtendDurationMinutes`) plus the general `state.ok === false && !state.errors` server-error block (same as Task 2 Step 5).
 
-- [ ] **Step 2: Convert the page to a server component**
+- [x] **Step 2: Convert the page to a server component**
 
 Replace `apps/admin-portal/src/app/admin/auctions/new/page.tsx`:
 
@@ -2169,7 +2169,7 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
 }
 ```
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 Run: `pnpm turbo build --filter=admin-portal && pnpm turbo test --filter=admin-portal` — PASS.
 
@@ -2191,15 +2191,15 @@ git commit -m "fix(admin-portal): lot picker and full error rendering on the sch
 **Interfaces:**
 - Produces: `EventSubscriber.subscribe<T>(queue: string, handler: (payload: T) => Promise<void>, routingKey: string): Promise<void>` — routing key now **required**; every queue is always bound to `carat.events`.
 
-- [ ] **Step 1: Failing test — subscribe always binds**
+- [x] **Step 1: Failing test — subscribe always binds**
 
 In `packages/shared-events/src/subscriber.test.ts`, update/add: calling `subscribe('q', handler, 'some.key')` asserts `bindQueue('q', 'carat.events', 'some.key')` was called; the two-argument form no longer compiles (delete tests that rely on it).
 
-- [ ] **Step 2: Make `routingKey` required**
+- [x] **Step 2: Make `routingKey` required**
 
 In `subscriber.ts` change the signature to `routingKey: string` (drop the `?`) and remove the `if (routingKey)` guard — always `bindQueue`. Build the workspace to surface every consumer that now fails to compile: `pnpm turbo build` — expected failures in `apps/payment` and `apps/shipping` only (notification already passes keys).
 
-- [ ] **Step 3: Fix the two consumers**
+- [x] **Step 3: Fix the two consumers**
 
 `apps/payment/src/infrastructure/auction-closed-consumer.ts`:
 
@@ -2223,11 +2223,11 @@ await subscriber.subscribe<PaymentReceivedPayload>(
 
 (Queue names switch to the dotted form so they match `definitions.json`.)
 
-- [ ] **Step 4: Fix the exchange in definitions.json**
+- [x] **Step 4: Fix the exchange in definitions.json**
 
 In `infra/rabbitmq/definitions.json` replace every `"platform.events"` with `"carat.events"` (the exchange declaration and all 12 bindings). Runtime code already asserts/binds `carat.events`, so this makes the pre-provisioned infra match reality instead of contradicting it.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run: `pnpm turbo build && pnpm turbo test`
 Expected: PASS across the workspace.
@@ -2252,7 +2252,7 @@ git commit -m "fix(events): require queue bindings and align queue/exchange name
 - Consumes: `BidPlacedPayload`, `AuctionClosingSoonPayload`, `AuctionClosedPayload` from `@carat-room/shared-types` (the canonical shapes — see `packages/shared-types/src/events/auction-events.ts`).
 - Produces: engine events that actually match those types; invoices created with `currency = process.env['DEFAULT_CURRENCY'] ?? 'AUD'`.
 
-- [ ] **Step 1: Type the publisher against shared payloads**
+- [x] **Step 1: Type the publisher against shared payloads**
 
 Change `AuctionEventPublisher` (application port) and `RabbitMQAuctionPublisher` so each method takes the shared payload type directly:
 
@@ -2268,7 +2268,7 @@ export interface AuctionEventPublisher {
 
 The infrastructure implementation forwards the payload verbatim to `publisher.publish(...)` — no more hand-built inline objects that can drift. The compiler now forces every call site to supply the missing fields.
 
-- [ ] **Step 2: Fix the call sites (compiler-guided)**
+- [x] **Step 2: Fix the call sites (compiler-guided)**
 
 Run `pnpm turbo build --filter=auction-engine` and fix each error:
 - **`close-auction-handler.ts`** — supply `highestBidId` and `highestAmount` (both available on the aggregate's `AuctionClosedPayload` domain event: `highest_bid_id`, `highest_amount`) and `closedAt: new Date().toISOString()`.
@@ -2292,7 +2292,7 @@ async findBidderIds(lotId: string): Promise<string[]> {
 
 Write the failing test for `findBidderIds` first, in the existing repository test style.
 
-- [ ] **Step 3: Fix the payment consumer (default currency AUD)**
+- [x] **Step 3: Fix the payment consumer (default currency AUD)**
 
 In `apps/payment/src/infrastructure/auction-closed-consumer.ts`, delete the local `AuctionClosedPayload` interface, import the shared one, and:
 
@@ -2316,7 +2316,7 @@ await createInvoiceUseCase.execute({
 
 Add a consumer test: an `auction.closed` event with `reserveMet: true` creates an invoice with `currency: 'AUD'` and `amount = highestAmount`; `reserveMet: false` creates nothing.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `pnpm turbo build && pnpm turbo test`
 Expected: PASS (notification-service compiles unchanged — it already consumes the shared types).
@@ -2335,7 +2335,7 @@ git commit -m "fix(auction-engine,payment): honour shared event contracts; invoi
 - Modify: `apps/admin/src/main.ts` (env var name + fallback host)
 - Modify: `docker-compose.yml` (+ mirror any equivalent entries in `docker-compose.test.yml` and `.env.example` if they exist — check both)
 
-- [ ] **Step 1: Shipping reads `RABBITMQ_URL`**
+- [x] **Step 1: Shipping reads `RABBITMQ_URL`**
 
 In `apps/shipping/src/main.ts` replace `process.env.AMQP_URL` with `process.env.RABBITMQ_URL` (variable name `amqpUrl` can stay; update the error message listing required vars). In `docker-compose.yml` add to `shipping-service.environment`:
 
@@ -2343,7 +2343,7 @@ In `apps/shipping/src/main.ts` replace `process.env.AMQP_URL` with `process.env.
 JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
 ```
 
-- [ ] **Step 2: Admin service reaches the auction engine**
+- [x] **Step 2: Admin service reaches the auction engine**
 
 In `apps/admin/src/main.ts` line ~22 replace:
 
@@ -2366,11 +2366,11 @@ ADMIN_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/adm
 
 and add `postgres`/`rabbitmq` `depends_on` conditions matching the other services. Verify the `admin` database is created by the postgres init script (`tests/db-init/init.sql` / `infra` init) — if not, add it there too.
 
-- [ ] **Step 3: Sweep for other env drift**
+- [x] **Step 3: Sweep for other env drift**
 
 Grep every service's `main.ts` for `process.env` and diff against its `docker-compose.yml` block — fix any further mismatches the same way (compose is the source of truth for names).
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run: `pnpm turbo build && pnpm turbo test`, then `docker compose config` (validates the YAML and interpolation).
 
@@ -2399,7 +2399,7 @@ git commit -m "fix(infra): align service env var names with docker-compose"
   - `GET /admin/api/enquiries?status=` (adminOnly) → `{ data: EnquiryDto[] }` where `EnquiryDto = { id: string; category: string; artistMaker: string | null; description: string; photoKeys: string[]; name: string; email: string; status: 'NEW' | 'RESPONDED' | 'CLOSED'; createdAt: string }`
   - `PATCH /admin/api/enquiries/:id/status` body `{ status: 'RESPONDED' | 'CLOSED' }` → `{ data: { id } }`; `404` unknown id; `400` bad status.
 
-- [ ] **Step 1: Create the table**
+- [x] **Step 1: Create the table**
 
 `apps/admin/migrations/001_create_admin.sql`:
 
@@ -2421,7 +2421,7 @@ CREATE INDEX valuation_enquiries_status_idx ON valuation_enquiries (status, crea
 
 Mirror the same DDL into `tests/db-init/init.sql` (in the admin DB section; create the section if the admin DB has none).
 
-- [ ] **Step 2: Failing repository tests, then extend the repository**
+- [x] **Step 2: Failing repository tests, then extend the repository**
 
 Tests (existing fake-Db style): `findAll({ status: 'NEW' })` filters by status; `findAll({})` returns all ordered newest-first; `updateStatus(id, 'RESPONDED')` issues an UPDATE and returns false when no row matched. Then:
 
@@ -2452,7 +2452,7 @@ async updateStatus(id: string, status: EnquiryStatus): Promise<boolean> {
 
 with `mapEnquiryRow` translating snake_case columns to the DTO (`artist_maker` → `artistMaker`, `photo_keys` → `photoKeys`, `created_at` → `createdAt`).
 
-- [ ] **Step 3: Failing router tests, then add admin endpoints**
+- [x] **Step 3: Failing router tests, then add admin endpoints**
 
 The existing enquiries routes are public (customer submission) — the new ones are adminOnly. Extend `Deps` with the repository (or two use-case functions following the file's function-style deps), then:
 
@@ -2475,14 +2475,14 @@ router.patch('/admin/api/enquiries/:id/status', adminOnly, async (c) => {
 
 where `adminOnly = authMiddleware(jwtPublicKey, { adminOnly: true })` (import as in the other routers) and `main.ts` wires `listEnquiries` / `updateEnquiryStatus` to the repository methods.
 
-- [ ] **Step 4: Portal page**
+- [x] **Step 4: Portal page**
 
 - `_table.tsx`: columns Name, Email, Category, Status (`StatusBadge`), Received (`createdAt` date), and an actions cell with "Mark Responded" / "Close" buttons calling the server actions (buttons hidden when the status already matches).
 - `_actions.ts`: `updateEnquiryStatus(id: string, status: 'RESPONDED' | 'CLOSED')` → `adminApi.patch('/admin/api/enquiries/${id}/status', { status })` + `revalidatePath('/admin/enquiries')`, returning `{ ok, error? }` like `categories/_actions.ts`.
 - `page.tsx`: server component fetching `adminApi.get<{ data: EnquiryDto[] }>('/admin/api/enquiries')`, rendering an expandable description/photos detail per row or a simple table (keep to the DataTable pattern used everywhere else).
 - `sidebar.tsx`: add `{ href: '/admin/enquiries', label: 'Enquiries', icon: MessageSquare }` (import `MessageSquare` from `lucide-react`).
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run: `pnpm turbo build --filter=admin --filter=admin-portal && pnpm turbo test --filter=admin --filter=admin-portal`
 
@@ -2509,7 +2509,7 @@ git commit -m "feat(admin): valuation enquiries table, endpoints and admin UI"
   - Engine `GET /api/reports/dashboard` → `{ data: { activeAuctions: number; endingSoon: number } }` (breaking change to this internal endpoint; the admin service is its only consumer and is updated in the same task).
   - Admin `GET /admin/api/reports/dashboard` → `{ data: { activeAuctions: number | null; endingSoon: number | null; pendingInvoices: number | null; pendingFulfilments: number | null } }` — `null` when that service is unreachable (fail-soft, same philosophy as `enrichment.ts`).
 
-- [ ] **Step 1: Payment count (TDD)**
+- [x] **Step 1: Payment count (TDD)**
 
 Failing repo test: `countAwaitingPayment()` returns the fake Db's count. Implement:
 
@@ -2530,7 +2530,7 @@ async countAwaitingPayment(): Promise<number> {
 
 Route (next to the Task 10 revenue route, adminOnly): `GET /api/payments/reports/pending-count` → `c.json({ data: { count } })`. Update in-memory test doubles of `InvoiceRepository` faithfully (count their stored invoices).
 
-- [ ] **Step 2: Shipping count (TDD)**
+- [x] **Step 2: Shipping count (TDD)**
 
 ```ts
 // domain/fulfilment-repository.ts
@@ -2558,11 +2558,11 @@ router.get('/fulfilments/pending-count', async (c) => {
 
 wired in `main.ts` as `countPendingFulfilments: () => repo.countByStatuses(['PENDING_CHOICE', 'PENDING_DISPATCH'])`.
 
-- [ ] **Step 3: Slim the engine's dashboard stats**
+- [x] **Step 3: Slim the engine's dashboard stats**
 
 Remove `pendingInvoices`/`pendingFulfilments` from `DashboardStats`, the handler, the repository implementation and their tests — the engine no longer fabricates other services' numbers.
 
-- [ ] **Step 4: Aggregate in the admin reports router**
+- [x] **Step 4: Aggregate in the admin reports router**
 
 Replace the dashboard passthrough (Task 11's version) with fail-soft aggregation:
 
@@ -2597,7 +2597,7 @@ r.get('/admin/api/reports/dashboard', auth, async c =>
 
 `buildReportsRouter`'s `Clients` gains `shipping: ServiceClient`; `main.ts` passes it: `buildReportsRouter({ auction, payment, catalogue, user, shipping })`. Router tests: all healthy → four numbers; payment client throwing → `pendingInvoices: null`, others intact.
 
-- [ ] **Step 5: Portal renders '—' for null**
+- [x] **Step 5: Portal renders '—' for null**
 
 In `dashboard/page.tsx`, `DashboardStats` fields become `number | null` and the card value renders:
 
@@ -2605,7 +2605,7 @@ In `dashboard/page.tsx`, `DashboardStats` fields become `number | null` and the 
 <p className='text-3xl font-bold'>{value ?? '—'}</p>
 ```
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run: `pnpm turbo build && pnpm turbo test`
 
