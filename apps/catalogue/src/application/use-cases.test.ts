@@ -8,13 +8,14 @@ import { RenameCategoryUseCase } from './rename-category-use-case';
 import { DeleteCategoryUseCase } from './delete-category-use-case';
 import { ConfirmImageUploadUseCase } from './confirm-image-upload-use-case';
 import { CreateLotUseCase } from './create-lot-use-case';
+import { UpdateLotUseCase } from './update-lot-use-case';
 import { Lot, LotCondition } from '../domain/lot';
 import { Category } from '../domain/category';
 import { LotRepository, PaginatedResult } from '../domain/lot-repository';
 import { CategoryRepository } from '../domain/category-repository';
 import { SearchRepository, LotSearchResult } from '../domain/search-repository';
 import { ImageStorage } from './image-storage';
-import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError } from '../domain/errors';
+import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError } from '../domain/errors';
 
 function buildLot(): Lot {
   return new Lot({
@@ -93,6 +94,43 @@ describe('CreateLotUseCase', () => {
     const mockRepo: LotRepository = { findById: vi.fn(), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
 
     await new CreateLotUseCase(mockRepo).execute({ title: 'Diamond Ring', status: 'INACTIVE' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.status).toBe('INACTIVE');
+  });
+});
+
+describe('UpdateLotUseCase', () => {
+  it('should_throw_when_lotDoesNotExist', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(null), findAll: vi.fn(), save: vi.fn() };
+
+    await expect(new UpdateLotUseCase(mockRepo).execute('nonexistent', { title: 'New Title' }))
+      .rejects.toThrow(LotNotFoundError);
+    expect(mockRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('should_applyOnlyProvidedFields_when_partialUpdate', async () => {
+    const mockRepo: LotRepository = {
+      findById: vi.fn().mockResolvedValue(buildLot()),
+      findAll: vi.fn(),
+      save: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await new UpdateLotUseCase(mockRepo).execute('lot-1', { title: 'Renamed Ring' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.title).toBe('Renamed Ring');
+    expect(savedLot.estimatedValue).toBe(3000);
+  });
+
+  it('should_updateStatus_when_provided', async () => {
+    const mockRepo: LotRepository = {
+      findById: vi.fn().mockResolvedValue(buildLot()),
+      findAll: vi.fn(),
+      save: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await new UpdateLotUseCase(mockRepo).execute('lot-1', { status: 'INACTIVE' });
 
     const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
     expect(savedLot.status).toBe('INACTIVE');

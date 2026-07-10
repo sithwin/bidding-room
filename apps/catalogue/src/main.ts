@@ -13,6 +13,7 @@ import { ListCategoriesUseCase } from './application/list-categories-use-case';
 import { RequestImageUploadUseCase } from './application/request-image-upload-use-case';
 import { ConfirmImageUploadUseCase } from './application/confirm-image-upload-use-case';
 import { CreateLotUseCase } from './application/create-lot-use-case';
+import { UpdateLotUseCase } from './application/update-lot-use-case';
 import { CreateCategoryUseCase } from './application/create-category-use-case';
 import { RenameCategoryUseCase } from './application/rename-category-use-case';
 import { DeleteCategoryUseCase } from './application/delete-category-use-case';
@@ -21,7 +22,8 @@ import { buildAuctionRouter } from './presentation/auction-router';
 import { buildFacetsRouter } from './presentation/facets-router';
 import { PostgresAuctionRepository } from './infrastructure/postgres-auction-repository';
 import { PostgresFacetRepository } from './infrastructure/postgres-facet-repository';
-import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError } from './domain/errors';
+import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError } from './domain/errors';
+import { LotCondition } from './domain/lot';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
@@ -53,6 +55,7 @@ const useCases = {
   requestImageUpload: new RequestImageUploadUseCase(imageStorage),
   confirmImageUpload: new ConfirmImageUploadUseCase(lotRepository, imageStorage),
   createLot: new CreateLotUseCase(lotRepository),
+  updateLot: new UpdateLotUseCase(lotRepository),
   createCategory: new CreateCategoryUseCase(categoryRepository),
   renameCategory: new RenameCategoryUseCase(categoryRepository),
   deleteCategory: new DeleteCategoryUseCase(categoryRepository),
@@ -84,6 +87,36 @@ app.post('/api/lots', authMiddleware(jwtPublicKey, { adminOnly: true }), async c
     createdBy: jwtPayload.userId,
   });
   return c.json({ data: result }, 201);
+});
+
+app.patch('/api/lots/:id', authMiddleware(jwtPublicKey, { adminOnly: true }), async c => {
+  const body = await c.req.json() as {
+    title?: string;
+    description?: string;
+    categoryId?: string;
+    condition?: string;
+    estimatedValue?: number;
+    status?: string;
+  };
+  if (body.status !== undefined && body.status !== 'ACTIVE' && body.status !== 'INACTIVE') {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'status must be ACTIVE or INACTIVE' } }, 400);
+  }
+  try {
+    await useCases.updateLot.execute(c.req.param('id'), {
+      title: body.title,
+      description: body.description,
+      categoryId: body.categoryId,
+      condition: body.condition as LotCondition | undefined,
+      estimatedValue: body.estimatedValue,
+      status: body.status as 'ACTIVE' | 'INACTIVE' | undefined,
+    });
+    return c.json({ data: null });
+  } catch (err) {
+    if (err instanceof LotNotFoundError) {
+      return c.json({ error: { code: 'NOT_FOUND', message: 'Lot not found' } }, 404);
+    }
+    throw err;
+  }
 });
 
 app.post('/api/categories', authMiddleware(jwtPublicKey, { adminOnly: true }), async c => {
