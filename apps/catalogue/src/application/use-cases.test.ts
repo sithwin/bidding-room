@@ -3,6 +3,9 @@ import { GetLotUseCase } from './get-lot-use-case';
 import { ListLotsUseCase } from './list-lots-use-case';
 import { SearchLotsUseCase } from './search-lots-use-case';
 import { ListCategoriesUseCase } from './list-categories-use-case';
+import { CreateCategoryUseCase } from './create-category-use-case';
+import { RenameCategoryUseCase } from './rename-category-use-case';
+import { DeleteCategoryUseCase } from './delete-category-use-case';
 import { ConfirmImageUploadUseCase } from './confirm-image-upload-use-case';
 import { Lot, LotCondition } from '../domain/lot';
 import { Category } from '../domain/category';
@@ -10,6 +13,7 @@ import { LotRepository, PaginatedResult } from '../domain/lot-repository';
 import { CategoryRepository } from '../domain/category-repository';
 import { SearchRepository, LotSearchResult } from '../domain/search-repository';
 import { ImageStorage } from './image-storage';
+import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError } from '../domain/errors';
 
 function buildLot(): Lot {
   return new Lot({
@@ -106,12 +110,89 @@ describe('ListCategoriesUseCase', () => {
       findAll: vi.fn().mockResolvedValue([buildCategory()]),
       findBySlug: vi.fn(),
       findById: vi.fn(),
+      create: vi.fn(),
+      updateName: vi.fn(),
+      delete: vi.fn(),
     };
 
     const result = await new ListCategoriesUseCase(mockRepo).execute();
 
     expect(result).toHaveLength(1);
     expect(result[0].slug).toBe('rings');
+  });
+});
+
+function buildCategoryRepoMock(overrides: Partial<CategoryRepository> = {}): CategoryRepository {
+  return {
+    findAll: vi.fn(),
+    findBySlug: vi.fn(),
+    findById: vi.fn(),
+    create: vi.fn(),
+    updateName: vi.fn(),
+    delete: vi.fn(),
+    ...overrides,
+  };
+}
+
+describe('CreateCategoryUseCase', () => {
+  it('should_createCategoryWithTrimmedFields_when_valid', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    const result = await new CreateCategoryUseCase(mockRepo).execute({ name: ' Rings ', slug: ' rings ' });
+
+    expect(result.name).toBe('Rings');
+    expect(result.slug).toBe('rings');
+    expect(result.parentId).toBeNull();
+    expect(mockRepo.create).toHaveBeenCalledWith(result);
+  });
+
+  it('should_setParentId_when_provided', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    const result = await new CreateCategoryUseCase(mockRepo).execute({ name: 'Gold Rings', slug: 'gold-rings', parentId: 'cat-1' });
+
+    expect(result.parentId).toBe('cat-1');
+  });
+
+  it('should_propagate_when_repositoryThrowsSlugConflict', async () => {
+    const mockRepo = buildCategoryRepoMock({ create: vi.fn().mockRejectedValue(new CategorySlugConflictError('rings')) });
+
+    await expect(new CreateCategoryUseCase(mockRepo).execute({ name: 'Rings', slug: 'rings' }))
+      .rejects.toThrow(CategorySlugConflictError);
+  });
+});
+
+describe('RenameCategoryUseCase', () => {
+  it('should_renameWithTrimmedName', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    await new RenameCategoryUseCase(mockRepo).execute('cat-1', ' New Name ');
+
+    expect(mockRepo.updateName).toHaveBeenCalledWith('cat-1', 'New Name');
+  });
+
+  it('should_propagate_when_categoryNotFound', async () => {
+    const mockRepo = buildCategoryRepoMock({ updateName: vi.fn().mockRejectedValue(new CategoryNotFoundError('cat-1')) });
+
+    await expect(new RenameCategoryUseCase(mockRepo).execute('cat-1', 'New Name'))
+      .rejects.toThrow(CategoryNotFoundError);
+  });
+});
+
+describe('DeleteCategoryUseCase', () => {
+  it('should_deleteCategory', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    await new DeleteCategoryUseCase(mockRepo).execute('cat-1');
+
+    expect(mockRepo.delete).toHaveBeenCalledWith('cat-1');
+  });
+
+  it('should_propagate_when_categoryHasLots', async () => {
+    const mockRepo = buildCategoryRepoMock({ delete: vi.fn().mockRejectedValue(new CategoryHasLotsError('cat-1')) });
+
+    await expect(new DeleteCategoryUseCase(mockRepo).execute('cat-1'))
+      .rejects.toThrow(CategoryHasLotsError);
   });
 });
 

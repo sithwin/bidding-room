@@ -13,11 +13,15 @@ import { ListCategoriesUseCase } from './application/list-categories-use-case';
 import { RequestImageUploadUseCase } from './application/request-image-upload-use-case';
 import { ConfirmImageUploadUseCase } from './application/confirm-image-upload-use-case';
 import { CreateLotUseCase } from './application/create-lot-use-case';
+import { CreateCategoryUseCase } from './application/create-category-use-case';
+import { RenameCategoryUseCase } from './application/rename-category-use-case';
+import { DeleteCategoryUseCase } from './application/delete-category-use-case';
 import { buildCatalogueRouter } from './presentation/catalogue-router';
 import { buildAuctionRouter } from './presentation/auction-router';
 import { buildFacetsRouter } from './presentation/facets-router';
 import { PostgresAuctionRepository } from './infrastructure/postgres-auction-repository';
 import { PostgresFacetRepository } from './infrastructure/postgres-facet-repository';
+import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError } from './domain/errors';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
@@ -49,6 +53,9 @@ const useCases = {
   requestImageUpload: new RequestImageUploadUseCase(imageStorage),
   confirmImageUpload: new ConfirmImageUploadUseCase(lotRepository, imageStorage),
   createLot: new CreateLotUseCase(lotRepository),
+  createCategory: new CreateCategoryUseCase(categoryRepository),
+  renameCategory: new RenameCategoryUseCase(categoryRepository),
+  deleteCategory: new DeleteCategoryUseCase(categoryRepository),
 };
 
 const app = new Hono<AppEnv>();
@@ -77,6 +84,56 @@ app.post('/api/lots', authMiddleware(jwtPublicKey, { adminOnly: true }), async c
     createdBy: jwtPayload.userId,
   });
   return c.json({ data: result }, 201);
+});
+
+app.post('/api/categories', authMiddleware(jwtPublicKey, { adminOnly: true }), async c => {
+  const body = await c.req.json() as { name?: string; slug?: string; parentId?: string };
+  if (!body.name?.trim()) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'name is required' } }, 400);
+  }
+  if (!body.slug?.trim()) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'slug is required' } }, 400);
+  }
+  try {
+    const category = await useCases.createCategory.execute({ name: body.name, slug: body.slug, parentId: body.parentId });
+    return c.json({ data: category }, 201);
+  } catch (err) {
+    if (err instanceof CategorySlugConflictError) {
+      return c.json({ error: { code: 'SLUG_CONFLICT', message: err.message } }, 409);
+    }
+    throw err;
+  }
+});
+
+app.patch('/api/categories/:id', authMiddleware(jwtPublicKey, { adminOnly: true }), async c => {
+  const body = await c.req.json() as { name?: string };
+  if (!body.name?.trim()) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'name is required' } }, 400);
+  }
+  try {
+    await useCases.renameCategory.execute(c.req.param('id'), body.name);
+    return c.json({ data: null });
+  } catch (err) {
+    if (err instanceof CategoryNotFoundError) {
+      return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
+    }
+    throw err;
+  }
+});
+
+app.delete('/api/categories/:id', authMiddleware(jwtPublicKey, { adminOnly: true }), async c => {
+  try {
+    await useCases.deleteCategory.execute(c.req.param('id'));
+    return c.json({ data: null });
+  } catch (err) {
+    if (err instanceof CategoryNotFoundError) {
+      return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
+    }
+    if (err instanceof CategoryHasLotsError) {
+      return c.json({ error: { code: 'CATEGORY_HAS_LOTS', message: err.message } }, 409);
+    }
+    throw err;
+  }
 });
 
 app.route('/', buildCatalogueRouter(useCases));
