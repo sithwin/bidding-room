@@ -6,7 +6,9 @@ import { EditLotForm } from './_edit-form';
 
 interface LotImage {
   id: string;
-  publicUrl: string;
+  url: string;
+  thumbnailUrl: string;
+  displayOrder: number;
   isPrimary: boolean;
 }
 
