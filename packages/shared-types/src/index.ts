@@ -52,3 +52,10 @@ export {
   adminUpdateUserRequestSchema, usersQuery,
 } from './api/user-auth.js';
 export type { Me, AdminUserSummary, AdminUserDetail } from './api/user-auth.js';
+export {
+  auctionLotStatusValueSchema, auctionLotStatusSchema, lotStatusResponseSchema,
+  lotStatusListResponseSchema, auctionBidSchema, bidListResponseSchema, placeBidRequestSchema,
+  placeBidResponseSchema, scheduleAuctionRequestSchema, scheduleAuctionResponseSchema,
+  dashboardStatsResponseSchema, auctionsListQuery, bidHistoryQuery,
+} from './api/auction-engine.js';
+export type { AuctionLotStatus, AuctionBid } from './api/auction-engine.js';

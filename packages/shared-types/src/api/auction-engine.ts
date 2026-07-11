@@ -1,0 +1,79 @@
+import { z } from 'zod';
+import { envelope } from './envelope.js';
+
+// Transcribed from apps/auction-engine/src/presentation/auction-router.ts
+// (serializeLotStatus and the bid-history mapping). List meta is { page, total }.
+// SSE stream payloads are out of contract scope by design.
+//
+// Named AuctionLotStatus (not LotStatus) to avoid colliding with the domain
+// LotStatus export in ./domain/auction.ts, which describes a wider shape.
+
+export const auctionLotStatusValueSchema = z.enum([
+  'SCHEDULED', 'LIVE', 'CLOSING', 'SOLD', 'UNSOLD', 'CANCELLED',
+]);
+
+export const auctionLotStatusSchema = z.object({
+  lotId: z.string(),
+  status: auctionLotStatusValueSchema,
+  currentHighestBid: z.number().nullable(),
+  bidCount: z.number(),
+  endAt: z.string(), // ISO-8601 UTC
+});
+
+const pageMetaSchema = z.object({ page: z.number(), total: z.number() });
+
+export const lotStatusResponseSchema = envelope(auctionLotStatusSchema);
+export const lotStatusListResponseSchema = z.object({
+  data: z.array(auctionLotStatusSchema),
+  meta: pageMetaSchema,
+});
+
+export const auctionBidSchema = z.object({
+  id: z.string(),
+  userId: z.string().optional(), // serialised only for admin callers
+  amount: z.number(),
+  placedAt: z.string(), // ISO-8601 UTC
+});
+export const bidListResponseSchema = z.object({
+  data: z.array(auctionBidSchema),
+  meta: pageMetaSchema,
+});
+
+export const placeBidRequestSchema = z.object({ amount: z.number() });
+export const placeBidResponseSchema = envelope(z.object({
+  bidId: z.string(),
+  amount: z.number(),
+  lotId: z.string(),
+}));
+
+export const scheduleAuctionRequestSchema = z.object({
+  lotId: z.string(),
+  startAt: z.string(),
+  endAt: z.string(),
+  reservePrice: z.number().optional(),
+  minBidIncrement: z.number().optional(),
+  autoExtendWindowMinutes: z.number().optional(),
+  autoExtendDurationMinutes: z.number().optional(),
+});
+export const scheduleAuctionResponseSchema = envelope(z.object({ lotId: z.string() }));
+
+export const dashboardStatsResponseSchema = envelope(z.object({
+  activeAuctions: z.number(),
+  endingSoon: z.number(),
+}));
+
+export type AuctionLotStatus = z.infer<typeof auctionLotStatusSchema>;
+export type AuctionBid = z.infer<typeof auctionBidSchema>;
+
+/** Query builder for GET /api/auctions. Router reads exactly page and pageSize. */
+export function auctionsListQuery(params: { page?: number; pageSize?: number }): URLSearchParams {
+  const query = new URLSearchParams();
+  if (params.page !== undefined) query.set('page', String(params.page));
+  if (params.pageSize !== undefined) query.set('pageSize', String(params.pageSize));
+  return query;
+}
+
+/** Query builder for GET /api/auctions/:lotId/bids. Router reads exactly page and pageSize. */
+export function bidHistoryQuery(params: { page?: number; pageSize?: number }): URLSearchParams {
+  return auctionsListQuery(params);
+}
