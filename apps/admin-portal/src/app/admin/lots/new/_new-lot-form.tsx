@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createLot } from '../_actions';
 import { LOT_CONDITIONS } from '@/lib/schemas/lot.schema';
+import { LOT_ACTIVE_STATUSES } from '@carat-room/shared-types';
 import type { CategoryOption } from '@/lib/categories';
 
 function SubmitButton() {
@@ -71,6 +72,16 @@ export function NewLotForm({ categories }: { categories: CategoryOption[] }) {
         <Label htmlFor='estimatedValue'>Estimated Value</Label>
         <Input id='estimatedValue' name='estimatedValue' type='number' min={0} step={0.01} />
         <FieldError messages={state.errors?.estimatedValue} />
+      </div>
+      <div className='space-y-1'>
+        <Label htmlFor='status'>Status</Label>
+        <Select name='status' defaultValue='ACTIVE'>
+          <SelectTrigger id='status'><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {LOT_ACTIVE_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <FieldError messages={state.errors?.status} />
       </div>
       <SubmitButton />
     </form>

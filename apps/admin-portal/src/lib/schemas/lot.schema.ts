@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { LOT_ACTIVE_STATUSES } from '@carat-room/shared-types';
 
 // Mirrors apps/catalogue LotCondition — FAIR is not a valid catalogue condition
 export const LOT_CONDITIONS = ['NEW', 'EXCELLENT', 'VERY_GOOD', 'GOOD'] as const;
@@ -10,6 +11,7 @@ export const LotFormSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   categoryId: z.string().uuid('Select a category'),
   condition: LotCondition,
+  status: z.enum(LOT_ACTIVE_STATUSES),
   estimatedValue: z.number({ invalid_type_error: 'Enter a number' }).positive('Must be positive'),
 });
 

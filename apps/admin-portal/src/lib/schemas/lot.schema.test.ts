@@ -8,6 +8,7 @@ describe('LotFormSchema', () => {
     categoryId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     condition: 'EXCELLENT' as const,
     estimatedValue: 5000,
+    status: 'ACTIVE' as const,
   };
 
   it('should_pass_when_allFieldsAreValid', () => {

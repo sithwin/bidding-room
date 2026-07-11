@@ -13,6 +13,7 @@ export async function createLot(_prev: ActionState, formData: FormData): Promise
     categoryId: formData.get('categoryId'),
     condition: formData.get('condition'),
     estimatedValue: Number(formData.get('estimatedValue')),
+    status: formData.get('status'),
   };
 
   const parsed = LotFormSchema.safeParse(raw);
@@ -35,6 +36,7 @@ export async function updateLot(id: string, _prev: ActionState, formData: FormDa
     categoryId: formData.get('categoryId'),
     condition: formData.get('condition'),
     estimatedValue: Number(formData.get('estimatedValue')),
+    status: formData.get('status'),
   };
 
   const parsed = LotFormSchema.safeParse(raw);

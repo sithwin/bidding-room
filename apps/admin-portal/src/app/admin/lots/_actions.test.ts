@@ -24,6 +24,7 @@ describe('createLot', () => {
     fd.append('categoryId', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
     fd.append('condition', 'EXCELLENT');
     fd.append('estimatedValue', '3000');
+    fd.append('status', 'ACTIVE');
 
     const result = await createLot({}, fd);
 
@@ -39,6 +40,38 @@ describe('createLot', () => {
 
     expect(result).toMatchObject({ ok: false, errors: expect.any(Object) });
     expect(adminApi.post).not.toHaveBeenCalled();
+  });
+
+  it('should_returnErrors_when_statusMissing', async () => {
+    const fd = new FormData();
+    fd.append('title', 'Emerald Ring');
+    fd.append('description', 'Natural 2ct emerald');
+    fd.append('categoryId', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+    fd.append('condition', 'EXCELLENT');
+    fd.append('estimatedValue', '3000');
+
+    const result = await createLot({}, fd);
+
+    expect(result).toMatchObject({ ok: false, errors: expect.objectContaining({ status: expect.any(Array) }) });
+  });
+});
+
+describe('updateLot', () => {
+  it('should_callAdminApiPatchWithStatus_when_formDataIsValid', async () => {
+    vi.mocked(adminApi.patch).mockResolvedValue({ data: null });
+
+    const fd = new FormData();
+    fd.append('title', 'Emerald Ring');
+    fd.append('description', 'Natural 2ct emerald');
+    fd.append('categoryId', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+    fd.append('condition', 'EXCELLENT');
+    fd.append('estimatedValue', '3000');
+    fd.append('status', 'INACTIVE');
+
+    const result = await updateLot('lot-1', {}, fd);
+
+    expect(adminApi.patch).toHaveBeenCalledWith('/admin/api/lots/lot-1', expect.objectContaining({ status: 'INACTIVE' }));
+    expect(result).toEqual({ ok: true });
   });
 });
 
