@@ -10,7 +10,12 @@ import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.u
 import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
 import { GetRevenueReportUseCase } from '../application/get-revenue-report-use-case';
 import { GetPendingInvoiceCountUseCase } from '../application/get-pending-invoice-count-use-case';
-import { revenueReportResponseSchema, pendingInvoiceCountResponseSchema } from '@carat-room/shared-types';
+import {
+  revenueReportResponseSchema, pendingInvoiceCountResponseSchema, apiErrorSchema, stringErrorSchema,
+  checkoutResponseSchema, confirmSetupIntentResponseSchema, invoiceListResponseSchema,
+  invoiceResponseSchema, invoicesQuery, paymentProfileResponseSchema,
+  paySavedCardResponseSchema, setupIntentResponseSchema,
+} from '@carat-room/shared-types';
 
 let currentRole = 'BUYER';
 
@@ -133,6 +138,27 @@ describe('GET /api/payments/reports/pending-count', () => {
   });
 });
 
+describe('GET /api/payments/invoices', () => {
+  it('should_return200WithInvoiceList_when_adminRequests', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockListInvoices.execute).mockResolvedValue([buildInvoice()]);
+
+    const res = await app.request(`/api/payments/invoices?${invoicesQuery({ status: 'PAID' })}`);
+
+    expect(res.status).toBe(200);
+    const body = invoiceListResponseSchema.parse(await res.json());
+    expect(body.data[0].id).toBe('inv-1');
+  });
+
+  it('should_return403_when_nonAdminRequests', async () => {
+    currentRole = 'BUYER';
+
+    const res = await app.request(`/api/payments/invoices?${invoicesQuery({ status: 'PAID' })}`);
+
+    expect(res.status).toBe(403);
+  });
+});
+
 describe('GET /api/payments/invoices/:id', () => {
   it('should_return200WithInvoice_when_userOwnsIt', async () => {
     vi.mocked(mockGetInvoice.execute).mockResolvedValue(buildInvoice());
@@ -140,7 +166,7 @@ describe('GET /api/payments/invoices/:id', () => {
     const res = await app.request('/api/payments/invoices/inv-1');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { id: string } };
+    const body = invoiceResponseSchema.parse(await res.json());
     expect(body.data.id).toBe('inv-1');
   });
 
@@ -150,6 +176,88 @@ describe('GET /api/payments/invoices/:id', () => {
     const res = await app.request('/api/payments/invoices/inv-1');
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe('PATCH /api/payments/invoices/:id/extend', () => {
+  it('should_return200WithInvoice_when_adminExtendsDueDate', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockExtendInvoiceDueDate.execute).mockResolvedValue(buildInvoice());
+
+    const res = await app.request('/api/payments/invoices/inv-1/extend', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dueAt: '2026-07-01T00:00:00Z' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = invoiceResponseSchema.parse(await res.json());
+    expect(body.data.id).toBe('inv-1');
+  });
+
+  it('should_return404_when_invoiceNotFound', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockExtendInvoiceDueDate.execute).mockRejectedValue(new Error('Invoice not found'));
+
+    const res = await app.request('/api/payments/invoices/inv-1/extend', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dueAt: '2026-07-01T00:00:00Z' }),
+    });
+
+    expect(res.status).toBe(404);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.message).toBe('Invoice not found');
+  });
+
+  it('should_return409_when_extendConflicts', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockExtendInvoiceDueDate.execute).mockRejectedValue(new Error('Invoice already paid'));
+
+    const res = await app.request('/api/payments/invoices/inv-1/extend', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dueAt: '2026-07-01T00:00:00Z' }),
+    });
+
+    expect(res.status).toBe(409);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.message).toBe('Invoice already paid');
+  });
+});
+
+describe('PATCH /api/payments/invoices/:id/cancel', () => {
+  it('should_return200WithInvoice_when_adminCancels', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockCancelInvoice.execute).mockResolvedValue(buildInvoice());
+
+    const res = await app.request('/api/payments/invoices/inv-1/cancel', { method: 'PATCH' });
+
+    expect(res.status).toBe(200);
+    const body = invoiceResponseSchema.parse(await res.json());
+    expect(body.data.id).toBe('inv-1');
+  });
+
+  it('should_return404_when_invoiceNotFound', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockCancelInvoice.execute).mockRejectedValue(new Error('Invoice not found'));
+
+    const res = await app.request('/api/payments/invoices/inv-1/cancel', { method: 'PATCH' });
+
+    expect(res.status).toBe(404);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.message).toBe('Invoice not found');
+  });
+
+  it('should_return409_when_cancelConflicts', async () => {
+    currentRole = 'ADMIN';
+    vi.mocked(mockCancelInvoice.execute).mockRejectedValue(new Error('Invoice already paid'));
+
+    const res = await app.request('/api/payments/invoices/inv-1/cancel', { method: 'PATCH' });
+
+    expect(res.status).toBe(409);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.message).toBe('Invoice already paid');
   });
 });
 
@@ -166,7 +274,7 @@ describe('POST /api/payments/invoices/:id/checkout', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { checkoutUrl: string } };
+    const body = checkoutResponseSchema.parse(await res.json());
     expect(body.data.checkoutUrl).toBe('https://checkout.stripe.com/test');
   });
 
@@ -190,7 +298,7 @@ describe('POST /api/payments/setup-intent', () => {
     const res = await app.request('/api/payments/setup-intent', { method: 'POST' });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { clientSecret: string };
+    const body = setupIntentResponseSchema.parse(await res.json());
     expect(body.clientSecret).toBe('seti_test_secret');
     expect(vi.mocked(mockCreateSetupIntent.execute)).toHaveBeenCalledWith({
       userId: 'user-1',
@@ -210,7 +318,7 @@ describe('POST /api/payments/setup-intent/confirm', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { ok: boolean };
+    const body = confirmSetupIntentResponseSchema.parse(await res.json());
     expect(body.ok).toBe(true);
     expect(vi.mocked(mockConfirmSetupIntent.execute)).toHaveBeenCalledWith({
       userId: 'user-1',
@@ -228,7 +336,7 @@ describe('POST /api/payments/setup-intent/confirm', () => {
     });
 
     expect(res.status).toBe(422);
-    const body = await res.json() as { error: string };
+    const body = stringErrorSchema.parse(await res.json());
     expect(body.error).toBe('SetupIntent has not succeeded');
   });
 });
@@ -243,7 +351,7 @@ describe('POST /api/payments/invoices/:id/pay-saved-card', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { status: string };
+    const body = paySavedCardResponseSchema.parse(await res.json());
     expect(body.status).toBe('paid');
     expect(vi.mocked(mockPaySavedCard.execute)).toHaveBeenCalledWith({
       invoiceId: 'inv-1',
@@ -260,7 +368,7 @@ describe('POST /api/payments/invoices/:id/pay-saved-card', () => {
     });
 
     expect(res.status).toBe(422);
-    const body = await res.json() as { error: string };
+    const body = stringErrorSchema.parse(await res.json());
     expect(body.error).toBe('No saved payment method');
   });
 });
@@ -272,7 +380,7 @@ describe('GET /api/payments/profile', () => {
     const res = await app.request('/api/payments/profile');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { hasCard: boolean };
+    const body = paymentProfileResponseSchema.parse(await res.json());
     expect(body.hasCard).toBe(false);
   });
 
@@ -287,10 +395,11 @@ describe('GET /api/payments/profile', () => {
     const res = await app.request('/api/payments/profile');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { hasCard: boolean; last4: string; brand: string };
+    const body = paymentProfileResponseSchema.parse(await res.json());
     expect(body.hasCard).toBe(true);
-    expect(body.last4).toBe('4242');
-    expect(body.brand).toBe('visa');
+    const { last4, brand } = body as Extract<typeof body, { hasCard: true }>;
+    expect(last4).toBe('4242');
+    expect(brand).toBe('visa');
     expect(mockStripe.retrievePaymentMethod).toHaveBeenCalledWith('pm_xyz');
   });
 });
