@@ -3,21 +3,28 @@ import { use, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { chooseShipRequestSchema, chooseCollectRequestSchema } from '@carat-room/shared-types';
 import { Header } from '@/components/layout/header';
 import { AccountShell } from '@/components/layout/account-shell';
 import { Toast } from '@/components/primitives/toast';
 import { useAuth } from '@/lib/auth-context';
+import { parseFulfilmentSuccess } from '@/lib/shipping';
+import { errorMessage } from '@/lib/user-auth';
 
+// Form field names mirror the shipping router's chooseShip/chooseCollect
+// request bodies (fullName/line1/line2/city/state/postcode/country and
+// location/date/timeSlot) — the router's names win over the old
+// name/address1/address2/locationId naming this page used before D5 was fixed.
 const addressSchema = z.object({
-  name: z.string().min(2), address1: z.string().min(5), address2: z.string().optional(),
-  city: z.string().min(2), postcode: z.string().min(4), country: z.string().min(2),
+  fullName: z.string().min(2), line1: z.string().min(5), line2: z.string().optional(),
+  city: z.string().min(2), state: z.string().optional(), postcode: z.string().min(4), country: z.string().min(2),
 });
 type AddressForm = z.infer<typeof addressSchema>;
 
 const collectSchema = z.object({
-  locationId: z.string().min(1, 'Select a location'),
-  date:       z.string().min(1, 'Select a date'),
-  timeSlot:   z.string().min(1, 'Select a time slot'),
+  location: z.string().min(1, 'Select a location'),
+  date:     z.string().min(1, 'Select a date'),
+  timeSlot: z.string().min(1, 'Select a time slot'),
 });
 type CollectForm = z.infer<typeof collectSchema>;
 
@@ -31,23 +38,38 @@ export default function FulfilmentPage({ params }: { params: Promise<{ id: strin
   const collectForm = useForm<CollectForm>({ resolver: zodResolver(collectSchema) });
 
   async function submitAddress(data: AddressForm) {
+    const payload = chooseShipRequestSchema.parse({
+      fullName: data.fullName, line1: data.line1, line2: data.line2 || undefined,
+      city: data.city, state: data.state || undefined, postcode: data.postcode, country: data.country,
+    });
     const res = await fetch(`/api/shipping/fulfilments/${id}/address`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
-    if (res.ok) setToast({ message: "Address saved. We'll be in touch with tracking details.", type: 'success' });
-    else setToast({ message: 'Failed to save address.', type: 'error' });
+    const json = await res.json();
+    if (parseFulfilmentSuccess(json)) {
+      setToast({ message: "Address saved. We'll be in touch with tracking details.", type: 'success' });
+    } else {
+      setToast({ message: errorMessage(json, 'Unable to save your choice.'), type: 'error' });
+    }
   }
 
   async function submitCollect(data: CollectForm) {
+    const payload = chooseCollectRequestSchema.parse({
+      location: data.location, date: data.date, timeSlot: data.timeSlot,
+    });
     const res = await fetch(`/api/shipping/fulfilments/${id}/collection-slot`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
-    if (res.ok) setToast({ message: 'Collection slot booked. We\'ll confirm by email.', type: 'success' });
-    else setToast({ message: 'Failed to book slot. Please try again.', type: 'error' });
+    const json = await res.json();
+    if (parseFulfilmentSuccess(json)) {
+      setToast({ message: 'Collection slot booked. We\'ll confirm by email.', type: 'success' });
+    } else {
+      setToast({ message: errorMessage(json, 'Unable to save your choice.'), type: 'error' });
+    }
   }
 
   return (
@@ -68,7 +90,7 @@ export default function FulfilmentPage({ params }: { params: Promise<{ id: strin
 
           {option === 'ship' && (
             <form onSubmit={form.handleSubmit(submitAddress)} className='space-y-4'>
-              {([['name', 'Full name'], ['address1', 'Address line 1'], ['address2', 'Address line 2 (optional)'], ['city', 'City'], ['postcode', 'Postcode'], ['country', 'Country']] as const).map(([field, label]) => (
+              {([['fullName', 'Full name'], ['line1', 'Address line 1'], ['line2', 'Address line 2 (optional)'], ['city', 'City'], ['state', 'State (optional)'], ['postcode', 'Postcode'], ['country', 'Country']] as const).map(([field, label]) => (
                 <div key={field}>
                   <label className='block font-sans text-sm font-medium text-ink mb-1'>{label}</label>
                   <input {...form.register(field)} className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm' />
@@ -86,15 +108,15 @@ export default function FulfilmentPage({ params }: { params: Promise<{ id: strin
             <form onSubmit={collectForm.handleSubmit(submitCollect)} className='space-y-4'>
               <div>
                 <label className='block font-sans text-sm font-medium text-ink mb-1'>Collection location</label>
-                <select {...collectForm.register('locationId')}
+                <select {...collectForm.register('location')}
                   className='w-full border border-[var(--line)] px-3 py-2 font-sans text-sm bg-white'>
                   <option value=''>Select location…</option>
                   <option value='sydney-cbd'>Sydney CBD</option>
                   <option value='sydney-east'>Eastern Suburbs</option>
                   <option value='melbourne-cbd'>Melbourne CBD</option>
                 </select>
-                {collectForm.formState.errors.locationId && (
-                  <p className='font-sans text-xs text-red-600 mt-1'>{collectForm.formState.errors.locationId.message}</p>
+                {collectForm.formState.errors.location && (
+                  <p className='font-sans text-xs text-red-600 mt-1'>{collectForm.formState.errors.location.message}</p>
                 )}
               </div>
 
