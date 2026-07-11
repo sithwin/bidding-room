@@ -14,6 +14,8 @@ import { SearchLotsUseCase } from './application/search-lots-use-case';
 import { ListCategoriesUseCase } from './application/list-categories-use-case';
 import { RequestImageUploadUseCase } from './application/request-image-upload-use-case';
 import { ConfirmImageUploadUseCase } from './application/confirm-image-upload-use-case';
+import { DeleteImageUseCase } from './application/delete-image-use-case';
+import { ReorderImagesUseCase } from './application/reorder-images-use-case';
 import { CreateLotUseCase } from './application/create-lot-use-case';
 import { UpdateLotUseCase } from './application/update-lot-use-case';
 import { CreateCategoryUseCase } from './application/create-category-use-case';
@@ -56,6 +58,8 @@ const useCases = {
   listCategories: new ListCategoriesUseCase(categoryRepository),
   requestImageUpload: new RequestImageUploadUseCase(imageStorage),
   confirmImageUpload: new ConfirmImageUploadUseCase(lotRepository, imageStorage),
+  deleteImage: new DeleteImageUseCase(lotRepository, imageStorage),
+  reorderImages: new ReorderImagesUseCase(lotRepository),
   createLot: new CreateLotUseCase(lotRepository),
   updateLot: new UpdateLotUseCase(lotRepository),
   createCategory: new CreateCategoryUseCase(categoryRepository),

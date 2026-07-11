@@ -8,6 +8,7 @@ export enum LotCondition {
 export interface LotImage {
   id: string;
   lotId: string;
+  key: string;
   url: string;
   thumbnailUrl: string;
   displayOrder: number;

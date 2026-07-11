@@ -124,6 +124,10 @@ ALTER TABLE lots
   ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'ACTIVE'
     CHECK (status IN ('ACTIVE', 'INACTIVE'));
 
+-- Migration 004: lot image key (mirrors apps/catalogue/migrations/004)
+ALTER TABLE lot_images
+  ADD COLUMN IF NOT EXISTS key TEXT NOT NULL DEFAULT '';
+
 -- ── Auction engine ────────────────────────────────────────────────────────────
 \c auction_test
 

@@ -25,3 +25,17 @@ export class CategoryHasLotsError extends Error {
     this.name = 'CategoryHasLotsError';
   }
 }
+
+export class LotImageNotFoundError extends Error {
+  constructor(imageId: string) {
+    super(`Lot image not found: ${imageId}`);
+    this.name = 'LotImageNotFoundError';
+  }
+}
+
+export class ImageOrderMismatchError extends Error {
+  constructor(lotId: string) {
+    super(`Reorder request does not match the lot's current images: ${lotId}`);
+    this.name = 'ImageOrderMismatchError';
+  }
+}

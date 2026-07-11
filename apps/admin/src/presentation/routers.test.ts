@@ -139,6 +139,20 @@ describe('Lots router', () => {
     expect(res.status).toBe(200);
     expect(body.data[0].auctionStatus).toBeNull();
   });
+
+  it('should_return200_when_confirmingImageUpload', async () => {
+    vi.mocked(mockClient.post).mockResolvedValue({ data: null });
+    const app = new Hono().route('/', buildLotsRouter({ catalogue: mockClient, auction: mockClient }));
+
+    const res = await app.request('/admin/api/lots/lot-1/images/confirm', {
+      method: 'POST',
+      headers: { ...authHeader(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageKey: 'lots/lot-1/a', isPrimary: true }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(mockClient.post).toHaveBeenCalledWith('/api/lots/lot-1/images/confirm', 'admin-token', { imageKey: 'lots/lot-1/a', isPrimary: true });
+  });
 });
 
 describe('Categories router', () => {

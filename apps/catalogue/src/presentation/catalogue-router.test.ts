@@ -4,9 +4,17 @@ import {
   lotListResponseSchema, lotResponseSchema, lotSearchResponseSchema,
   categoryListResponseSchema, lotsQuery,
 } from '@carat-room/shared-types';
+import { JwtPayload } from '@carat-room/shared-auth';
 import { buildCatalogueRouter } from './catalogue-router';
 import { Lot, LotCondition } from '../domain/lot';
 import { Category } from '../domain/category';
+import { LotImageNotFoundError, ImageOrderMismatchError } from '../domain/errors';
+
+const jwtMiddleware = (userId = 'admin-1', role = 'ADMIN') =>
+  vi.fn(async (c: any, next: any) => {
+    c.set('jwtPayload', { userId, role } as JwtPayload);
+    await next();
+  });
 
 function buildLot(): Lot {
   return new Lot({
@@ -31,6 +39,8 @@ function buildUseCases(overrides: Record<string, unknown> = {}) {
     listCategories: { execute: vi.fn().mockResolvedValue([]) },
     requestImageUpload: { execute: vi.fn() },
     confirmImageUpload: { execute: vi.fn() },
+    deleteImage: { execute: vi.fn() },
+    reorderImages: { execute: vi.fn() },
     ...overrides,
   };
 }
@@ -136,5 +146,119 @@ describe('GET /api/categories', () => {
     expect(res.status).toBe(200);
     const body = categoryListResponseSchema.parse(await res.json());
     expect(body.data[0].slug).toBe('rings');
+  });
+});
+
+describe('DELETE /api/lots/:id/images/:imageId', () => {
+  it('should_return200_when_imageDeleted', async () => {
+    const useCases = buildUseCases({ deleteImage: { execute: vi.fn().mockResolvedValue(undefined) } });
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/img-1', { method: 'DELETE' });
+
+    expect(res.status).toBe(200);
+    expect(useCases.deleteImage.execute).toHaveBeenCalledWith('lot-1', 'img-1');
+  });
+
+  it('should_return403_when_notAdmin', async () => {
+    const useCases = buildUseCases({ deleteImage: { execute: vi.fn().mockResolvedValue(undefined) } });
+    const app = new Hono();
+    app.use('*', jwtMiddleware('user-1', 'BUYER'));
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/img-1', { method: 'DELETE' });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('should_return404_when_imageDoesNotExist', async () => {
+    const useCases = buildUseCases({
+      deleteImage: { execute: vi.fn().mockRejectedValue(new LotImageNotFoundError('img-1')) },
+    });
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/img-1', { method: 'DELETE' });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('PATCH /api/lots/:id/images/reorder', () => {
+  it('should_return200_when_reorderValid', async () => {
+    const useCases = buildUseCases({ reorderImages: { execute: vi.fn().mockResolvedValue(undefined) } });
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/reorder', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageIds: ['img-2', 'img-1'] }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(useCases.reorderImages.execute).toHaveBeenCalledWith('lot-1', ['img-2', 'img-1']);
+  });
+
+  it('should_return400_when_imageIdsMissing', async () => {
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(buildUseCases()));
+
+    const res = await app.request('/api/lots/lot-1/images/reorder', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('should_return400_when_imageOrderMismatch', async () => {
+    const useCases = buildUseCases({
+      reorderImages: { execute: vi.fn().mockRejectedValue(new ImageOrderMismatchError('lot-1')) },
+    });
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/reorder', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageIds: ['img-1'] }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('response mapping', () => {
+  it('should_notIncludeKey_when_lotHasImages', async () => {
+    const lotWithImage = new Lot({
+      id: 'lot-1',
+      title: 'Cartier Love Ring',
+      description: null,
+      categoryId: 'cat-1',
+      condition: LotCondition.Excellent,
+      estimatedValue: 3000,
+      images: [
+        { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/a', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true },
+      ],
+      createdBy: null,
+      createdAt: new Date('2026-06-20T00:00:00Z'),
+      updatedAt: new Date('2026-06-20T00:00:00Z'),
+    });
+    const useCases = buildUseCases({ getLot: { execute: vi.fn().mockResolvedValue(lotWithImage) } });
+    const app = new Hono().route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1');
+    const body = await res.json();
+
+    expect(body.data.images[0].key).toBeUndefined();
+    expect(body.data.images[0].url).toBe('https://a');
   });
 });

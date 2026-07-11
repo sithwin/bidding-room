@@ -5,12 +5,31 @@ import { adminApi } from '@/lib/admin-api';
 
 export async function getUploadUrl(
   lotId: string,
-  filename: string,
   contentType: string,
-): Promise<{ uploadUrl: string; imageId: string; publicUrl: string }> {
-  const res = await adminApi.post<{ data: { uploadUrl: string; imageId: string; publicUrl: string } }>(
+): Promise<{ uploadUrl: string; imageKey: string }> {
+  const res = await adminApi.post<{ data: { uploadUrl: string; imageKey: string } }>(
     `/admin/api/lots/${lotId}/images/upload-url`,
-    { filename, contentType },
+    { contentType },
+  );
+  return res.data;
+}
+
+export interface ConfirmedImage {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  displayOrder: number;
+  isPrimary: boolean;
+}
+
+export async function confirmImage(
+  lotId: string,
+  imageKey: string,
+  isPrimary: boolean,
+): Promise<ConfirmedImage> {
+  const res = await adminApi.post<{ data: ConfirmedImage }>(
+    `/admin/api/lots/${lotId}/images/confirm`,
+    { imageKey, isPrimary },
   );
   return res.data;
 }

@@ -96,6 +96,7 @@ describe('PostgresLotRepository', () => {
       {
         id: '22222222-2222-2222-2222-222222222222',
         lotId: '11111111-1111-1111-1111-111111111111',
+        key: 'lots/lot-1/a',
         url: 'https://assets.example.com/a.jpg',
         thumbnailUrl: 'https://assets.example.com/a_thumb.jpg',
         displayOrder: 0,
@@ -121,6 +122,7 @@ describe('PostgresLotRepository', () => {
     expect(found!.images).toHaveLength(1);
     expect(found!.images[0].url).toBe('https://assets.example.com/a.jpg');
     expect(found!.images[0].isPrimary).toBe(true);
+    expect(found!.images[0].key).toBe('lots/lot-1/a');
   });
 
   it('should_returnPaginatedResults_when_findAll', async () => {
