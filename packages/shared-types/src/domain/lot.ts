@@ -6,6 +6,8 @@ export interface LotImage {
   thumbnailUrl: string;
   displayOrder: number;
   isPrimary: boolean;
+  processingStatus: 'pending' | 'ready' | 'rejected';
+  rejectionReason: 'virus_detected' | 'processing_failed' | null;
 }
 
 export interface Lot {
