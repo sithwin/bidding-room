@@ -24,9 +24,9 @@ jobs:
       - run: pnpm turbo test
       - name: SonarCloud Scan
         if: (success() || failure()) && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.qualitygate.wait=true
+            "-Dsonar.qualitygate.wait=true"
