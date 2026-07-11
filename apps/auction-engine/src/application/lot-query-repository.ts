@@ -10,6 +10,7 @@ export interface LotStatusRow {
 
 export interface BidRow {
   id: string;
+  userId: string;
   amount: number;
   placedAt: Date;
 }
@@ -17,8 +18,19 @@ export interface BidRow {
 export interface DashboardStats {
   activeAuctions: number;
   endingSoon: number;
-  pendingInvoices: number;
-  pendingFulfilments: number;
+}
+
+export interface AuctionResultRow {
+  lotId: string;
+  finalBid: number | null;
+  reserveMet: boolean;
+  winnerUserId: string | null;
+  closedAt: Date;
+}
+
+export interface UnsoldLotRow {
+  lotId: string;
+  highestBid: number | null;
 }
 
 export interface LotQueryRepository {
@@ -26,4 +38,7 @@ export interface LotQueryRepository {
   findBidHistory(lotId: string, limit: number, offset: number): Promise<{ bids: BidRow[]; total: number }>;
   findActiveLots(limit: number, offset: number): Promise<{ lots: LotStatusRow[]; total: number }>;
   getDashboardStats(): Promise<DashboardStats>;
+  findClosedResults(from: Date, to: Date): Promise<AuctionResultRow[]>;
+  findUnsoldLots(): Promise<UnsoldLotRow[]>;
+  findBidderIds(lotId: string): Promise<string[]>;
 }

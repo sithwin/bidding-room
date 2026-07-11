@@ -1,7 +1,7 @@
 export interface UserRegisteredPayload {
   userId: string;
   email: string;
-  createdAt: string; // ISO 8601
+  emailVerificationCode: string;
 }
 
 export interface PhoneVerificationRequestedPayload {

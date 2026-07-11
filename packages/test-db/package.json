@@ -1,0 +1,23 @@
+{
+  "name": "@carat-room/test-db",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "@electric-sql/pglite-socket": "^0.0.9",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@carat-room/tsconfig": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^1.6.1",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

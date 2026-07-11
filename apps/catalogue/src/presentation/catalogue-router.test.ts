@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Hono } from 'hono';
+import {
+  lotListResponseSchema, lotResponseSchema, lotSearchResponseSchema,
+  categoryListResponseSchema, lotsQuery,
+} from '@carat-room/shared-types';
 import { buildCatalogueRouter } from './catalogue-router';
 import { Lot, LotCondition } from '../domain/lot';
 import { Category } from '../domain/category';
@@ -39,8 +43,18 @@ describe('GET /api/lots/:id', () => {
     const res = await app.request('/api/lots/lot-1');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { id: string } };
+    const body = lotResponseSchema.parse(await res.json());
     expect(body.data.id).toBe('lot-1');
+  });
+
+  it('should_includeStatus_when_lotExists', async () => {
+    const useCases = buildUseCases({ getLot: { execute: vi.fn().mockResolvedValue(buildLot()) } });
+    const app = new Hono().route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1');
+
+    const body = lotResponseSchema.parse(await res.json());
+    expect(body.data.status).toBe('ACTIVE');
   });
 
   it('should_return404_when_lotDoesNotExist', async () => {
@@ -59,12 +73,26 @@ describe('GET /api/lots', () => {
     });
     const app = new Hono().route('/', buildCatalogueRouter(useCases));
 
-    const res = await app.request('/api/lots?limit=10&offset=0');
+    const res = await app.request(`/api/lots?${lotsQuery({ limit: 10, offset: 0 })}`);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: unknown[]; meta: { total: number } };
+    const body = lotListResponseSchema.parse(await res.json());
     expect(body.data).toHaveLength(1);
     expect(body.meta.total).toBe(1);
+  });
+
+  it('should_passAuctionIdFilter_when_auctionIdQueryProvided', async () => {
+    const listLots = { execute: vi.fn().mockResolvedValue({ items: [], total: 0, limit: 20, offset: 0 }) };
+    const app = new Hono().route('/', buildCatalogueRouter(buildUseCases({ listLots })));
+
+    const res = await app.request(`/api/lots?${lotsQuery({ auctionId: 'auction-1' })}`);
+
+    expect(res.status).toBe(200);
+    expect(listLots.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ auctionId: 'auction-1' }),
+      20,
+      0,
+    );
   });
 });
 
@@ -89,7 +117,7 @@ describe('GET /api/lots/search', () => {
     const res = await app.request('/api/lots/search?q=Cartier');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: unknown[] };
+    const body = lotSearchResponseSchema.parse(await res.json());
     expect(body.data).toHaveLength(1);
   });
 });
@@ -106,7 +134,7 @@ describe('GET /api/categories', () => {
     const res = await app.request('/api/categories');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { slug: string }[] };
+    const body = categoryListResponseSchema.parse(await res.json());
     expect(body.data[0].slug).toBe('rings');
   });
 });

@@ -6,6 +6,8 @@ import { GetMeUseCase } from '../application/get-me.use-case';
 import { SuspendUserUseCase } from '../application/suspend-user.use-case';
 import { ReinstateUserUseCase } from '../application/reinstate-user.use-case';
 import { ApproveUserUseCase } from '../application/approve-user.use-case';
+import { AdminCreateUserUseCase } from '../application/admin-create-user.use-case';
+import { AdminUpdateUserUseCase } from '../application/admin-update-user.use-case';
 
 interface UseCases {
   listUsers: ListUsersUseCase;
@@ -13,6 +15,8 @@ interface UseCases {
   suspendUser: SuspendUserUseCase;
   reinstateUser: ReinstateUserUseCase;
   approveUser: ApproveUserUseCase;
+  adminCreateUser: AdminCreateUserUseCase;
+  adminUpdateUser: AdminUpdateUserUseCase;
 }
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
@@ -83,6 +87,44 @@ export function buildAdminUsersRouter(useCases: UseCases, jwtPublicKey: string):
 
   router.patch('/:id/approve', adminOnly, async (c) =>
     mutate(c, () => useCases.approveUser.execute(c.req.param('id'))));
+
+  router.post('/', adminOnly, async (c) => {
+    const body = await c.req.json<{ email?: string; password?: string; role?: string; country?: string }>();
+    if (!body.email || !body.password || (body.role !== 'BUYER' && body.role !== 'ADMIN')) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'email, password and role (BUYER or ADMIN) are required' } },
+        400,
+      );
+    }
+    try {
+      const result = await useCases.adminCreateUser.execute({
+        email: body.email,
+        password: body.password,
+        role: body.role,
+        country: body.country,
+      });
+      return c.json({ data: { id: result.id } }, 201);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+    }
+  });
+
+  // Registered after /:id/suspend, /:id/reinstate and /:id/approve so those more specific
+  // PATCH routes match first (Hono matches route patterns in registration order).
+  router.patch('/:id', adminOnly, async (c) => {
+    const body = await c.req.json<{ email?: string; country?: string }>();
+    try {
+      await useCases.adminUpdateUser.execute(c.req.param('id'), { email: body.email, country: body.country });
+      return c.json({ data: { id: c.req.param('id') } });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (message === 'User not found') {
+        return c.json({ error: { code: 'NOT_FOUND', message } }, 404);
+      }
+      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+    }
+  });
 
   return router;
 }

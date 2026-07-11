@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { createTestDb } from '@carat-room/test-db';
 import { PostgresFulfilmentRepository } from './postgres-fulfilment-repository';
-import { createDb, Db } from './db';
+import { Db } from './db';
 import { Fulfilment, FulfilmentStatus, ShippingAddress } from '../../domain/fulfilment';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,7 +12,7 @@ describe('PostgresFulfilmentRepository', () => {
   let repo: PostgresFulfilmentRepository;
 
   beforeAll(async () => {
-    db = createDb(TEST_DB_URL);
+    db = createTestDb(TEST_DB_URL) as Db;
     repo = new PostgresFulfilmentRepository(db);
     await db`
       CREATE TABLE IF NOT EXISTS fulfilments (
@@ -105,5 +106,43 @@ describe('PostgresFulfilmentRepository', () => {
 
     expect(found).not.toBeNull();
     expect(found!.lotId).toBe(lotId);
+  });
+
+  it('should_countFulfilmentsMatchingStatuses_when_someMatch', async () => {
+    const pendingChoice = Fulfilment.create({ id: uuidv4(), lotId: uuidv4(), userId: uuidv4() });
+    await repo.save(pendingChoice);
+
+    const pendingDispatch = Fulfilment.create({ id: uuidv4(), lotId: uuidv4(), userId: uuidv4() });
+    const address: ShippingAddress = {
+      id: uuidv4(),
+      fulfilmentId: pendingDispatch.id,
+      fullName: 'Jane Smith',
+      line1: '1 Queen St',
+      line2: null,
+      city: 'Melbourne',
+      state: 'VIC',
+      postcode: '3000',
+      country: 'AU',
+    };
+    pendingDispatch.chooseShip(address);
+    await repo.saveWithAddress(pendingDispatch, address);
+
+    const dispatched = Fulfilment.create({ id: uuidv4(), lotId: uuidv4(), userId: uuidv4() });
+    dispatched.chooseShip({ ...address, id: uuidv4(), fulfilmentId: dispatched.id });
+    dispatched.markDispatched();
+    await repo.save(dispatched);
+
+    const count = await repo.countByStatuses([
+      FulfilmentStatus.PENDING_CHOICE,
+      FulfilmentStatus.PENDING_DISPATCH,
+    ]);
+
+    expect(count).toBe(2);
+  });
+
+  it('should_countZero_when_noFulfilmentsMatchStatuses', async () => {
+    const count = await repo.countByStatuses([FulfilmentStatus.DISPATCHED]);
+
+    expect(count).toBe(0);
   });
 });

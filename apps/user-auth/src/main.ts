@@ -1,5 +1,7 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db/db';
 import { PostgresUserRepository } from './infrastructure/db/postgres-user-repository';
 import { PostgresTokenRepository } from './infrastructure/db/postgres-token-repository';
@@ -21,6 +23,8 @@ import { ListUsersUseCase } from './application/list-users.use-case';
 import { SuspendUserUseCase } from './application/suspend-user.use-case';
 import { ReinstateUserUseCase } from './application/reinstate-user.use-case';
 import { ApproveUserUseCase } from './application/approve-user.use-case';
+import { AdminCreateUserUseCase } from './application/admin-create-user.use-case';
+import { AdminUpdateUserUseCase } from './application/admin-update-user.use-case';
 import { buildUserRouter } from './presentation/user-router';
 import { buildAdminUsersRouter } from './presentation/admin-users-router';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
@@ -30,7 +34,7 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
-  const amqpUrl = process.env.AMQP_URL;
+  const amqpUrl = process.env.RABBITMQ_URL;
   const jwtPrivateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const port = Number(process.env.PORT ?? 3001);
@@ -42,11 +46,12 @@ async function main(): Promise<void> {
 
   if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey) {
     throw new Error(
-      'Missing required environment variables: DATABASE_URL, AMQP_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY',
+      'Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY',
     );
   }
 
   const db = createDb(databaseUrl);
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
   const userRepo = new PostgresUserRepository(db);
   const tokenRepo = new PostgresTokenRepository(db);
 
@@ -92,6 +97,8 @@ async function main(): Promise<void> {
     suspendUser:   new SuspendUserUseCase(userRepo),
     reinstateUser: new ReinstateUserUseCase(userRepo),
     approveUser:   new ApproveUserUseCase(userRepo),
+    adminCreateUser: new AdminCreateUserUseCase(userRepo, tokenRepo, passwordService, publisher),
+    adminUpdateUser: new AdminUpdateUserUseCase(userRepo),
   }, jwtPublicKey));
 
   serve({ fetch: app.fetch, port });

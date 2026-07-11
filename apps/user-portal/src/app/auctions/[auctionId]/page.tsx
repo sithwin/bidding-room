@@ -1,20 +1,21 @@
 import { Header } from '@/components/layout/header';
 import { notFound } from 'next/navigation';
+import { parseAuction } from '@/lib/catalogue';
 import { CatalogueLots } from './catalogue-lots';
 
 export const revalidate = 30;
 
 const CATALOGUE_URL = process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002';
 
-type Auction = { id: string; title: string; saleDate: string; location: string; description: string; viewingDates: string | null };
-
-export default async function SaleCataloguePage({ params }: { params: { auctionId: string } }) {
-  const auctionRes = await fetch(`${CATALOGUE_URL}/api/auctions/${params.auctionId}`, {
+export default async function SaleCataloguePage({ params }: { params: Promise<{ auctionId: string }> }) {
+  const { auctionId } = await params;
+  const auctionRes = await fetch(`${CATALOGUE_URL}/api/auctions/${auctionId}`, {
     next: { revalidate: 30 },
   });
 
   if (!auctionRes.ok) notFound();
-  const auction = await auctionRes.json() as Auction;
+  const auction = parseAuction(await auctionRes.json());
+  if (!auction) notFound();
 
   return (
     <>
@@ -22,16 +23,18 @@ export default async function SaleCataloguePage({ params }: { params: { auctionI
       {/* Hero */}
       <section className='bg-ink text-paper px-6 py-16'>
         <div className='max-w-5xl mx-auto'>
-          <p className='font-sans text-xs text-gold uppercase tracking-widest mb-3'>
-            {new Date(auction.saleDate).toLocaleDateString('en-AU', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
+          {auction.saleDate && (
+            <p className='font-sans text-xs text-gold uppercase tracking-widest mb-3'>
+              {new Date(auction.saleDate).toLocaleDateString('en-AU', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </p>
+          )}
           <h1 className='font-serif text-4xl font-semibold mb-2'>{auction.title}</h1>
-          <p className='font-sans text-mut text-sm'>{auction.location}</p>
+          {auction.location && <p className='font-sans text-mut text-sm'>{auction.location}</p>}
           {auction.viewingDates && (
             <p className='font-sans text-sm text-mut/80 mt-1'>Viewing: {auction.viewingDates}</p>
           )}
@@ -54,7 +57,7 @@ export default async function SaleCataloguePage({ params }: { params: { auctionI
       </div>
 
       {/* Lot grid with sort + pagination */}
-      <CatalogueLots auctionId={params.auctionId} />
+      <CatalogueLots auctionId={auctionId} />
     </>
   );
 }

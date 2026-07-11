@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createDb, Db } from './db';
+import { createTestDb } from '@carat-room/test-db';
+import { Db } from './db';
 import { PostgresLotRepository } from './postgres-lot-repository';
 import { Lot, LotCondition, LotImage } from '../domain/lot';
 
@@ -10,7 +11,7 @@ describe('PostgresLotRepository', () => {
   let repo: PostgresLotRepository;
 
   beforeEach(async () => {
-    db = createDb(TEST_DB_URL);
+    db = createTestDb(TEST_DB_URL) as Db;
     repo = new PostgresLotRepository(db);
     await db`DELETE FROM lot_images`;
     await db`DELETE FROM lots`;
@@ -47,6 +48,47 @@ describe('PostgresLotRepository', () => {
     expect(found!.condition).toBe(LotCondition.Excellent);
     expect(found!.estimatedValue).toBe(4500);
     expect(found!.images).toHaveLength(0);
+  });
+
+  it('should_defaultStatusToActive_when_notProvidedOnSave', async () => {
+    const lot = new Lot({
+      id: '33333333-3333-3333-3333-333333333333',
+      title: 'Unstatused Lot',
+      description: null,
+      categoryId: null,
+      condition: LotCondition.Good,
+      estimatedValue: 500,
+      images: [],
+      createdBy: null,
+      createdAt: new Date('2026-06-20T00:00:00Z'),
+      updatedAt: new Date('2026-06-20T00:00:00Z'),
+    });
+
+    await repo.save(lot);
+    const found = await repo.findById(lot.id);
+
+    expect(found!.status).toBe('ACTIVE');
+  });
+
+  it('should_persistInactiveStatus_when_saveThenFindById', async () => {
+    const lot = new Lot({
+      id: '44444444-4444-4444-4444-444444444444',
+      title: 'Withdrawn Lot',
+      description: null,
+      categoryId: null,
+      condition: LotCondition.Good,
+      estimatedValue: 500,
+      status: 'INACTIVE',
+      images: [],
+      createdBy: null,
+      createdAt: new Date('2026-06-20T00:00:00Z'),
+      updatedAt: new Date('2026-06-20T00:00:00Z'),
+    });
+
+    await repo.save(lot);
+    const found = await repo.findById(lot.id);
+
+    expect(found!.status).toBe('INACTIVE');
   });
 
   it('should_saveThenFindById_when_lotHasImages', async () => {

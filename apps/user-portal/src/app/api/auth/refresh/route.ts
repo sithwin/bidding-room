@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL ?? 'http://localhost:3001';
 
 export async function GET() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refresh_token')?.value;
   if (!refreshToken) return NextResponse.json({ error: 'No refresh token' }, { status: 401 });
 
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const refreshToken = cookieStore.get('refresh_token')?.value;
   if (refreshToken) {
     await fetch(`${USER_SERVICE_URL}/api/users/logout`, {

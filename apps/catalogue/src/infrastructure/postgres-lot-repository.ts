@@ -1,4 +1,4 @@
-import { Lot, LotCondition, LotImage } from '../domain/lot';
+import { Lot, LotActiveStatus, LotCondition, LotImage } from '../domain/lot';
 import { LotFilters, LotRepository, PaginatedResult } from '../domain/lot-repository';
 import { Db } from './db';
 
@@ -6,9 +6,11 @@ interface LotRow {
   id: string;
   title: string;
   description: string | null;
+  auction_id: string | null;
   category_id: string | null;
   condition: string | null;
   estimated_value: string | null;
+  status: string;
   created_by: string | null;
   created_at: Date;
   updated_at: Date;
@@ -48,9 +50,11 @@ function rowToLot(row: LotRow, images: LotImage[]): Lot {
     id: row.id,
     title: row.title,
     description: row.description,
+    auctionId: row.auction_id,
     categoryId: row.category_id,
     condition: row.condition as LotCondition | null,
     estimatedValue: row.estimated_value !== null ? Number(row.estimated_value) : null,
+    status: row.status as LotActiveStatus,
     images,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -63,7 +67,7 @@ export class PostgresLotRepository implements LotRepository {
 
   async findById(id: string): Promise<Lot | null> {
     const rows = await this.db<LotRow[]>`
-      SELECT id, title, description, category_id, condition, estimated_value, created_by, created_at, updated_at
+      SELECT id, title, description, auction_id, category_id, condition, estimated_value, status, created_by, created_at, updated_at
       FROM lots WHERE id = ${id}
     `;
     if (rows.length === 0) {
@@ -78,6 +82,10 @@ export class PostgresLotRepository implements LotRepository {
     const values: (string | number | null)[] = [];
     let paramIndex = 1;
 
+    if (filters.auctionId) {
+      conditions.push(`auction_id = $${paramIndex++}`);
+      values.push(filters.auctionId);
+    }
     if (filters.categoryId) {
       conditions.push(`category_id = $${paramIndex++}`);
       values.push(filters.categoryId);
@@ -104,7 +112,7 @@ export class PostgresLotRepository implements LotRepository {
     const total = Number(countRows[0].count);
 
     const rows = await this.db.unsafe<LotRow[]>(
-      `SELECT id, title, description, category_id, condition, estimated_value, created_by, created_at, updated_at
+      `SELECT id, title, description, auction_id, category_id, condition, estimated_value, status, created_by, created_at, updated_at
        FROM lots ${where}
        ORDER BY created_at DESC
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
@@ -135,18 +143,20 @@ export class PostgresLotRepository implements LotRepository {
 
   async save(lot: Lot): Promise<void> {
     await this.db`
-      INSERT INTO lots (id, title, description, category_id, condition, estimated_value, created_by, created_at, updated_at)
+      INSERT INTO lots (id, title, description, auction_id, category_id, condition, estimated_value, status, created_by, created_at, updated_at)
       VALUES (
-        ${lot.id}, ${lot.title}, ${lot.description}, ${lot.categoryId},
-        ${lot.condition}, ${lot.estimatedValue}, ${lot.createdBy},
+        ${lot.id}, ${lot.title}, ${lot.description}, ${lot.auctionId}, ${lot.categoryId},
+        ${lot.condition}, ${lot.estimatedValue}, ${lot.status}, ${lot.createdBy},
         ${lot.createdAt}, ${lot.updatedAt}
       )
       ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
         description = EXCLUDED.description,
+        auction_id = EXCLUDED.auction_id,
         category_id = EXCLUDED.category_id,
         condition = EXCLUDED.condition,
         estimated_value = EXCLUDED.estimated_value,
+        status = EXCLUDED.status,
         updated_at = EXCLUDED.updated_at
     `;
 

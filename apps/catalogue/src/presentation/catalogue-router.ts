@@ -50,6 +50,7 @@ export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
   });
 
   router.get('/api/lots', async c => {
+    const auctionId = c.req.query('auctionId');
     const categoryId = c.req.query('categoryId');
     const conditionParam = c.req.query('condition');
     const condition =
@@ -62,7 +63,7 @@ export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
     const offset = Number(c.req.query('offset') ?? 0);
 
     const result = await useCases.listLots.execute(
-      { categoryId, condition, minEstimatedValue, maxEstimatedValue },
+      { auctionId, categoryId, condition, minEstimatedValue, maxEstimatedValue },
       limit,
       offset,
     );

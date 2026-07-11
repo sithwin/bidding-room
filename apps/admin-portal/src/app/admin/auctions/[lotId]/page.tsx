@@ -4,14 +4,12 @@ import { BidsTable, type Bid } from './_bids-table';
 
 interface AuctionDetail {
   lotId: string;
-  lotTitle: string;
+  lotTitle: string | null;
   status: string;
   currentBid: number | null;
   bidCount: number;
   endAt: string;
   bids: Bid[];
-  autoExtendWindowMinutes: number;
-  autoExtendDurationMinutes: number;
 }
 
 export default async function AuctionDetailPage({ params }: { params: Promise<{ lotId: string }> }) {
@@ -21,7 +19,7 @@ export default async function AuctionDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className='space-y-6'>
-      <h1 className='text-2xl font-semibold'>{auction.lotTitle}</h1>
+      <h1 className='text-2xl font-semibold'>{auction.lotTitle ?? auction.lotId}</h1>
       <AuctionLiveStats lotId={lotId} />
       <section className='space-y-2'>
         <h2 className='text-lg font-medium'>Bid History</h2>

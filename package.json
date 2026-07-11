@@ -6,13 +6,16 @@
     "test": "turbo test",
     "dev": "concurrently --names \"user-auth,catalogue,auction,payment,notification,shipping,admin,admin-portal,user-portal\" \"cd apps/user-auth && npx tsx watch --env-file .env src/main.ts\" \"cd apps/catalogue && npx tsx watch --env-file .env src/main.ts\" \"cd apps/auction-engine && npx tsx watch --env-file .env src/main.ts\" \"cd apps/payment && npx tsx watch --env-file .env src/main.ts\" \"cd apps/notification-service && npx tsx watch --env-file .env src/main.ts\" \"cd apps/shipping && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin-portal && npx next dev -p 3008\" \"cd apps/user-portal && npx next dev -p 3000\"",
     "dev:admin": "concurrently --names \"user-auth,catalogue,auction,payment,shipping,admin,admin-portal\" \"cd apps/user-auth && npx tsx watch --env-file .env src/main.ts\" \"cd apps/catalogue && npx tsx watch --env-file .env src/main.ts\" \"cd apps/auction-engine && npx tsx watch --env-file .env src/main.ts\" \"cd apps/payment && npx tsx watch --env-file .env src/main.ts\" \"cd apps/shipping && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin-portal && npx next dev -p 3008\"",
-    "lint": "turbo lint",
+    "lint": "eslint \"apps/*/src/**/*.ts\"",
     "test:integration": "vitest run --config tests/vitest.integration.config.ts",
     "start": "docker compose up --build"
   },
   "devDependencies": {
     "@types/pg": "^8.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
     "concurrently": "^10.0.3",
+    "eslint": "^10.6.0",
     "pg": "^8.13.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"

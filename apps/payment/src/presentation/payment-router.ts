@@ -14,6 +14,10 @@ import { ConfirmSetupIntentUseCase } from '../application/confirm-setup-intent.u
 import { PaySavedCardUseCase } from '../application/pay-saved-card.use-case';
 import { PaymentProfileRepository } from '../application/payment-profile-repository';
 import { StripeClient } from '../application/stripe-client';
+import { GetRevenueReportUseCase } from '../application/get-revenue-report-use-case';
+import { GetPendingInvoiceCountUseCase } from '../application/get-pending-invoice-count-use-case';
+
+type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 interface RouterDeps {
   getInvoice: Pick<GetInvoiceUseCase, 'execute'>;
@@ -21,6 +25,8 @@ interface RouterDeps {
   cancelInvoice: Pick<CancelInvoiceUseCase, 'execute'>;
   extendInvoiceDueDate: Pick<ExtendInvoiceDueDateUseCase, 'execute'>;
   invoiceRepo: Pick<InvoiceRepository, 'findById'>;
+  getRevenueReport: Pick<GetRevenueReportUseCase, 'execute'>;
+  getPendingInvoiceCount: Pick<GetPendingInvoiceCountUseCase, 'execute'>;
   createCheckoutSession: Pick<CreateCheckoutSessionUseCase, 'execute'>;
   handleWebhook: Pick<HandleWebhookUseCase, 'execute'>;
   createSetupIntent: Pick<CreateSetupIntentUseCase, 'execute'>;
@@ -47,13 +53,27 @@ function toInvoiceDto(invoice: Invoice) {
   };
 }
 
-export function buildPaymentRouter(deps: RouterDeps): Hono {
-  const router = new Hono();
+export function buildPaymentRouter(deps: RouterDeps): Hono<AppEnv> {
+  const router = new Hono<AppEnv>();
   const adminOnly = authMiddleware(deps.jwtPublicKey, { adminOnly: true });
 
   router.get('/api/payments/invoices', adminOnly, async (c) => {
     const invoices = await deps.listInvoices.execute({ status: c.req.query('status') });
     return c.json({ data: invoices.map(toInvoiceDto) });
+  });
+
+  // Registered ahead of the /api/payments/invoices/:id parameterised route so
+  // it can never be shadowed, even though the segments differ today.
+  router.get('/api/payments/reports/revenue', adminOnly, async (c) => {
+    const report = await deps.getRevenueReport.execute();
+    return c.json({ data: report });
+  });
+
+  // Registered ahead of the /api/payments/invoices/:id parameterised route so
+  // it can never be shadowed, even though the segments differ today.
+  router.get('/api/payments/reports/pending-count', adminOnly, async (c) => {
+    const { count } = await deps.getPendingInvoiceCount.execute();
+    return c.json({ data: { count } });
   });
 
   router.get('/api/payments/invoices/:id', authMiddleware(deps.jwtPublicKey), async (c) => {

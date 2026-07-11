@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import type { JSONValue } from 'postgres';
 import { AuctionDomainEvent } from '../domain/auction-events';
 import { EventStore, StoredEvent } from '../domain/event-store';
 import { Db } from './db';
@@ -25,7 +26,7 @@ export class PostgresEventStore implements EventStore {
           ${lotId},
           ${afterSequence + i + 1},
           ${event.type},
-          ${this.db.json(event.payload as Record<string, unknown>)}
+          ${this.db.json(event.payload as unknown as JSONValue)}
         )
       `;
     }

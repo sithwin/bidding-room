@@ -3,13 +3,19 @@ import { GetLotUseCase } from './get-lot-use-case';
 import { ListLotsUseCase } from './list-lots-use-case';
 import { SearchLotsUseCase } from './search-lots-use-case';
 import { ListCategoriesUseCase } from './list-categories-use-case';
+import { CreateCategoryUseCase } from './create-category-use-case';
+import { RenameCategoryUseCase } from './rename-category-use-case';
+import { DeleteCategoryUseCase } from './delete-category-use-case';
 import { ConfirmImageUploadUseCase } from './confirm-image-upload-use-case';
+import { CreateLotUseCase } from './create-lot-use-case';
+import { UpdateLotUseCase } from './update-lot-use-case';
 import { Lot, LotCondition } from '../domain/lot';
 import { Category } from '../domain/category';
 import { LotRepository, PaginatedResult } from '../domain/lot-repository';
 import { CategoryRepository } from '../domain/category-repository';
 import { SearchRepository, LotSearchResult } from '../domain/search-repository';
 import { ImageStorage } from './image-storage';
+import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError } from '../domain/errors';
 
 function buildLot(): Lot {
   return new Lot({
@@ -74,6 +80,63 @@ describe('ListLotsUseCase', () => {
   });
 });
 
+describe('CreateLotUseCase', () => {
+  it('should_defaultStatusToActive_when_notProvided', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn(), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+
+    await new CreateLotUseCase(mockRepo).execute({ title: 'Diamond Ring' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.status).toBe('ACTIVE');
+  });
+
+  it('should_useProvidedStatus_when_given', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn(), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+
+    await new CreateLotUseCase(mockRepo).execute({ title: 'Diamond Ring', status: 'INACTIVE' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.status).toBe('INACTIVE');
+  });
+});
+
+describe('UpdateLotUseCase', () => {
+  it('should_throw_when_lotDoesNotExist', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(null), findAll: vi.fn(), save: vi.fn() };
+
+    await expect(new UpdateLotUseCase(mockRepo).execute('nonexistent', { title: 'New Title' }))
+      .rejects.toThrow(LotNotFoundError);
+    expect(mockRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('should_applyOnlyProvidedFields_when_partialUpdate', async () => {
+    const mockRepo: LotRepository = {
+      findById: vi.fn().mockResolvedValue(buildLot()),
+      findAll: vi.fn(),
+      save: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await new UpdateLotUseCase(mockRepo).execute('lot-1', { title: 'Renamed Ring' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.title).toBe('Renamed Ring');
+    expect(savedLot.estimatedValue).toBe(3000);
+  });
+
+  it('should_updateStatus_when_provided', async () => {
+    const mockRepo: LotRepository = {
+      findById: vi.fn().mockResolvedValue(buildLot()),
+      findAll: vi.fn(),
+      save: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await new UpdateLotUseCase(mockRepo).execute('lot-1', { status: 'INACTIVE' });
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.status).toBe('INACTIVE');
+  });
+});
+
 describe('SearchLotsUseCase', () => {
   it('should_delegateToSearchRepository_with_correct_filters', async () => {
     const searchResults: LotSearchResult[] = [
@@ -106,12 +169,89 @@ describe('ListCategoriesUseCase', () => {
       findAll: vi.fn().mockResolvedValue([buildCategory()]),
       findBySlug: vi.fn(),
       findById: vi.fn(),
+      create: vi.fn(),
+      updateName: vi.fn(),
+      delete: vi.fn(),
     };
 
     const result = await new ListCategoriesUseCase(mockRepo).execute();
 
     expect(result).toHaveLength(1);
     expect(result[0].slug).toBe('rings');
+  });
+});
+
+function buildCategoryRepoMock(overrides: Partial<CategoryRepository> = {}): CategoryRepository {
+  return {
+    findAll: vi.fn(),
+    findBySlug: vi.fn(),
+    findById: vi.fn(),
+    create: vi.fn(),
+    updateName: vi.fn(),
+    delete: vi.fn(),
+    ...overrides,
+  };
+}
+
+describe('CreateCategoryUseCase', () => {
+  it('should_createCategoryWithTrimmedFields_when_valid', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    const result = await new CreateCategoryUseCase(mockRepo).execute({ name: ' Rings ', slug: ' rings ' });
+
+    expect(result.name).toBe('Rings');
+    expect(result.slug).toBe('rings');
+    expect(result.parentId).toBeNull();
+    expect(mockRepo.create).toHaveBeenCalledWith(result);
+  });
+
+  it('should_setParentId_when_provided', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    const result = await new CreateCategoryUseCase(mockRepo).execute({ name: 'Gold Rings', slug: 'gold-rings', parentId: 'cat-1' });
+
+    expect(result.parentId).toBe('cat-1');
+  });
+
+  it('should_propagate_when_repositoryThrowsSlugConflict', async () => {
+    const mockRepo = buildCategoryRepoMock({ create: vi.fn().mockRejectedValue(new CategorySlugConflictError('rings')) });
+
+    await expect(new CreateCategoryUseCase(mockRepo).execute({ name: 'Rings', slug: 'rings' }))
+      .rejects.toThrow(CategorySlugConflictError);
+  });
+});
+
+describe('RenameCategoryUseCase', () => {
+  it('should_renameWithTrimmedName', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    await new RenameCategoryUseCase(mockRepo).execute('cat-1', ' New Name ');
+
+    expect(mockRepo.updateName).toHaveBeenCalledWith('cat-1', 'New Name');
+  });
+
+  it('should_propagate_when_categoryNotFound', async () => {
+    const mockRepo = buildCategoryRepoMock({ updateName: vi.fn().mockRejectedValue(new CategoryNotFoundError('cat-1')) });
+
+    await expect(new RenameCategoryUseCase(mockRepo).execute('cat-1', 'New Name'))
+      .rejects.toThrow(CategoryNotFoundError);
+  });
+});
+
+describe('DeleteCategoryUseCase', () => {
+  it('should_deleteCategory', async () => {
+    const mockRepo = buildCategoryRepoMock();
+
+    await new DeleteCategoryUseCase(mockRepo).execute('cat-1');
+
+    expect(mockRepo.delete).toHaveBeenCalledWith('cat-1');
+  });
+
+  it('should_propagate_when_categoryHasLots', async () => {
+    const mockRepo = buildCategoryRepoMock({ delete: vi.fn().mockRejectedValue(new CategoryHasLotsError('cat-1')) });
+
+    await expect(new DeleteCategoryUseCase(mockRepo).execute('cat-1'))
+      .rejects.toThrow(CategoryHasLotsError);
   });
 });
 

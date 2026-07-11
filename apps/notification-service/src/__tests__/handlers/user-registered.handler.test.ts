@@ -11,7 +11,7 @@ describe('handleUserRegistered', () => {
 
   it('should_callUseCaseWithEmailChannel_when_userRegisteredPayloadReceived', async () => {
     await handleUserRegistered(
-      { userId: 'user-1', email: 'test@example.com', createdAt: '2026-06-20T00:00:00Z' },
+      { userId: 'user-1', email: 'test@example.com', emailVerificationCode: 'test-code' },
       mockUseCase,
       mockEmailSender,
       'https://app.example.com'

@@ -14,13 +14,17 @@ export interface LotImage {
   isPrimary: boolean;
 }
 
+export type LotActiveStatus = 'ACTIVE' | 'INACTIVE';
+
 interface LotProps {
   id: string;
   title: string;
   description: string | null;
+  auctionId?: string | null;
   categoryId: string | null;
   condition: LotCondition | null;
   estimatedValue: number | null;
+  status?: LotActiveStatus;
   images: LotImage[];
   createdBy: string | null;
   createdAt: Date;
@@ -31,9 +35,11 @@ export class Lot {
   readonly id: string;
   readonly title: string;
   readonly description: string | null;
+  readonly auctionId: string | null;
   readonly categoryId: string | null;
   readonly condition: LotCondition | null;
   readonly estimatedValue: number | null;
+  readonly status: LotActiveStatus;
   readonly images: LotImage[];
   readonly createdBy: string | null;
   readonly createdAt: Date;
@@ -43,9 +49,11 @@ export class Lot {
     this.id = props.id;
     this.title = props.title;
     this.description = props.description;
+    this.auctionId = props.auctionId ?? null;
     this.categoryId = props.categoryId;
     this.condition = props.condition;
     this.estimatedValue = props.estimatedValue;
+    this.status = props.status ?? 'ACTIVE';
     this.images = props.images;
     this.createdBy = props.createdBy;
     this.createdAt = props.createdAt;

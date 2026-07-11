@@ -1,6 +1,7 @@
 import { type Context, Hono } from 'hono';
 import { authMiddleware } from '@carat-room/shared-auth';
 import { ServiceClient, ServiceError } from '../infrastructure/service-client';
+import { fetchCategoryNameMap, fetchLotAuctionStatus } from './enrichment';
 
 type Ctx = Context;
 
@@ -19,33 +20,81 @@ async function proxy(fn: () => Promise<unknown>, c: Ctx): Promise<Response> {
   }
 }
 
-export function buildLotsRouter(client: ServiceClient): Hono {
+interface CatalogueLot {
+  id: string;
+  categoryId: string | null;
+  auctionId: string | null;
+  [key: string]: unknown;
+}
+
+export interface LotsRouterClients {
+  catalogue: ServiceClient;
+  auction: ServiceClient;
+}
+
+async function enrichLot(
+  lot: CatalogueLot,
+  clients: LotsRouterClients,
+  token: string,
+  categoryNames: Map<string, string>,
+): Promise<CatalogueLot & { categoryName: string | null; auctionStatus: string | null }> {
+  const auctionStatus = lot.auctionId
+    ? await fetchLotAuctionStatus(clients.auction, lot.id, token)
+    : 'UNSCHEDULED';
+  return {
+    ...lot,
+    categoryName: lot.categoryId ? categoryNames.get(lot.categoryId) ?? null : null,
+    auctionStatus,
+  };
+}
+
+export function buildLotsRouter(clients: LotsRouterClients): Hono {
   const r = new Hono();
   const auth = authMiddleware(jwtPublicKey, { adminOnly: true });
+  const { catalogue } = clients;
 
   r.get('/admin/api/lots', auth, async c =>
-    proxy(() => client.get(`/api/lots?${new URLSearchParams(c.req.query() as Record<string, string>)}`, tok(c)), c));
+    proxy(async () => {
+      const token = tok(c);
+      const query = new URLSearchParams(c.req.query() as Record<string, string>);
+      const [lotsRes, categoryNames] = await Promise.all([
+        catalogue.get<{ data: CatalogueLot[]; meta: unknown }>(`/api/lots?${query}`, token),
+        fetchCategoryNameMap(catalogue, token),
+      ]);
+      const data = await Promise.all(
+        lotsRes.data.map(lot => enrichLot(lot, clients, token, categoryNames)),
+      );
+      return { data, meta: lotsRes.meta };
+    }, c));
 
   r.get('/admin/api/lots/:id', auth, async c =>
-    proxy(() => client.get(`/api/lots/${c.req.param('id')}`, tok(c)), c));
+    proxy(async () => {
+      const token = tok(c);
+      const [lotRes, categoryNames] = await Promise.all([
+        catalogue.get<{ data: CatalogueLot }>(`/api/lots/${c.req.param('id')}`, token),
+        fetchCategoryNameMap(catalogue, token),
+      ]);
+      const data = await enrichLot(lotRes.data, clients, token, categoryNames);
+      return { data };
+    }, c));
 
   r.post('/admin/api/lots', auth, async c =>
-    proxy(async () => client.post('/api/lots', tok(c), await c.req.json()), c));
+    proxy(async () => catalogue.post('/api/lots', tok(c), await c.req.json()), c));
 
   r.patch('/admin/api/lots/:id', auth, async c =>
-    proxy(async () => client.patch(`/api/lots/${c.req.param('id')}`, tok(c), await c.req.json()), c));
+    proxy(async () => catalogue.patch(`/api/lots/${c.req.param('id')}`, tok(c), await c.req.json()), c));
 
   r.delete('/admin/api/lots/:id', auth, async c =>
-    proxy(() => client.delete(`/api/lots/${c.req.param('id')}`, tok(c)), c));
+    proxy(() => catalogue.delete(`/api/lots/${c.req.param('id')}`, tok(c)), c));
 
   r.post('/admin/api/lots/:id/images/upload-url', auth, async c =>
-    proxy(async () => client.post(`/api/lots/${c.req.param('id')}/images/upload-url`, tok(c), await c.req.json()), c));
+    proxy(async () => catalogue.post(`/api/lots/${c.req.param('id')}/images/upload-url`, tok(c), await c.req.json()), c));
 
   r.delete('/admin/api/lots/:id/images/:imageId', auth, async c =>
-    proxy(() => client.delete(`/api/lots/${c.req.param('id')}/images/${c.req.param('imageId')}`, tok(c)), c));
+    proxy(() => catalogue.delete(`/api/lots/${c.req.param('id')}/images/${c.req.param('imageId')}`, tok(c)), c));
 
   r.patch('/admin/api/lots/:id/images/reorder', auth, async c =>
-    proxy(async () => client.patch(`/api/lots/${c.req.param('id')}/images/reorder`, tok(c), await c.req.json()), c));
+    proxy(async () => catalogue.patch(`/api/lots/${c.req.param('id')}/images/reorder`, tok(c), await c.req.json()), c));
 
   return r;
 }

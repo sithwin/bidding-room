@@ -1,45 +1,23 @@
 import { EventPublisher } from '@carat-room/shared-events';
+import type {
+  AuctionClosedPayload,
+  AuctionClosingSoonPayload,
+  BidPlacedPayload,
+} from '@carat-room/shared-types';
 import { AuctionEventPublisher } from '../application/auction-event-publisher';
 
 export class RabbitMQAuctionPublisher implements AuctionEventPublisher {
   constructor(private readonly publisher: EventPublisher) {}
 
-  async publishBidPlaced(params: {
-    lotId: string;
-    bidId: string;
-    userId: string;
-    amount: number;
-    bidCount: number;
-    endAt: string;
-  }): Promise<void> {
-    await this.publisher.publish('auction.bid.placed', {
-      lotId: params.lotId,
-      bidId: params.bidId,
-      userId: params.userId,
-      amount: params.amount,
-      bidCount: params.bidCount,
-      endAt: params.endAt,
-    });
+  async publishBidPlaced(payload: BidPlacedPayload): Promise<void> {
+    await this.publisher.publish('auction.bid.placed', payload);
   }
 
-  async publishAuctionClosingSoon(params: { lotId: string; endAt: string }): Promise<void> {
-    await this.publisher.publish('auction.closing.soon', {
-      lotId: params.lotId,
-      endAt: params.endAt,
-    });
+  async publishAuctionClosingSoon(payload: AuctionClosingSoonPayload): Promise<void> {
+    await this.publisher.publish('auction.closing.soon', payload);
   }
 
-  async publishAuctionClosed(params: {
-    lotId: string;
-    reserveMet: boolean;
-    winnerUserId: string | null;
-    finalAmount: number;
-  }): Promise<void> {
-    await this.publisher.publish('auction.closed', {
-      lotId: params.lotId,
-      reserveMet: params.reserveMet,
-      winnerUserId: params.winnerUserId,
-      finalAmount: params.finalAmount,
-    });
+  async publishAuctionClosed(payload: AuctionClosedPayload): Promise<void> {
+    await this.publisher.publish('auction.closed', payload);
   }
 }

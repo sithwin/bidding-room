@@ -23,3 +23,22 @@ export type {
 } from './events/index.js';
 export { ROUTING_KEYS } from './events/index.js';
 export type { RoutingKey } from './events/index.js';
+export { envelope, listEnvelope } from './api/envelope.js';
+export {
+  catalogueLotSchema, catalogueLotImageSchema, lotListResponseSchema, lotResponseSchema,
+  lotSearchResultSchema, lotSearchResponseSchema, categorySchema, categoryListResponseSchema,
+  auctionStatusSchema, catalogueAuctionSchema, auctionListResponseSchema, auctionResponseSchema,
+  facetsResponseSchema, lotsQuery, auctionsQuery, lotActiveStatusSchema, LOT_ACTIVE_STATUSES,
+} from './api/catalogue.js';
+export type { CatalogueLot, CatalogueLotImage, CatalogueAuction } from './api/catalogue.js';
+export {
+  auctionResultRowSchema, auctionResultsResponseSchema, unsoldLotRowSchema, unsoldLotsResponseSchema,
+} from './api/auction-reports.js';
+export type { AuctionResultReportRow, UnsoldLotReportRow } from './api/auction-reports.js';
+export {
+  revenueReportSchema, revenueReportResponseSchema,
+  pendingInvoiceCountSchema, pendingInvoiceCountResponseSchema,
+} from './api/payment-reports.js';
+export type { RevenueReport, PendingInvoiceCount } from './api/payment-reports.js';
+export { pendingFulfilmentCountSchema, pendingFulfilmentCountResponseSchema } from './api/shipping-reports.js';
+export type { PendingFulfilmentCount } from './api/shipping-reports.js';

@@ -6,11 +6,11 @@
     "dev": "tsx watch --env-file .env src/main.ts",
     "build": "tsc --build",
     "start": "node dist/main.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "migrate": "tsx scripts/migrate.ts"
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@carat-room/db-migrate": "workspace:*",
     "@carat-room/shared-auth": "workspace:*",
     "@carat-room/shared-events": "workspace:*",
     "@carat-room/shared-types": "workspace:*",
@@ -23,8 +23,11 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@carat-room/test-db": "workspace:*",
+    "@carat-room/tsconfig": "workspace:*",
     "@types/node": "^20.0.0",
     "@types/uuid": "^10.0.0",
+    "@vitest/coverage-v8": "^1.6.1",
     "tsx": "^4.15.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

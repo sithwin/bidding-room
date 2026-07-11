@@ -76,8 +76,8 @@ pnpm turbo test --filter=auction-engine
 # Start all services in development mode (requires Docker Compose running)
 pnpm turbo dev
 
-# Lint all
-pnpm turbo lint
+# Lint all (includes Clean Architecture layer-boundary checks — see eslint.config.mjs)
+pnpm lint
 
 # Start local infrastructure (PostgreSQL, Redis, RabbitMQ)
 docker compose up -d
@@ -183,6 +183,35 @@ SSE (Server-Sent Events) for bid and timer updates on the lot detail page. Bids 
 
 ---
 
+## Engineering Principles — apply on EVERY change
+
+### Boy Scout Rule
+Always leave the code you touch cleaner than you found it. When editing any file:
+- Fix nearby code smells you touch: dead code, misleading names, duplicated literals, missing types, violations of the Code Standards above.
+- Keep the cleanup **small and in the same commit only if it is in the file(s) you are already changing**. Larger refactors get their own commit (prefix `refactor:`), never mixed into a feature/fix commit.
+- Never let a cleanup change behaviour without a test proving the behaviour is preserved.
+- If you spot a problem too big to fix now, record it as a one-line note in the relevant `plan.md` or raise it to the user — do not silently ignore it.
+
+### Clean Architecture
+Services follow the `domain / application / infrastructure / presentation` layering (see `apps/catalogue`). Dependencies point **inwards only**:
+- `domain/` — entities and repository **interfaces**. No imports from any other layer or any framework (Hono, pg, amqplib).
+- `application/` — use cases. May import `domain/` only; defines ports (e.g. `image-storage.ts`) that infrastructure implements.
+- `infrastructure/` — repository implementations (e.g. `postgres-*-repository.ts`), external clients. Implements domain/application interfaces; never imports presentation.
+- `presentation/` — Hono routers, request/response mapping, validation. Depends on application/domain interfaces; receives implementations by injection from `src/main.ts` (the composition root), never imports `infrastructure/` directly.
+- Business rules live in `domain/`, never in routers or repositories. SQL never appears outside `infrastructure/`.
+- New code in a service must fit this layering; when touching a file that violates it, move the logic to the correct layer (Boy Scout Rule).
+
+**Enforced by ESLint** — `pnpm lint` (root `eslint.config.mjs`) fails on any cross-layer import. Pre-existing violations are grandfathered in a "legacy debt" block in that config; the list may only shrink — never add a file to it, fix the layering instead.
+
+### SOLID
+- **S — Single responsibility**: one reason to change per module. A router routes; a repository persists; a domain service decides. If a file needs "and" to describe it, split it.
+- **O — Open/closed**: extend behaviour by adding implementations of existing interfaces, not by adding flags/branches to existing classes.
+- **L — Liskov substitution**: any implementation of a repository interface must honour its full contract (including error behaviour) — test doubles too.
+- **I — Interface segregation**: keep repository/domain interfaces narrow and per-consumer; don't force a reader to depend on write methods it never uses.
+- **D — Dependency inversion**: high-level code depends on interfaces defined in `domain/`; concrete implementations are wired at the composition root (app entry point). Never `new` an infrastructure class inside domain or presentation logic.
+
+---
+
 ## Task Completion
 
 When a task or plan step is completed, mark its checkbox in the relevant `plan.md` immediately:
@@ -224,5 +253,34 @@ When I correct you, or you catch yourself making a mistake before continuing, ad
 
 ## Lessons
 - Never hard-code values that another service owns (e.g. token TTLs) — derive them from the source of truth (the JWT `exp` claim) and extract repeated literals (cookie names) into a shared constant.
+- Never write a frontend consumer from an assumed API shape — open the backend router first and match its actual envelope (`{ data, meta }` in this repo); an `as` cast on `res.json()` validates nothing.
+- Guard cross-service responses at runtime (`Array.isArray`) — `data?.lots.map` still crashes when `data` exists but `lots` doesn't.
+- A `catch` that returns a fallback can mask contract bugs: a 200 with the wrong shape is not an error, so validate the success path too.
+- Declare a service's response types and mappers once in a shared module (e.g. `apps/user-portal/src/lib/catalogue.ts`) — per-file inline types drift independently.
+- Query param names must match the backend exactly (`offset` not `page`, `minValue` not `minPrice`) — unrecognised params are silently ignored, never rejected.
+- Verify SQL column names against the migrations; a unit test asserting the query string contains the code's own column name proves nothing when both share the wrong assumption.
+- Never put SQL in a presentation-layer router — define a domain repository interface and an infrastructure implementation, even for small endpoints; the service already has that layering, so follow it.
+- When adding a migration, mirror its schema changes into `tests/db-init/init.sql` — the test DB bootstrap does not run service migrations, so it silently drifts.
+- A form must render an error slot for every field its schema validates, plus a general server-error message — an error that is returned but never displayed looks like a dead submit button.
+- Never ask users to type an entity ID — fetch the owning service's list and render a select; a free-text "UUID" input guarantees validation failures.
+- Every mutation action needs a reachable UI entry point, including from an empty state — a per-row "add child" button is useless when the list is empty; always provide a root-level "New" button.
+- `z.string().datetime()` rejects what `<input type='datetime-local'>` emits (`2026-07-09T14:30` — no seconds, no timezone); validate with the format the HTML control actually produces (`{ local: true }` or a transform) and unit-test the schema with a real sample value from the control.
+- Before writing a proxy route, grep the downstream service for the exact target path and pass the client of the service that owns it — a proxy to a non-existent endpoint compiles fine and fails only at runtime.
+- A fetch wrapper must check `res.ok` before trusting the body shape — parsing an error envelope as the success type moves the crash into rendering code.
+- Schema unit tests are not verification for a UI flow — before marking a frontend plan step complete, drive the actual flow in the browser (submit the form, click the menu) at least once.
+- A bug report names symptoms, not scope — after root-causing the reported items, audit the entire functional chain they live in (create → schedule → bid → close → invoice → fulfil); the worst breaks were adjacent to, not inside, the reported pages.
+- An asserted RabbitMQ queue with no binding consumes nothing and raises no error — queue bindings must be explicit and required (never optional parameters), and queue/exchange names must be diffed against `infra/rabbitmq/definitions.json`.
+- Event producers and consumers must both type their payloads against `@carat-room/shared-types` — an inline payload object on either side drifts silently (`finalAmount` vs `highestAmount` broke invoicing with zero errors logged).
+- Infra declarations are part of the contract: an exchange name in `definitions.json` that differs from the code constant (`platform.events` vs `carat.events`) means every pre-provisioned binding is dead.
+- Diff every service's `process.env` reads against its `docker-compose.yml` block — env-name drift (`AMQP_URL` vs `RABBITMQ_URL`) and wrong fallback hostnames (`auction-service` vs `auction-engine`) crash or isolate services only at deploy time.
+- SQL referencing a table proves nothing about the table existing — every table named in an INSERT/SELECT needs DDL in a migration and in `tests/db-init/init.sql`; `valuation_enquiries` had neither.
+- A service must not fabricate another service's numbers — never hard-code placeholder values (`pendingInvoices: 0`) in a cross-service response; report only what you own, aggregate at the composition point, and fail soft to `null` (rendered '—'), not to a fake zero.
+- A backend feature without a reachable UI entry point is not shipped — when adding a router, add the page and navigation link in the same plan, or the feature silently doesn't exist.
+- Never accept a bug report's framing ("no button", "page crashes") as the fix's scope without tracing the full request chain to the data-owning service — a plan that labels a fix "frontend-only" must still grep the final service for the endpoint being called; proxy tests that mock the downstream client (`ServiceClient.post` etc.) will pass even when that endpoint was never implemented anywhere.
+- A field rendered in existing frontend code (e.g. a `status` or `categoryName` column) is not evidence it has a backing contract — before building on it or explaining it, trace migration → domain → router → proxy; the admin lots table rendered `status`/`categoryName` for months with no migration, no domain field, and no route ever producing either.
+- Derived state owned by another service's event-sourced aggregate (e.g. auction-engine's per-lot `SOLD`/`UNSOLD` status) must be looked up live from the owning service, never re-homed as a column on the consuming service's table — check which service the projection actually writes to before adding a field anywhere.
+- A proxy route matching 1:1 with a downstream path is not proof the downstream route exists — grep the downstream service's router file directly; `admin/lots-router.ts` proxied `PATCH /admin/api/lots/:id` to a catalogue endpoint that was never implemented.
+- A migration file sitting in `migrations/` is not a deployed schema — tests pass because vitest applies migrations to a disposable embedded Postgres, but nothing applied `003_add_lot_status.sql` to the real dev database, so the feature crashed on first real use; every service must run pending migrations on boot (`@carat-room/db-migrate`'s `runMigrations`), not just have migration files exist.
+- Migrations must be idempotent (`CREATE TABLE IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION/TRIGGER`) — a migrate-on-boot runner will replay `001` against any database that already has the tables but no `schema_migrations` history (a teammate's pre-existing local DB, or one built by hand before the runner existed), and a bare `CREATE TABLE` crashes on that replay.
 
 

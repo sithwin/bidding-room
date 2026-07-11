@@ -1,12 +1,13 @@
 import { NextRequest } from 'next/server';
 
-const AUCTION_SERVICE_URL = process.env.AUCTION_SERVICE_URL ?? 'http://localhost:3003';
+const AUCTION_SERVICE_URL = process.env.AUCTION_ENGINE_URL ?? 'http://auction-engine:3003';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { lotId: string } },
+  { params }: { params: Promise<{ lotId: string }> },
 ) {
-  const upstream = await fetch(`${AUCTION_SERVICE_URL}/api/auctions/${params.lotId}/stream`, {
+  const { lotId } = await params;
+  const upstream = await fetch(`${AUCTION_SERVICE_URL}/api/auctions/${lotId}/stream`, {
     headers: { Accept: 'text/event-stream' },
     signal: request.signal,
   });

@@ -1,5 +1,5 @@
 -- Event store: append-only, never updated
-CREATE TABLE auction_events (
+CREATE TABLE IF NOT EXISTS auction_events (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lot_id       TEXT NOT NULL,
   sequence     BIGINT NOT NULL,
@@ -9,10 +9,10 @@ CREATE TABLE auction_events (
   UNIQUE (lot_id, sequence)
 );
 
-CREATE INDEX auction_events_lot_id_idx ON auction_events (lot_id, sequence);
+CREATE INDEX IF NOT EXISTS auction_events_lot_id_idx ON auction_events (lot_id, sequence);
 
 -- Read projection: rebuilt from events; reserve_price is NEVER stored here
-CREATE TABLE lot_status (
+CREATE TABLE IF NOT EXISTS lot_status (
   lot_id              TEXT PRIMARY KEY,
   status              TEXT NOT NULL,
   current_highest_bid NUMERIC(12,2),
@@ -23,7 +23,7 @@ CREATE TABLE lot_status (
 );
 
 -- Read projection: bid history (amounts only — user_id stored for ownership checks, not exposed via API)
-CREATE TABLE bids (
+CREATE TABLE IF NOT EXISTS bids (
   id         TEXT PRIMARY KEY,
   lot_id     TEXT NOT NULL,
   user_id    TEXT NOT NULL,
@@ -31,4 +31,4 @@ CREATE TABLE bids (
   placed_at  TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX bids_lot_id_idx ON bids (lot_id, placed_at DESC);
+CREATE INDEX IF NOT EXISTS bids_lot_id_idx ON bids (lot_id, placed_at DESC);

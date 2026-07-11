@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { z } from 'zod';
+import { lotListResponseSchema } from '@carat-room/shared-types';
 import { CatalogueLots } from './catalogue-lots';
 
 // Mock useSWR
@@ -22,21 +24,18 @@ vi.mock('next-intl', () => ({
 
 import useSWR from 'swr';
 
+// Mirrors the catalogue service's { data, meta } list envelope
 const mockLots = Array.from({ length: 3 }, (_, i) => ({
-  id: `lot-${i}`,
-  auctionId: 'auction-1',
-  lotNumber: `${i + 1}`,
-  title: `Lot ${i + 1} Title`,
-  imageUrl: '/placeholder.jpg',
-  currentBid: 1000 * (i + 1),
-  currency: 'AUD',
-  endAt: new Date(Date.now() + 3600000).toISOString(),
-}));
+  id: `lot-${i}`, title: `Lot ${i + 1} Title`, description: null, auctionId: 'auction-1',
+  categoryId: null, condition: null, estimatedValue: 1000 * (i + 1),
+  images: [{ id: `img-${i}`, lotId: `lot-${i}`, url: '/full.jpg', thumbnailUrl: '/thumb.jpg', displayOrder: 0, isPrimary: true }],
+  createdBy: null, createdAt: '2026-06-20T00:00:00.000Z', updatedAt: '2026-06-20T00:00:00.000Z',
+})) satisfies z.infer<typeof lotListResponseSchema>['data'];
 
 describe('CatalogueLots', () => {
   beforeEach(() => {
     vi.mocked(useSWR).mockReturnValue({
-      data: { lots: mockLots, total: 3 },
+      data: { data: mockLots, meta: { total: 3, limit: 24, offset: 0 } },
       error: undefined,
       isLoading: false,
       isValidating: false,
@@ -78,7 +77,7 @@ describe('CatalogueLots', () => {
 
   it('renders pagination when total exceeds PAGE_SIZE', () => {
     vi.mocked(useSWR).mockReturnValue({
-      data: { lots: mockLots, total: 50 },
+      data: { data: mockLots, meta: { total: 50, limit: 24, offset: 0 } },
       error: undefined,
       isLoading: false,
       isValidating: false,
@@ -102,6 +101,20 @@ describe('CatalogueLots', () => {
 
     render(<CatalogueLots auctionId='auction-1' />);
     expect(screen.getByText('— lots')).toBeTruthy();
+  });
+
+  it('does not crash when the response has an unexpected shape', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(useSWR).mockReturnValue({
+      data: { unexpected: true },
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    } as ReturnType<typeof useSWR>);
+
+    render(<CatalogueLots auctionId='auction-1' />);
+    expect(screen.queryAllByTestId('lot-card')).toHaveLength(0);
   });
 
   it('shows error message when SWR returns an error', () => {
