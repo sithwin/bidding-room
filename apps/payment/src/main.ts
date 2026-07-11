@@ -1,7 +1,9 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { Worker } from 'bullmq';
 import { createAmqpConnection, EventPublisher, EventSubscriber } from '@carat-room/shared-events';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
 import { PostgresInvoiceRepository } from './infrastructure/postgres-invoice-repository';
 import { StripeAdapter } from './infrastructure/stripe-adapter';
@@ -37,17 +39,7 @@ const JWT_PUBLIC_KEY = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n
 
 async function main(): Promise<void> {
   const db = createDb(DATABASE_URL);
-
-  // Ensure the payment_profiles table exists (idempotent).
-  await db.unsafe(`
-    CREATE TABLE IF NOT EXISTS payment_profiles (
-      user_id                  UUID PRIMARY KEY,
-      stripe_customer_id       TEXT NOT NULL,
-      stripe_payment_method_id TEXT,
-      created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
 
   const invoiceRepository = new PostgresInvoiceRepository(db);
   const paymentProfileRepository = new PostgresPaymentProfileRepository(db);

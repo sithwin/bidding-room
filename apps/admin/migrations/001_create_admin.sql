@@ -1,4 +1,4 @@
-CREATE TABLE valuation_enquiries (
+CREATE TABLE IF NOT EXISTS valuation_enquiries (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category     TEXT NOT NULL,
   artist_maker TEXT,
@@ -10,4 +10,4 @@ CREATE TABLE valuation_enquiries (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX valuation_enquiries_status_idx ON valuation_enquiries (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS valuation_enquiries_status_idx ON valuation_enquiries (status, created_at DESC);

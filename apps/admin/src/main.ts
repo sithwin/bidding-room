@@ -1,6 +1,8 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
+import { runMigrations } from '@carat-room/db-migrate';
 import { ServiceClient } from './infrastructure/service-client';
 import { createDb } from './infrastructure/db';
 import { R2UploadClient } from './infrastructure/r2-upload-client';
@@ -25,6 +27,7 @@ async function main(): Promise<void> {
   const shipping  = new ServiceClient(process.env['SHIPPING_SERVICE_URL']  ?? 'http://shipping-service:3006');
 
   const db = createDb(process.env['ADMIN_DATABASE_URL'] ?? '');
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
   const r2 = new R2UploadClient({
     accountId: process.env['R2_ACCOUNT_ID'] ?? '',
     accessKeyId: process.env['R2_ACCESS_KEY_ID'] ?? '',

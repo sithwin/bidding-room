@@ -43,7 +43,8 @@ export default function NewUserPage() {
         </div>
         <div className='space-y-1'>
           <Label htmlFor='password'>Temporary Password</Label>
-          <Input id='password' name='password' type='password' />
+          <Input id='password' name='password' type='password' minLength={12} />
+          <p className='text-sm text-muted-foreground'>At least 12 characters.</p>
           <FieldError messages={state.errors?.password} />
         </div>
         <div className='space-y-1'>

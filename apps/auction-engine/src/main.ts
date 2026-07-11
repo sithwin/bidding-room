@@ -1,5 +1,7 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
 import { PostgresEventStore } from './infrastructure/postgres-event-store';
 import { PostgresProjectionHandler } from './infrastructure/postgres-projection-handler';
@@ -26,6 +28,7 @@ const PORT = Number(process.env['PORT'] ?? 3003);
 
 async function main(): Promise<void> {
   const db = createDb(process.env['DATABASE_URL'] ?? 'postgres://localhost/carat_auction');
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
   const redis = {
     host: process.env['REDIS_HOST'] ?? 'localhost',
     port: Number(process.env['REDIS_PORT'] ?? '6379'),

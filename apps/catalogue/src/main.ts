@@ -1,6 +1,8 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
 import { PostgresLotRepository } from './infrastructure/postgres-lot-repository';
 import { PostgresCategoryRepository } from './infrastructure/postgres-category-repository';
@@ -178,4 +180,11 @@ app.route('/', buildCatalogueRouter(useCases));
 app.route('/', buildAuctionRouter({ auctionRepository }));
 app.route('/', buildFacetsRouter({ facetRepository }));
 
-serve({ fetch: app.fetch, port: PORT });
+runMigrations(db, join(__dirname, '..', 'migrations'))
+  .then(() => {
+    serve({ fetch: app.fetch, port: PORT });
+  })
+  .catch(err => {
+    console.error('Failed to apply catalogue migrations:', err);
+    process.exit(1);
+  });

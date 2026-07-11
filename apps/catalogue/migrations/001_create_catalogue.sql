@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name          TEXT NOT NULL,
   slug          TEXT UNIQUE NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE categories (
   display_order INT NOT NULL DEFAULT 0
 );
 
-CREATE TABLE lots (
+CREATE TABLE IF NOT EXISTS lots (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title           TEXT NOT NULL,
   description     TEXT,
@@ -21,7 +21,7 @@ CREATE TABLE lots (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE lot_images (
+CREATE TABLE IF NOT EXISTS lot_images (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   lot_id        UUID NOT NULL REFERENCES lots(id) ON DELETE CASCADE,
   url           TEXT NOT NULL,
@@ -30,10 +30,10 @@ CREATE TABLE lot_images (
   is_primary    BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE INDEX lots_search_idx ON lots USING GIN(search_vector);
-CREATE INDEX lot_images_lot_id_idx ON lot_images(lot_id);
+CREATE INDEX IF NOT EXISTS lots_search_idx ON lots USING GIN(search_vector);
+CREATE INDEX IF NOT EXISTS lot_images_lot_id_idx ON lot_images(lot_id);
 
-CREATE FUNCTION lots_search_vector_update() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION lots_search_vector_update() RETURNS trigger AS $$
 BEGIN
   NEW.search_vector :=
     setweight(to_tsvector('english', COALESCE(NEW.title, '')), 'A') ||
@@ -42,6 +42,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER lots_search_vector_trigger
+CREATE OR REPLACE TRIGGER lots_search_vector_trigger
   BEFORE INSERT OR UPDATE OF title, description ON lots
   FOR EACH ROW EXECUTE FUNCTION lots_search_vector_update();

@@ -1,5 +1,7 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db/db';
 import { PostgresFulfilmentRepository } from './infrastructure/db/postgres-fulfilment-repository';
 import { CreateFulfilmentUseCase } from './application/create-fulfilment.use-case';
@@ -28,6 +30,7 @@ async function main(): Promise<void> {
   }
 
   const db = createDb(databaseUrl);
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
   const repo = new PostgresFulfilmentRepository(db);
 
   const createFulfilment = new CreateFulfilmentUseCase(repo);

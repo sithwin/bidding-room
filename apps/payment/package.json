@@ -7,10 +7,10 @@
     "build": "tsc --build",
     "start": "node dist/main.js",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "migrate": "tsx scripts/migrate.ts"
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@carat-room/db-migrate": "workspace:*",
     "@carat-room/shared-auth": "workspace:*",
     "@carat-room/shared-events": "workspace:*",
     "@carat-room/shared-types": "workspace:*",
