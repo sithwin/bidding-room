@@ -27,7 +27,7 @@ import useSWR from 'swr';
 // Mirrors the catalogue service's { data, meta } list envelope
 const mockLots = Array.from({ length: 3 }, (_, i) => ({
   id: `lot-${i}`, title: `Lot ${i + 1} Title`, description: null, auctionId: 'auction-1',
-  categoryId: null, condition: null, estimatedValue: 1000 * (i + 1),
+  categoryId: null, condition: null, estimatedValue: 1000 * (i + 1), status: 'ACTIVE' as const,
   images: [{ id: `img-${i}`, lotId: `lot-${i}`, url: '/full.jpg', thumbnailUrl: '/thumb.jpg', displayOrder: 0, isPrimary: true }],
   createdBy: null, createdAt: '2026-06-20T00:00:00.000Z', updatedAt: '2026-06-20T00:00:00.000Z',
 })) satisfies z.infer<typeof lotListResponseSchema>['data'];

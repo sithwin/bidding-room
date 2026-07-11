@@ -15,7 +15,7 @@ import HomePage from './page';
 
 const lotFixture = {
   id: 'lot-1', title: 'Art Deco Diamond Ring', description: null, auctionId: 'auction-1',
-  categoryId: null, condition: 'EXCELLENT', estimatedValue: 4200,
+  categoryId: null, condition: 'EXCELLENT', estimatedValue: 4200, status: 'ACTIVE',
   images: [{ id: 'img-1', lotId: 'lot-1', url: '/ring.jpg', thumbnailUrl: '/ring_t.jpg', displayOrder: 0, isPrimary: true }],
   createdBy: null, createdAt: '2026-06-20T00:00:00.000Z', updatedAt: '2026-06-20T00:00:00.000Z',
 } satisfies z.infer<typeof lotListResponseSchema>['data'][number];
