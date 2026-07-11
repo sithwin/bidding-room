@@ -289,6 +289,7 @@ describe('ConfirmImageUploadUseCase', () => {
     const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
     expect(savedLot.images).toHaveLength(1);
     expect(savedLot.images[0].isPrimary).toBe(false);
+    expect(savedLot.images[0].key).toBe('lots/lot-1/img');
   });
 
   it('should_demoteExistingPrimary_when_isPrimaryIsTrue', async () => {

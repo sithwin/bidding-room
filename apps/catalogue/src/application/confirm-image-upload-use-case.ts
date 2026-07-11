@@ -21,6 +21,7 @@ export class ConfirmImageUploadUseCase {
 
     const newImage: LotImage = {
       id: uuidv4(),
+      key: imageKey,
       lotId,
       url,
       thumbnailUrl,
