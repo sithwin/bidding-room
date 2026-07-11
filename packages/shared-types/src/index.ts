@@ -66,3 +66,12 @@ export {
   paySavedCardResponseSchema, paymentProfileResponseSchema, invoicesQuery,
 } from './api/payment.js';
 export type { PaymentInvoice, PaymentProfile } from './api/payment.js';
+export {
+  fulfilmentStatusSchema, fulfilmentMethodSchema, shippingAddressSchema, collectionSlotSchema,
+  fulfilmentSchema, fulfilmentResponseSchema, fulfilmentListResponseSchema,
+  pendingCountResponseSchema, fulfilmentSuccessResponseSchema, fulfilmentIdResponseSchema,
+  chooseShipRequestSchema, chooseCollectRequestSchema, fulfilmentsQuery,
+} from './api/shipping.js';
+export type {
+  ShippingFulfilment, FulfilmentShippingAddress, FulfilmentCollectionSlot,
+} from './api/shipping.js';
