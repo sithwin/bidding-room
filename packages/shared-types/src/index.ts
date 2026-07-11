@@ -42,3 +42,13 @@ export {
 export type { RevenueReport, PendingInvoiceCount } from './api/payment-reports.js';
 export { pendingFulfilmentCountSchema, pendingFulfilmentCountResponseSchema } from './api/shipping-reports.js';
 export type { PendingFulfilmentCount } from './api/shipping-reports.js';
+export {
+  apiErrorSchema, stringErrorSchema, userStatusSchema, userRoleSchema, messageResponseSchema,
+  accessTokenResponseSchema, meSchema, meResponseSchema, emailLookupResponseSchema,
+  identityDocumentResponseSchema, adminUserSummarySchema, adminUserDetailSchema,
+  adminUserListResponseSchema, adminUserResponseSchema, adminUserIdResponseSchema,
+  registerRequestSchema, loginRequestSchema, verifyEmailRequestSchema, phoneRequestSchema,
+  phoneVerifyRequestSchema, updateProfileRequestSchema, adminCreateUserRequestSchema,
+  adminUpdateUserRequestSchema, usersQuery,
+} from './api/user-auth.js';
+export type { Me, AdminUserSummary, AdminUserDetail } from './api/user-auth.js';
