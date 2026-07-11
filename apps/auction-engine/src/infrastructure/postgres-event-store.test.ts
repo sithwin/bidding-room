@@ -1,10 +1,14 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterAll, afterEach } from 'vitest';
 import { createDb } from './db';
 import { PostgresEventStore } from './postgres-event-store';
 import { AuctionDomainEvent } from '../domain/auction-events';
 
 const db = createDb(process.env['TEST_DATABASE_URL'] ?? 'postgres://localhost/carat_auction_test');
 const store = new PostgresEventStore(db);
+
+afterAll(async () => {
+  await db.end();
+});
 
 const SCHEDULED_EVENT: AuctionDomainEvent = {
   type: 'AuctionScheduled',
