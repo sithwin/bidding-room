@@ -90,6 +90,9 @@ export function buildLotsRouter(clients: LotsRouterClients): Hono {
   r.post('/admin/api/lots/:id/images/upload-url', auth, async c =>
     proxy(async () => catalogue.post(`/api/lots/${c.req.param('id')}/images/upload-url`, tok(c), await c.req.json()), c));
 
+  r.post('/admin/api/lots/:id/images/confirm', auth, async c =>
+    proxy(async () => catalogue.post(`/api/lots/${c.req.param('id')}/images/confirm`, tok(c), await c.req.json()), c));
+
   r.delete('/admin/api/lots/:id/images/:imageId', auth, async c =>
     proxy(() => catalogue.delete(`/api/lots/${c.req.param('id')}/images/${c.req.param('imageId')}`, tok(c)), c));
 
