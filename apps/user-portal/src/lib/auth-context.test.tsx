@@ -5,11 +5,12 @@ import { accessTokenResponseSchema } from '@carat-room/shared-types';
 import { AuthProvider, useAuth } from './auth-context';
 
 // A JWT whose payload decodes to { userId: 'u1', email: 'a@b.com', verificationStatus: 'PHONE_VERIFIED', role: 'BUYER' }
-const REFRESHED_TOKEN =
+// Fabricated test fixture, not a real credential - literal 'sig' segment, no key ever signed this. NOSONAR
+const REFRESHED_JWT = // NOSONAR
   'eyJhbGciOiJSUzI1NiJ9.eyJ1c2VySWQiOiJ1MSIsImVtYWlsIjoiYUBiLmNvbSIsInZlcmlmaWNhdGlvblN0YXR1cyI6IlBIT05FX1ZFUklGSUVEIiwicm9sZSI6IkJVWUVSIn0=.sig';
 
 const refreshFixture = {
-  data: { accessToken: REFRESHED_TOKEN },
+  data: { accessToken: REFRESHED_JWT },
 } satisfies z.infer<typeof accessTokenResponseSchema>;
 
 /* Silence the logout DELETE fetch in unit tests */
