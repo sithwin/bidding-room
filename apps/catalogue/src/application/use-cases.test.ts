@@ -8,6 +8,7 @@ import { RenameCategoryUseCase } from './rename-category-use-case';
 import { DeleteCategoryUseCase } from './delete-category-use-case';
 import { ConfirmImageUploadUseCase } from './confirm-image-upload-use-case';
 import { DeleteImageUseCase } from './delete-image-use-case';
+import { ReorderImagesUseCase } from './reorder-images-use-case';
 import { CreateLotUseCase } from './create-lot-use-case';
 import { UpdateLotUseCase } from './update-lot-use-case';
 import { Lot, LotCondition, LotImage } from '../domain/lot';
@@ -16,7 +17,7 @@ import { LotRepository, PaginatedResult } from '../domain/lot-repository';
 import { CategoryRepository } from '../domain/category-repository';
 import { SearchRepository, LotSearchResult } from '../domain/search-repository';
 import { ImageStorage } from './image-storage';
-import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError, LotImageNotFoundError } from '../domain/errors';
+import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError, LotImageNotFoundError, ImageOrderMismatchError } from '../domain/errors';
 
 function buildLot(): Lot {
   return new Lot({
@@ -418,5 +419,40 @@ describe('DeleteImageUseCase', () => {
 
     const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
     expect(savedLot.images.find(img => img.id === 'img-1')?.isPrimary).toBe(true);
+  });
+});
+
+describe('ReorderImagesUseCase', () => {
+  it('should_throw_when_lotDoesNotExist', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(null), findAll: vi.fn(), save: vi.fn() };
+
+    await expect(new ReorderImagesUseCase(mockRepo).execute('nonexistent', ['img-1']))
+      .rejects.toThrow(LotNotFoundError);
+  });
+
+  it('should_throw_when_imageIdsDoNotMatchLotsCurrentImages', async () => {
+    const images: LotImage[] = [
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/a', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true },
+      { id: 'img-2', lotId: 'lot-1', key: 'lots/lot-1/b', url: 'https://b', thumbnailUrl: 'https://b_thumb', displayOrder: 1, isPrimary: false },
+    ];
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(buildLotWithImages(images)), findAll: vi.fn(), save: vi.fn() };
+
+    await expect(new ReorderImagesUseCase(mockRepo).execute('lot-1', ['img-1', 'img-nonexistent']))
+      .rejects.toThrow(ImageOrderMismatchError);
+    expect(mockRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('should_reassignDisplayOrder_when_validReorderGiven', async () => {
+    const images: LotImage[] = [
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/a', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true },
+      { id: 'img-2', lotId: 'lot-1', key: 'lots/lot-1/b', url: 'https://b', thumbnailUrl: 'https://b_thumb', displayOrder: 1, isPrimary: false },
+    ];
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(buildLotWithImages(images)), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+
+    await new ReorderImagesUseCase(mockRepo).execute('lot-1', ['img-2', 'img-1']);
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.images.find(img => img.id === 'img-2')?.displayOrder).toBe(0);
+    expect(savedLot.images.find(img => img.id === 'img-1')?.displayOrder).toBe(1);
   });
 });
