@@ -17,9 +17,10 @@ const TWILIO_ACCOUNT_SID = process.env['TWILIO_ACCOUNT_SID'] ?? '';
 const TWILIO_AUTH_TOKEN = process.env['TWILIO_AUTH_TOKEN'] ?? '';
 const TWILIO_PHONE_NUMBER = process.env['TWILIO_PHONE_NUMBER'] ?? '';
 const APP_BASE_URL = process.env['APP_BASE_URL'] ?? 'https://thecaratroom.com';
-const USER_SERVICE_URL = process.env['USER_SERVICE_URL'] ?? 'http://user-service:3001';
-const CATALOGUE_SERVICE_URL = process.env['CATALOGUE_SERVICE_URL'] ?? 'http://catalogue-service:3002';
-const AUCTION_ENGINE_URL = process.env['AUCTION_ENGINE_URL'] ?? 'http://auction-engine:3003';
+// http fallbacks are intentional: private Docker-network traffic; TLS terminates at the Nginx edge
+const USER_SERVICE_URL = process.env['USER_SERVICE_URL'] ?? 'http://user-service:3001'; // NOSONAR
+const CATALOGUE_SERVICE_URL = process.env['CATALOGUE_SERVICE_URL'] ?? 'http://catalogue-service:3002'; // NOSONAR
+const AUCTION_ENGINE_URL = process.env['AUCTION_ENGINE_URL'] ?? 'http://auction-engine:3003'; // NOSONAR
 
 async function main(): Promise<void> {
   const sql = createPostgresClient(DATABASE_URL);

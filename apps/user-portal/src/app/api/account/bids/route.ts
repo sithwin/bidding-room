@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const AUCTION_SERVICE_URL = process.env.AUCTION_ENGINE_URL ?? 'http://auction-engine:3003';
+import { AUCTION_ENGINE_URL } from '@/lib/service-config';
 
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization') ?? '';
-  const res = await fetch(`${AUCTION_SERVICE_URL}/api/account/bids${request.nextUrl.search}`, { headers: { Authorization: auth }, cache: 'no-store' });
+  const res = await fetch(`${AUCTION_ENGINE_URL}/api/account/bids${request.nextUrl.search}`, { headers: { Authorization: auth }, cache: 'no-store' });
   return NextResponse.json(await res.json(), { status: res.status });
 }
