@@ -1,35 +1,34 @@
 'use client';
 import { useState } from 'react';
-import Image from 'next/image';
 import useSWR from 'swr';
 import { Header } from '@/components/layout/header';
 
-type Auction = { id: string; title: string; saleDate: string; lotCount: number; status: 'upcoming' | 'open' | 'closed'; location: string; imageUrl: string };
+import { auctionsQuery, type CatalogueAuction } from '@carat-room/shared-types';
+import { parseAuctionList } from '@/lib/catalogue';
+
 type Tab = 'upcoming' | 'live' | 'results';
 
 const fetcher = (url: string) => fetch(url).then(r => r.json());
 
-function AuctionRow({ auction }: { auction: Auction }) {
-  const date = new Date(auction.saleDate);
+function AuctionRow({ auction }: { auction: CatalogueAuction }) {
+  const date = auction.saleDate ? new Date(auction.saleDate) : null;
   return (
     <div className='flex items-center gap-6 bg-paper border border-[var(--line)] p-5'>
       {/* Date column */}
       <div className='w-16 text-center shrink-0'>
-        <p className='font-serif text-2xl font-semibold text-ink'>{date.getDate()}</p>
-        <p className='font-sans text-xs text-mut uppercase'>{date.toLocaleString('en-AU', { month: 'short' })}</p>
+        <p className='font-serif text-2xl font-semibold text-ink'>{date ? date.getDate() : '—'}</p>
+        <p className='font-sans text-xs text-mut uppercase'>{date ? date.toLocaleString('en-AU', { month: 'short' }) : ''}</p>
       </div>
 
       {/* Thumbnail */}
       <div className='relative w-16 h-16 shrink-0 border border-[var(--line)] overflow-hidden'>
-        {auction.imageUrl
-          ? <Image src={auction.imageUrl} alt={auction.title} fill className='object-cover' />
-          : <div className='w-full h-full bg-cream' />}
+        <div className='w-full h-full bg-cream' />
       </div>
 
       {/* Text */}
       <div className='flex-1 min-w-0'>
         <p className='font-serif text-base font-semibold text-ink truncate'>{auction.title}</p>
-        <p className='font-sans text-sm text-mut'>{auction.lotCount} lots · {auction.location}</p>
+        <p className='font-sans text-sm text-mut'>{auction.lotCount} lots · {auction.location ?? '—'}</p>
       </div>
 
       {/* CTA */}
@@ -42,9 +41,10 @@ function AuctionRow({ auction }: { auction: Auction }) {
 
 export default function CalendarPage() {
   const [tab, setTab] = useState<Tab>('upcoming');
-  const { data } = useSWR<{ auctions: Auction[] }>('/api/catalogue/auctions?limit=50', fetcher, { revalidateOnFocus: false });
+  const { data } = useSWR<unknown>(`/api/catalogue/auctions?${auctionsQuery({ limit: 50 })}`, fetcher, { revalidateOnFocus: false });
 
-  const auctions = data?.auctions ?? [];
+  // undefined = still loading — do not run it through the schema (it would log a spurious contract error)
+  const auctions = data === undefined ? [] : parseAuctionList(data);
   const filtered = {
     upcoming: auctions.filter(a => a.status === 'upcoming'),
     live:     auctions.filter(a => a.status === 'open'),
