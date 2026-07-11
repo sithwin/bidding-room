@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ImageStorage } from '../application/image-storage';
 
@@ -39,5 +39,9 @@ export class R2ImageStorage implements ImageStorage {
 
   async getPublicUrl(key: string): Promise<string> {
     return `${this.publicBaseUrl}/${key}`;
+  }
+
+  async deleteObject(key: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 }
