@@ -6,14 +6,15 @@ COPY packages/ ./packages/
 COPY apps/notification-service/ ./apps/notification-service/
 
 FROM base AS deps
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @carat-room/notification-service rebuild
 
 FROM deps AS builder
 RUN pnpm --filter @carat-room/notification-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-COPY --from=builder /app/apps/notification-service/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/apps/notification-service/dist ./dist
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+USER node
 EXPOSE 3005
 CMD ["node", "dist/main.js"]
