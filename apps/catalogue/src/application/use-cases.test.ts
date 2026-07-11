@@ -7,15 +7,16 @@ import { CreateCategoryUseCase } from './create-category-use-case';
 import { RenameCategoryUseCase } from './rename-category-use-case';
 import { DeleteCategoryUseCase } from './delete-category-use-case';
 import { ConfirmImageUploadUseCase } from './confirm-image-upload-use-case';
+import { DeleteImageUseCase } from './delete-image-use-case';
 import { CreateLotUseCase } from './create-lot-use-case';
 import { UpdateLotUseCase } from './update-lot-use-case';
-import { Lot, LotCondition } from '../domain/lot';
+import { Lot, LotCondition, LotImage } from '../domain/lot';
 import { Category } from '../domain/category';
 import { LotRepository, PaginatedResult } from '../domain/lot-repository';
 import { CategoryRepository } from '../domain/category-repository';
 import { SearchRepository, LotSearchResult } from '../domain/search-repository';
 import { ImageStorage } from './image-storage';
-import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError } from '../domain/errors';
+import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError, LotImageNotFoundError } from '../domain/errors';
 
 function buildLot(): Lot {
   return new Lot({
@@ -327,5 +328,95 @@ describe('ConfirmImageUploadUseCase', () => {
     const newImg = savedLot.images.find(img => img.isPrimary);
     expect(existingImg?.isPrimary).toBe(false);
     expect(newImg?.id).not.toBe('img-existing');
+  });
+});
+
+function buildLotWithImages(images: LotImage[]): Lot {
+  return new Lot({
+    id: 'lot-1',
+    title: 'Cartier Love Ring',
+    description: null,
+    categoryId: 'cat-1',
+    condition: LotCondition.Excellent,
+    estimatedValue: 3000,
+    images,
+    createdBy: null,
+    createdAt: new Date('2026-06-20T00:00:00Z'),
+    updatedAt: new Date('2026-06-20T00:00:00Z'),
+  });
+}
+
+describe('DeleteImageUseCase', () => {
+  it('should_throw_when_lotDoesNotExist', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(null), findAll: vi.fn(), save: vi.fn() };
+    const mockStorage: ImageStorage = { generatePresignedUploadUrl: vi.fn(), getPublicUrl: vi.fn(), deleteObject: vi.fn() };
+
+    await expect(new DeleteImageUseCase(mockRepo, mockStorage).execute('nonexistent', 'img-1'))
+      .rejects.toThrow(LotNotFoundError);
+  });
+
+  it('should_throw_when_imageDoesNotExistOnLot', async () => {
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(buildLotWithImages([])), findAll: vi.fn(), save: vi.fn() };
+    const mockStorage: ImageStorage = { generatePresignedUploadUrl: vi.fn(), getPublicUrl: vi.fn(), deleteObject: vi.fn() };
+
+    await expect(new DeleteImageUseCase(mockRepo, mockStorage).execute('lot-1', 'nonexistent'))
+      .rejects.toThrow(LotImageNotFoundError);
+  });
+
+  it('should_deleteBothOriginalAndThumbnailObjects_when_imageDeleted', async () => {
+    const images: LotImage[] = [
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/a', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: false },
+    ];
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(buildLotWithImages(images)), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+    const mockStorage: ImageStorage = { generatePresignedUploadUrl: vi.fn(), getPublicUrl: vi.fn(), deleteObject: vi.fn().mockResolvedValue(undefined) };
+
+    await new DeleteImageUseCase(mockRepo, mockStorage).execute('lot-1', 'img-1');
+
+    expect(mockStorage.deleteObject).toHaveBeenCalledWith('lots/lot-1/a');
+    expect(mockStorage.deleteObject).toHaveBeenCalledWith('lots/lot-1/a_thumb');
+  });
+
+  it('should_promoteLowestDisplayOrderRemaining_when_primaryImageDeleted', async () => {
+    const images: LotImage[] = [
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/a', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true },
+      { id: 'img-2', lotId: 'lot-1', key: 'lots/lot-1/b', url: 'https://b', thumbnailUrl: 'https://b_thumb', displayOrder: 1, isPrimary: false },
+      { id: 'img-3', lotId: 'lot-1', key: 'lots/lot-1/c', url: 'https://c', thumbnailUrl: 'https://c_thumb', displayOrder: 2, isPrimary: false },
+    ];
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(buildLotWithImages(images)), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+    const mockStorage: ImageStorage = { generatePresignedUploadUrl: vi.fn(), getPublicUrl: vi.fn(), deleteObject: vi.fn().mockResolvedValue(undefined) };
+
+    await new DeleteImageUseCase(mockRepo, mockStorage).execute('lot-1', 'img-1');
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.images).toHaveLength(2);
+    expect(savedLot.images.find(img => img.id === 'img-2')?.isPrimary).toBe(true);
+    expect(savedLot.images.map(img => img.displayOrder)).toEqual([0, 1]);
+  });
+
+  it('should_leaveNoPrimary_when_lastImageDeleted', async () => {
+    const images: LotImage[] = [
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/a', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true },
+    ];
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(buildLotWithImages(images)), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+    const mockStorage: ImageStorage = { generatePresignedUploadUrl: vi.fn(), getPublicUrl: vi.fn(), deleteObject: vi.fn().mockResolvedValue(undefined) };
+
+    await new DeleteImageUseCase(mockRepo, mockStorage).execute('lot-1', 'img-1');
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.images).toHaveLength(0);
+  });
+
+  it('should_notChangePrimary_when_nonPrimaryImageDeleted', async () => {
+    const images: LotImage[] = [
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/a', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true },
+      { id: 'img-2', lotId: 'lot-1', key: 'lots/lot-1/b', url: 'https://b', thumbnailUrl: 'https://b_thumb', displayOrder: 1, isPrimary: false },
+    ];
+    const mockRepo: LotRepository = { findById: vi.fn().mockResolvedValue(buildLotWithImages(images)), findAll: vi.fn(), save: vi.fn().mockResolvedValue(undefined) };
+    const mockStorage: ImageStorage = { generatePresignedUploadUrl: vi.fn(), getPublicUrl: vi.fn(), deleteObject: vi.fn().mockResolvedValue(undefined) };
+
+    await new DeleteImageUseCase(mockRepo, mockStorage).execute('lot-1', 'img-2');
+
+    const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
+    expect(savedLot.images.find(img => img.id === 'img-1')?.isPrimary).toBe(true);
   });
 });
