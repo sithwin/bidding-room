@@ -41,7 +41,7 @@ async function main(): Promise<void> {
   const submitEnquiry = new SubmitValuationEnquiryUseCase(enquiryRepo, publishEvent);
 
   const app = new Hono();
-  app.route('/', buildLotsRouter(catalogue));
+  app.route('/', buildLotsRouter({ catalogue, auction }));
   app.route('/', buildCategoriesRouter(catalogue));
   app.route('/', buildAuctionsRouter({ auction, catalogue }));
   app.route('/', buildUsersRouter(user));

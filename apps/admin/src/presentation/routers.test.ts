@@ -44,7 +44,7 @@ const authHeader = () => ({ Authorization: 'Bearer admin-token' });
 describe('Lots router', () => {
   it('should_return200_when_listingLots', async () => {
     vi.mocked(mockClient.get).mockResolvedValue({ data: [] });
-    const app = new Hono().route('/', buildLotsRouter(mockClient));
+    const app = new Hono().route('/', buildLotsRouter({ catalogue: mockClient, auction: mockClient }));
 
     const res = await app.request('/admin/api/lots?status=DRAFT', { headers: authHeader() });
 
@@ -54,7 +54,7 @@ describe('Lots router', () => {
 
   it('should_return200_when_fetchingSingleLot', async () => {
     vi.mocked(mockClient.get).mockResolvedValue({ data: { id: 'lot-1' } });
-    const app = new Hono().route('/', buildLotsRouter(mockClient));
+    const app = new Hono().route('/', buildLotsRouter({ catalogue: mockClient, auction: mockClient }));
 
     const res = await app.request('/admin/api/lots/lot-1', { headers: authHeader() });
 
@@ -64,7 +64,7 @@ describe('Lots router', () => {
 
   it('should_return200_when_postingNewLot', async () => {
     vi.mocked(mockClient.post).mockResolvedValue({ data: { id: 'lot-1' } });
-    const app = new Hono().route('/', buildLotsRouter(mockClient));
+    const app = new Hono().route('/', buildLotsRouter({ catalogue: mockClient, auction: mockClient }));
 
     const res = await app.request('/admin/api/lots', {
       method: 'POST',
@@ -78,7 +78,7 @@ describe('Lots router', () => {
 
   it('should_propagateStatusCode_when_downstreamReturnsError', async () => {
     vi.mocked(mockClient.patch).mockRejectedValue(new ServiceError(404, { error: { code: 'NOT_FOUND' } }));
-    const app = new Hono().route('/', buildLotsRouter(mockClient));
+    const app = new Hono().route('/', buildLotsRouter({ catalogue: mockClient, auction: mockClient }));
 
     const res = await app.request('/admin/api/lots/lot-1', {
       method: 'PATCH',
@@ -87,6 +87,57 @@ describe('Lots router', () => {
     });
 
     expect(res.status).toBe(404);
+  });
+
+  it('should_includeCategoryNameAndAuctionStatus_when_listingLots', async () => {
+    const catalogue = new ServiceClient('http://mock');
+    const auction = new ServiceClient('http://mock');
+    vi.mocked(catalogue.get).mockImplementation(async (url: string) => {
+      if (url === '/api/categories') return { data: [{ id: 'cat-1', name: 'Rings' }] };
+      return { data: [{ id: 'lot-1', categoryId: 'cat-1', auctionId: 'auction-1' }], meta: { total: 1 } };
+    });
+    vi.mocked(auction.get).mockResolvedValue({ data: { status: 'LIVE' } });
+    const app = new Hono().route('/', buildLotsRouter({ catalogue, auction }));
+
+    const res = await app.request('/admin/api/lots', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data[0].categoryName).toBe('Rings');
+    expect(body.data[0].auctionStatus).toBe('LIVE');
+  });
+
+  it('should_setAuctionStatusUnscheduled_when_lotHasNoAuctionId', async () => {
+    const catalogue = new ServiceClient('http://mock');
+    const auction = new ServiceClient('http://mock');
+    vi.mocked(catalogue.get).mockImplementation(async (url: string) => {
+      if (url === '/api/categories') return { data: [] };
+      return { data: [{ id: 'lot-1', categoryId: null, auctionId: null }], meta: { total: 1 } };
+    });
+    const app = new Hono().route('/', buildLotsRouter({ catalogue, auction }));
+
+    const res = await app.request('/admin/api/lots', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(body.data[0].auctionStatus).toBe('UNSCHEDULED');
+    expect(auction.get).not.toHaveBeenCalled();
+  });
+
+  it('should_setAuctionStatusNull_when_auctionEngineLookupFails', async () => {
+    const catalogue = new ServiceClient('http://mock');
+    const auction = new ServiceClient('http://mock');
+    vi.mocked(catalogue.get).mockImplementation(async (url: string) => {
+      if (url === '/api/categories') return { data: [] };
+      return { data: [{ id: 'lot-1', categoryId: null, auctionId: 'auction-1' }], meta: { total: 1 } };
+    });
+    vi.mocked(auction.get).mockRejectedValue(new ServiceError(500, { error: { code: 'INTERNAL_ERROR' } }));
+    const app = new Hono().route('/', buildLotsRouter({ catalogue, auction }));
+
+    const res = await app.request('/admin/api/lots', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data[0].auctionStatus).toBeNull();
   });
 });
 

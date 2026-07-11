@@ -60,3 +60,19 @@ export async function fetchCategoryNameMap(
     return new Map();
   }
 }
+
+// Auction status is event-sourced and owned entirely by auction-engine — this is a read-only
+// lookup, never written from admin-service. Lists stay usable even when auction-engine is down,
+// so lookups fail soft to null.
+export async function fetchLotAuctionStatus(
+  auction: ServiceClient,
+  lotId: string,
+  token: string,
+): Promise<string | null> {
+  try {
+    const res = await auction.get<{ data: { status?: string } }>(`/api/auctions/${lotId}`, token);
+    return res.data?.status ?? null;
+  } catch {
+    return null;
+  }
+}
