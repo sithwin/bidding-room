@@ -8,6 +8,7 @@ import { parseMe, errorMessage } from '@/lib/user-auth';
 import { parseSetupIntent } from '@/lib/payment';
 import { DropZone } from '@/components/primitives/drop-zone';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
+import type { StripeCardElement } from '@stripe/stripe-js';
 import useSWR from 'swr';
 
 const STEPS = ['Account', 'Identity', 'Payment', 'Approved'] as const;
@@ -122,7 +123,9 @@ function Step3Payment({ onDone }: { onDone: () => void }) {
     const clientSecret = parseSetupIntent(setupIntentJson);
     if (!clientSecret) { setError(errorMessage(setupIntentJson, 'Failed to initialise payment')); setIsLoading(false); return; }
 
-    const card = elements.getElement(CardElement);
+    // getElement's overloads collapse to the first structurally-compatible one (AuBankAccountElement)
+    // since @stripe/react-stripe-js@6.7's element component types are all-optional FunctionComponent props
+    const card = elements.getElement(CardElement) as StripeCardElement | null;
     if (!card) return;
 
     const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, { payment_method: { card } });
