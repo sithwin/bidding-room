@@ -1,6 +1,10 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+hoistPattern:
+  - '*'
+  - '!@types/react'
+  - '!@types/react-dom'
 allowBuilds:
   '@parcel/watcher': true
   '@swc/core': true
@@ -15,3 +19,16 @@ onlyBuiltDependencies:
   - esbuild
   - msgpackr-extract
   - sharp
+packageExtensions:
+  '@react-email/components':
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+  '@react-email/render':
+    peerDependencies:
+      '@types/react': '*'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true

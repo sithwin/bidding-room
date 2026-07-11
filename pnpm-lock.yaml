@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+packageExtensionsChecksum: sha256-Zmrf2KZnujYoUQJVsGot+2SDuYek874fFx1OUBS/lRY=
+
 importers:
 
   .:
@@ -335,7 +337,7 @@ importers:
         version: 0.0.22(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
       '@react-email/render':
         specifier: ^0.0.17
-        version: 0.0.17(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
+        version: 0.0.17(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
       hono:
         specifier: ^4.4.0
         version: 4.12.26
@@ -347,7 +349,7 @@ importers:
         version: 18.3.1
       resend:
         specifier: ^3.2.0
-        version: 3.5.0(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
+        version: 3.5.0(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
       twilio:
         specifier: ^5.2.0
         version: 5.13.1
@@ -2301,7 +2303,11 @@ packages:
     engines: {node: '>=18.0.0'}
     deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
+      '@types/react': '*'
       react: ^18.2.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@react-email/container@0.0.13':
     resolution: {integrity: sha512-ftke0N1FZl8MX3XXxXiiOaiJOnrQz7ZXUyqNj81K+BK+DePWIVaSmgK6Bu8fFnsgwdKuBdqjZTEtF4sIkU3FuQ==}
@@ -2376,15 +2382,23 @@ packages:
     resolution: {integrity: sha512-wDaMy27xAq1cJHtSFptp0DTKPuV2GYhloqia95ub/DH9Dea1aWYsbdM918MOc/b/HvVS3w1z8DWzfAk13bGStQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
+      '@types/react': '*'
       react: ^18.2.0
       react-dom: ^18.2.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@react-email/render@0.0.17':
     resolution: {integrity: sha512-xBQ+/73+WsGuXKY7r1U73zMBNV28xdV0cp9cFjhNYipBReDHhV97IpA6v7Hl0dDtDzt+yS/72dY5vYXrF1v8NA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
+      '@types/react': '*'
       react: ^18.2.0
       react-dom: ^18.2.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   '@react-email/row@0.0.9':
     resolution: {integrity: sha512-ZDASHVvyKrWBS00o5pSH5khfMf46UtZhrHcSAfPSiC4nj7R8A0bf+3Wmbk8YmsaV+qWXUCUSHWwIAAlMRnJoAA==}
@@ -6440,14 +6454,15 @@ snapshots:
       '@react-email/link': 0.0.9(react@18.3.1)
       '@react-email/markdown': 0.0.11(react@18.3.1)
       '@react-email/preview': 0.0.10(react@18.3.1)
-      '@react-email/render': 0.0.17(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
+      '@react-email/render': 0.0.17(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
       '@react-email/row': 0.0.9(react@18.3.1)
       '@react-email/section': 0.0.13(react@18.3.1)
       '@react-email/tailwind': 0.0.19(react@18.3.1)
       '@react-email/text': 0.0.9(react@18.3.1)
       react: 18.3.1
+    optionalDependencies:
+      '@types/react': 18.3.31
     transitivePeerDependencies:
-      - '@types/react'
       - react-dom
 
   '@react-email/container@0.0.13(react@18.3.1)':
@@ -6494,21 +6509,25 @@ snapshots:
     dependencies:
       react: 18.3.1
 
-  '@react-email/render@0.0.16(react-dom@19.2.7(react@18.3.1))(react@18.3.1)':
+  '@react-email/render@0.0.16(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1)':
     dependencies:
       html-to-text: 9.0.5
       js-beautify: 1.15.4
       react: 18.3.1
       react-dom: 19.2.7(react@18.3.1)
       react-promise-suspense: 0.3.4
+    optionalDependencies:
+      '@types/react': 18.3.31
 
-  '@react-email/render@0.0.17(react-dom@19.2.7(react@18.3.1))(react@18.3.1)':
+  '@react-email/render@0.0.17(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1)':
     dependencies:
       html-to-text: 9.0.5
       js-beautify: 1.15.4
       react: 18.3.1
       react-dom: 19.2.7(react@18.3.1)
       react-promise-suspense: 0.3.4
+    optionalDependencies:
+      '@types/react': 18.3.31
 
   '@react-email/row@0.0.9(react@18.3.1)':
     dependencies:
@@ -8606,10 +8625,11 @@ snapshots:
 
   requires-port@1.0.0: {}
 
-  resend@3.5.0(react-dom@19.2.7(react@18.3.1))(react@18.3.1):
+  resend@3.5.0(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1):
     dependencies:
-      '@react-email/render': 0.0.16(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
+      '@react-email/render': 0.0.16(@types/react@18.3.31)(react-dom@19.2.7(react@18.3.1))(react@18.3.1)
     transitivePeerDependencies:
+      - '@types/react'
       - react
       - react-dom
 
