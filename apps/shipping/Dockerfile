@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/shipping/package.json ./apps/shipping/
 COPY packages/ ./packages/
-RUN npm install -g pnpm@9 && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @carat-room/shipping rebuild
+RUN corepack enable && corepack prepare pnpm@11.8.0 --activate && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @carat-room/shipping rebuild
 COPY apps/shipping/ ./apps/shipping/
 RUN pnpm --filter @carat-room/shipping build
 

@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/payment/package.json ./apps/payment/
 COPY packages/ ./packages/
-RUN npm install -g pnpm@9 && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @carat-room/payment rebuild
+RUN corepack enable && corepack prepare pnpm@11.8.0 --activate && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @carat-room/payment rebuild
 COPY apps/payment/ ./apps/payment/
 RUN pnpm --filter @carat-room/payment build
 
