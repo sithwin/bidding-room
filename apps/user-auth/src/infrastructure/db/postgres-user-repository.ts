@@ -1,9 +1,3 @@
-// NOTE: Before deploying, run the following migration against the user-auth database:
-//   ALTER TABLE users ADD COLUMN IF NOT EXISTS identity_document_key TEXT;
-//   ALTER TYPE user_status ADD VALUE IF NOT EXISTS 'PHONE_VERIFIED';
-//   ALTER TYPE user_status ADD VALUE IF NOT EXISTS 'PENDING_REVIEW';
-// If user_status is stored as VARCHAR (not a Postgres enum), only the column addition is needed.
-
 import { Db } from './db';
 import { User, UserProps, UserRole, UserStatus } from '../../domain/user';
 import { UserRepository, UserListFilter } from '../../domain/user-repository';

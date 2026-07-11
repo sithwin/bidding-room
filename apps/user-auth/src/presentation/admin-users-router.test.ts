@@ -226,6 +226,27 @@ describe('buildAdminUsersRouter', () => {
 
       expect(res.status).toBe(409);
     });
+
+    it('returns 500 for an unexpected error, not a duplicate-email 409', async () => {
+      const useCases = makeUseCases();
+      const { privateKeyPem, publicKeyPem } = buildKeys();
+      const adminToken = makeAdminToken(privateKeyPem);
+      (useCases.adminCreateUser.execute as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('column "identity_document_key" does not exist'),
+      );
+
+      const app = new Hono();
+      app.route('/', buildAdminUsersRouter(useCases, publicKeyPem));
+
+      const res = await app.request('/', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'a@b.com', password: 'CorrectHorse9!', role: 'BUYER' }),
+      });
+
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } });
+    });
   });
 
   describe('PATCH /:id', () => {
@@ -267,6 +288,27 @@ describe('buildAdminUsersRouter', () => {
       });
 
       expect(res.status).toBe(404);
+    });
+
+    it('returns 500 for an unexpected error, not a duplicate-email 409', async () => {
+      const useCases = makeUseCases();
+      const { privateKeyPem, publicKeyPem } = buildKeys();
+      const adminToken = makeAdminToken(privateKeyPem);
+      (useCases.adminUpdateUser.execute as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('connection terminated unexpectedly'),
+      );
+
+      const app = new Hono();
+      app.route('/', buildAdminUsersRouter(useCases, publicKeyPem));
+
+      const res = await app.request('/u1', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ country: 'GB' }),
+      });
+
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } });
     });
 
     it('does not shadow /:id/suspend, /:id/reinstate or /:id/approve', async () => {
