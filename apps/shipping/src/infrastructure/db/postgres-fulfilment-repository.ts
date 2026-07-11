@@ -103,6 +103,13 @@ export class PostgresFulfilmentRepository implements FulfilmentRepository {
     `;
   }
 
+  async countByStatuses(statuses: string[]): Promise<number> {
+    const rows = await this.db`
+      SELECT COUNT(*)::int AS count FROM fulfilments WHERE status = ANY(${statuses})
+    `;
+    return rows[0]['count'] as number;
+  }
+
   private async hydrate(row: FulfilmentRow): Promise<Fulfilment> {
     let shippingAddress: ShippingAddress | null = null;
     let collectionSlot: CollectionSlot | null = null;

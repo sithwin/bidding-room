@@ -35,6 +35,7 @@ const makeMockRepo = (): FulfilmentRepository => ({
   save: vi.fn(),
   saveWithAddress: vi.fn(),
   saveWithSlot: vi.fn(),
+  countByStatuses: vi.fn(),
 });
 
 describe('CreateFulfilmentUseCase', () => {

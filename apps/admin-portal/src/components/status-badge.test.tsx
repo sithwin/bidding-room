@@ -13,6 +13,21 @@ describe('StatusBadge', () => {
     expect(container.firstChild).toHaveClass('destructive');
   });
 
+  it('should_applyDestructiveVariant_when_statusIsInactive', () => {
+    const { container } = render(<StatusBadge status='INACTIVE' />);
+    expect(container.firstChild).toHaveClass('destructive');
+  });
+
+  it('should_applyDefaultVariant_when_statusIsSold', () => {
+    const { container } = render(<StatusBadge status='SOLD' />);
+    expect(container.firstChild).toHaveClass('default');
+  });
+
+  it('should_applyOutlineVariant_when_statusIsUnscheduled', () => {
+    render(<StatusBadge status='UNSCHEDULED' />);
+    expect(screen.getByText('UNSCHEDULED')).toBeInTheDocument();
+  });
+
   it('should_applyDefaultVariant_when_statusIsUnknown', () => {
     const { container } = render(<StatusBadge status='UNKNOWN_STATUS' />);
     expect(container.firstChild).toBeDefined();

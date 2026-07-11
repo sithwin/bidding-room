@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  lotListResponseSchema, auctionListResponseSchema, facetsResponseSchema,
+  lotListResponseSchema, lotResponseSchema, auctionListResponseSchema, facetsResponseSchema,
   lotsQuery, auctionsQuery,
 } from './catalogue.js';
 
@@ -9,12 +9,19 @@ const lotFixture = {
   categoryId: null, condition: 'EXCELLENT', estimatedValue: 3000,
   images: [{ id: 'img-1', lotId: 'lot-1', url: 'https://a/x.jpg', thumbnailUrl: 'https://a/t.jpg', displayOrder: 0, isPrimary: true }],
   createdBy: null, createdAt: '2026-06-20T00:00:00.000Z', updatedAt: '2026-06-20T00:00:00.000Z',
+  status: 'ACTIVE',
 };
 
 describe('catalogue schemas', () => {
   it('should_parseLotListEnvelope', () => {
     const parsed = lotListResponseSchema.parse({ data: [lotFixture], meta: { total: 1, limit: 20, offset: 0 } });
     expect(parsed.data[0].auctionId).toBe('auction-1');
+  });
+
+  it('should_rejectLot_when_statusMissing', () => {
+    const { status, ...lotWithoutStatus } = lotFixture;
+    const result = lotResponseSchema.safeParse({ data: lotWithoutStatus });
+    expect(result.success).toBe(false);
   });
 
   it('should_rejectImaginedLotsShape', () => {

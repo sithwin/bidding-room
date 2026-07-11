@@ -3,12 +3,13 @@ import { StatusBadge } from '@/components/status-badge';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { suspendUser, reinstateUser, manuallyApproveUser } from './_actions';
+import { EditUserForm } from './_edit-form';
 
 interface UserDetail {
   id: string;
   email: string;
   status: string;
-  country: string;
+  country: string | null;
   phoneVerified: boolean;
   emailVerified: boolean;
   registeredAt: string;
@@ -32,7 +33,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
               trigger={<Button variant='destructive'>Suspend</Button>}
               title='Suspend user?'
               description='User will be unable to place bids.'
-              onConfirm={async () => { 'use server'; await suspendUser(user.id, 'Suspended by admin.      '); }}
+              onConfirm={async () => { 'use server'; await suspendUser(user.id, 'Suspended by an administrator.'); }}
               confirmLabel='Suspend'
             />
           )}
@@ -54,6 +55,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         <div><dt className='text-xs text-muted-foreground'>Email verified</dt><dd>{user.emailVerified ? 'Yes' : 'No'}</dd></div>
         <div><dt className='text-xs text-muted-foreground'>Phone verified</dt><dd>{user.phoneVerified ? 'Yes' : 'No'}</dd></div>
       </dl>
+      <EditUserForm user={user} />
     </div>
   );
 }

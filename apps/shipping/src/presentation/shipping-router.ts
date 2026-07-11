@@ -15,6 +15,7 @@ interface UseCases {
   chooseCollect: ChooseCollectUseCase;
   markDispatched: MarkDispatchedUseCase;
   markCollected: MarkCollectedUseCase;
+  countPendingFulfilments: () => Promise<number>;
 }
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
@@ -42,6 +43,17 @@ export function buildShippingRouter(useCases: UseCases): Hono<AppEnv> {
     }
     const fulfilments = await useCases.listFulfilments.execute({ status: c.req.query('status') });
     return c.json({ data: fulfilments.map(toFulfilmentDto) });
+  });
+
+  // Registered ahead of GET /fulfilments/:id so 'pending-count' is never
+  // swallowed as an :id value.
+  router.get('/fulfilments/pending-count', async (c) => {
+    const { role } = c.get('jwtPayload');
+    if (role !== 'ADMIN') {
+      return c.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    }
+    const count = await useCases.countPendingFulfilments();
+    return c.json({ data: { count } });
   });
 
   router.patch('/fulfilments/:id/dispatch', async (c) => {

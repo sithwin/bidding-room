@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Lot, LotCondition } from '../domain/lot';
+import { Lot, LotActiveStatus, LotCondition } from '../domain/lot';
 import { LotRepository } from '../domain/lot-repository';
 
 export interface CreateLotInput {
@@ -8,6 +8,7 @@ export interface CreateLotInput {
   categoryId?: string;
   condition?: string;
   estimatedValue?: number;
+  status?: LotActiveStatus;
   createdBy?: string;
 }
 
@@ -23,6 +24,7 @@ export class CreateLotUseCase {
       categoryId: input.categoryId ?? null,
       condition: (input.condition as LotCondition) ?? null,
       estimatedValue: input.estimatedValue ?? null,
+      status: input.status ?? 'ACTIVE',
       images: [],
       createdBy: input.createdBy ?? null,
       createdAt: now,

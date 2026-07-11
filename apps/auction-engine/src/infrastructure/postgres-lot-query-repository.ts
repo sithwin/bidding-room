@@ -1,4 +1,11 @@
-import { BidRow, DashboardStats, LotQueryRepository, LotStatusRow } from '../application/lot-query-repository';
+import {
+  AuctionResultRow,
+  BidRow,
+  DashboardStats,
+  LotQueryRepository,
+  LotStatusRow,
+  UnsoldLotRow,
+} from '../application/lot-query-repository';
 import { Db } from './db';
 
 const ACTIVE_STATUSES = ['SCHEDULED', 'LIVE', 'CLOSING'];
@@ -23,7 +30,7 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
   ): Promise<{ bids: BidRow[]; total: number }> {
     const [rows, countRows] = await Promise.all([
       this.db`
-        SELECT id, amount, placed_at
+        SELECT id, user_id, amount, placed_at
         FROM bids
         WHERE lot_id = ${lotId}
         ORDER BY placed_at DESC
@@ -34,6 +41,7 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
     return {
       bids: rows.map(r => ({
         id: r['id'] as string,
+        userId: r['user_id'] as string,
         amount: Number(r['amount']),
         placedAt: r['placed_at'] as Date,
       })),
@@ -83,9 +91,45 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
     return {
       activeAuctions: activeRows[0]['count'] as number,
       endingSoon: endingSoonRows[0]['count'] as number,
-      pendingInvoices: 0,
-      pendingFulfilments: 0,
     };
+  }
+
+  async findClosedResults(from: Date, to: Date): Promise<AuctionResultRow[]> {
+    const rows = await this.db`
+      SELECT lot_id, status, current_highest_bid, winner_user_id, updated_at
+      FROM lot_status
+      WHERE status IN ('SOLD', 'UNSOLD')
+        AND updated_at >= ${from}
+        AND updated_at <= ${to}
+      ORDER BY updated_at DESC
+    `;
+    return rows.map(r => ({
+      lotId: r['lot_id'] as string,
+      finalBid: r['current_highest_bid'] != null ? Number(r['current_highest_bid']) : null,
+      reserveMet: (r['status'] as string) === 'SOLD',
+      winnerUserId: (r['winner_user_id'] as string | null) ?? null,
+      closedAt: r['updated_at'] as Date,
+    }));
+  }
+
+  async findUnsoldLots(): Promise<UnsoldLotRow[]> {
+    const rows = await this.db`
+      SELECT lot_id, current_highest_bid
+      FROM lot_status
+      WHERE status = 'UNSOLD'
+      ORDER BY updated_at DESC
+    `;
+    return rows.map(r => ({
+      lotId: r['lot_id'] as string,
+      highestBid: r['current_highest_bid'] != null ? Number(r['current_highest_bid']) : null,
+    }));
+  }
+
+  async findBidderIds(lotId: string): Promise<string[]> {
+    const rows = await this.db`
+      SELECT DISTINCT user_id FROM bids WHERE lot_id = ${lotId}
+    `;
+    return rows.map(r => r['user_id'] as string);
   }
 }
 

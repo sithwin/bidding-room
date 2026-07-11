@@ -12,6 +12,9 @@ export const catalogueLotImageSchema = z.object({
   isPrimary: z.boolean(),
 });
 
+export const LOT_ACTIVE_STATUSES = ['ACTIVE', 'INACTIVE'] as const;
+export const lotActiveStatusSchema = z.enum(LOT_ACTIVE_STATUSES);
+
 export const catalogueLotSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -20,6 +23,7 @@ export const catalogueLotSchema = z.object({
   categoryId: z.string().nullable(),
   condition: z.enum(['NEW', 'EXCELLENT', 'VERY_GOOD', 'GOOD']).nullable(),
   estimatedValue: z.number().nullable(),
+  status: lotActiveStatusSchema,
   images: z.array(catalogueLotImageSchema),
   createdBy: z.string().nullable(),
   createdAt: z.string(),

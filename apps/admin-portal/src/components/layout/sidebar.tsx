@@ -12,6 +12,7 @@ import {
   Package,
   Tag,
   BarChart3,
+  MessageSquare,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/invoices', label: 'Invoices', icon: FileText },
   { href: '/admin/fulfilments', label: 'Fulfilments', icon: Package },
+  { href: '/admin/enquiries', label: 'Enquiries', icon: MessageSquare },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
 ];
 

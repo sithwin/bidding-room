@@ -1,3 +1,4 @@
+import type { JSONValue } from 'postgres';
 import { Invoice, InvoiceStatus } from '../domain/invoice';
 import { InvoiceRepository } from '../domain/invoice-repository';
 import { Db } from './db';
@@ -98,8 +99,25 @@ export class PostgresInvoiceRepository implements InvoiceRepository {
         ${params.invoiceId},
         ${params.stripeEventId},
         ${params.eventType},
-        ${this.db.json(params.payload as Record<string, unknown>)}
+        ${this.db.json(params.payload as unknown as JSONValue)}
       )
     `;
+  }
+
+  async sumPaidAmountByCurrency(): Promise<Record<string, number>> {
+    const rows = await this.db`
+      SELECT currency, SUM(amount)::float AS total
+      FROM invoices
+      WHERE status = 'PAID'
+      GROUP BY currency
+    `;
+    return Object.fromEntries(rows.map(r => [r['currency'] as string, Number(r['total'])]));
+  }
+
+  async countAwaitingPayment(): Promise<number> {
+    const rows = await this.db`
+      SELECT COUNT(*)::int AS count FROM invoices WHERE status = 'AWAITING_PAYMENT'
+    `;
+    return rows[0]['count'] as number;
   }
 }

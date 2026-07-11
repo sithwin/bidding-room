@@ -1,7 +1,9 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { Worker } from 'bullmq';
 import { createAmqpConnection, EventPublisher, EventSubscriber } from '@carat-room/shared-events';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
 import { PostgresInvoiceRepository } from './infrastructure/postgres-invoice-repository';
 import { StripeAdapter } from './infrastructure/stripe-adapter';
@@ -19,6 +21,8 @@ import { ExpireInvoiceUseCase } from './application/expire-invoice-use-case';
 import { CreateSetupIntentUseCase } from './application/create-setup-intent.use-case';
 import { ConfirmSetupIntentUseCase } from './application/confirm-setup-intent.use-case';
 import { PaySavedCardUseCase } from './application/pay-saved-card.use-case';
+import { GetRevenueReportUseCase } from './application/get-revenue-report-use-case';
+import { GetPendingInvoiceCountUseCase } from './application/get-pending-invoice-count-use-case';
 import { PostgresPaymentProfileRepository } from './infrastructure/postgres-payment-profile-repository';
 import { buildPaymentRouter } from './presentation/payment-router';
 
@@ -35,17 +39,7 @@ const JWT_PUBLIC_KEY = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n
 
 async function main(): Promise<void> {
   const db = createDb(DATABASE_URL);
-
-  // Ensure the payment_profiles table exists (idempotent).
-  await db.unsafe(`
-    CREATE TABLE IF NOT EXISTS payment_profiles (
-      user_id                  UUID PRIMARY KEY,
-      stripe_customer_id       TEXT NOT NULL,
-      stripe_payment_method_id TEXT,
-      created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
 
   const invoiceRepository = new PostgresInvoiceRepository(db);
   const paymentProfileRepository = new PostgresPaymentProfileRepository(db);
@@ -80,6 +74,8 @@ async function main(): Promise<void> {
   const paySavedCardUseCase = new PaySavedCardUseCase(
     invoiceRepository, paymentProfileRepository, stripeAdapter, publish,
   );
+  const getRevenueReportUseCase = new GetRevenueReportUseCase(invoiceRepository);
+  const getPendingInvoiceCountUseCase = new GetPendingInvoiceCountUseCase(invoiceRepository);
 
   const eventSubscriber = new EventSubscriber(amqp);
   await startAuctionClosedConsumer(eventSubscriber, createInvoiceUseCase);
@@ -106,6 +102,8 @@ async function main(): Promise<void> {
     createSetupIntent: createSetupIntentUseCase,
     confirmSetupIntent: confirmSetupIntentUseCase,
     paySavedCard: paySavedCardUseCase,
+    getRevenueReport: getRevenueReportUseCase,
+    getPendingInvoiceCount: getPendingInvoiceCountUseCase,
     profileRepo: paymentProfileRepository,
     stripe: stripeAdapter,
     jwtPublicKey: JWT_PUBLIC_KEY,

@@ -13,13 +13,33 @@ describe('RabbitMQAuctionPublisher', () => {
       bidId: 'bid-1',
       userId: 'user-1',
       amount: 300,
-      bidCount: 2,
-      endAt: '2026-06-20T12:00:00Z',
+      previousHighestBidderId: 'user-0',
+      placedAt: '2026-06-20T12:00:00Z',
     });
 
     expect(mockPublisher.publish).toHaveBeenCalledWith(
       'auction.bid.placed',
-      expect.objectContaining({ lotId: 'lot-1', amount: 300, bidCount: 2 }),
+      expect.objectContaining({
+        lotId: 'lot-1',
+        amount: 300,
+        previousHighestBidderId: 'user-0',
+        placedAt: '2026-06-20T12:00:00Z',
+      }),
+    );
+  });
+
+  it('should_publishAuctionClosingSoonWithCorrectRoutingKey', async () => {
+    const pub = new RabbitMQAuctionPublisher(mockPublisher);
+
+    await pub.publishAuctionClosingSoon({
+      lotId: 'lot-1',
+      endAt: '2026-06-20T12:00:00Z',
+      activeBidderIds: ['user-1', 'user-2'],
+    });
+
+    expect(mockPublisher.publish).toHaveBeenCalledWith(
+      'auction.closing.soon',
+      expect.objectContaining({ lotId: 'lot-1', activeBidderIds: ['user-1', 'user-2'] }),
     );
   });
 
@@ -28,14 +48,22 @@ describe('RabbitMQAuctionPublisher', () => {
 
     await pub.publishAuctionClosed({
       lotId: 'lot-1',
+      highestBidId: 'bid-1',
+      highestAmount: 600,
       reserveMet: true,
       winnerUserId: 'user-1',
-      finalAmount: 600,
+      closedAt: '2026-06-20T12:00:00Z',
     });
 
     expect(mockPublisher.publish).toHaveBeenCalledWith(
       'auction.closed',
-      expect.objectContaining({ lotId: 'lot-1', reserveMet: true, winnerUserId: 'user-1' }),
+      expect.objectContaining({
+        lotId: 'lot-1',
+        reserveMet: true,
+        winnerUserId: 'user-1',
+        highestAmount: 600,
+        highestBidId: 'bid-1',
+      }),
     );
   });
 });

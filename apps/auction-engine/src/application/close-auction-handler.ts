@@ -24,9 +24,11 @@ export class CloseAuctionCommandHandler {
     await this.projectionHandler.handle(command.lotId, agg.uncommittedEvents);
     await this.publisher.publishAuctionClosed({
       lotId: command.lotId,
+      highestBidId: agg.highestBidId,
+      highestAmount: agg.highestBidId === null ? null : result.finalAmount,
       reserveMet: result.reserveMet,
       winnerUserId: result.winnerUserId,
-      finalAmount: result.finalAmount,
+      closedAt: new Date().toISOString(),
     });
   }
 }

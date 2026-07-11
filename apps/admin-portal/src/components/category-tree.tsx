@@ -6,18 +6,38 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from './confirm-dialog';
 import { renameCategory, deleteCategory, createCategory } from '@/app/admin/categories/_actions';
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parentId: string | null;
-  children: Category[];
-}
+import type { CategoryTreeNode } from '@/lib/categories';
 
 interface CategoryNodeProps {
-  category: Category;
+  category: CategoryTreeNode;
   depth: number;
+}
+
+function NewCategoryForm({ parentId, indentPx, onDone }: { parentId?: string; indentPx: number; onDone: () => void }) {
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleCreate = async () => {
+    const result = await createCategory({ name, slug, parentId });
+    if (!result.ok) {
+      setErrorMessage('Could not create category — check the name and slug are valid and unique.');
+      return;
+    }
+    onDone();
+  };
+
+  return (
+    <div className='space-y-1 py-1' style={{ paddingLeft: `${indentPx}px` }}>
+      <div className='flex items-center gap-2'>
+        <Input placeholder='Name' value={name} onChange={e => setName(e.target.value)} className='h-6 w-32 text-sm' autoFocus />
+        <Input placeholder='slug' value={slug} onChange={e => setSlug(e.target.value)} className='h-6 w-28 text-sm' />
+        <Button size='sm' className='h-6' onClick={handleCreate}>Add</Button>
+        <Button size='sm' variant='ghost' className='h-6' onClick={onDone}>Cancel</Button>
+      </div>
+      {errorMessage && <p className='text-sm text-destructive'>{errorMessage}</p>}
+    </div>
+  );
 }
 
 function CategoryNode({ category, depth }: CategoryNodeProps) {
@@ -25,19 +45,10 @@ function CategoryNode({ category, depth }: CategoryNodeProps) {
   const [editing, setEditing] = useState(false);
   const [addingChild, setAddingChild] = useState(false);
   const [nameValue, setNameValue] = useState(category.name);
-  const [newChildName, setNewChildName] = useState('');
-  const [newChildSlug, setNewChildSlug] = useState('');
 
   const handleRename = async () => {
     await renameCategory(category.id, nameValue);
     setEditing(false);
-  };
-
-  const handleAddChild = async () => {
-    await createCategory({ name: newChildName, slug: newChildSlug, parentId: category.id });
-    setAddingChild(false);
-    setNewChildName('');
-    setNewChildSlug('');
   };
 
   const handleDelete = async () => {
@@ -83,12 +94,7 @@ function CategoryNode({ category, depth }: CategoryNodeProps) {
         />
       </div>
       {addingChild && (
-        <div className='flex items-center gap-2 py-1' style={{ paddingLeft: `${(depth + 1) * 16}px` }}>
-          <Input placeholder='Name' value={newChildName} onChange={e => setNewChildName(e.target.value)} className='h-6 w-32 text-sm' autoFocus />
-          <Input placeholder='slug' value={newChildSlug} onChange={e => setNewChildSlug(e.target.value)} className='h-6 w-28 text-sm' />
-          <Button size='sm' className='h-6' onClick={handleAddChild}>Add</Button>
-          <Button size='sm' variant='ghost' className='h-6' onClick={() => setAddingChild(false)}>Cancel</Button>
-        </div>
+        <NewCategoryForm parentId={category.id} indentPx={(depth + 1) * 16} onDone={() => setAddingChild(false)} />
       )}
       {expanded && category.children.length > 0 && (
         <ul>
@@ -101,12 +107,25 @@ function CategoryNode({ category, depth }: CategoryNodeProps) {
   );
 }
 
-export function CategoryTree({ categories }: { categories: Category[] }) {
+export function CategoryTree({ categories }: { categories: CategoryTreeNode[] }) {
+  const [isAddingRoot, setIsAddingRoot] = useState(false);
+
   return (
-    <ul className='rounded border bg-card p-2'>
-      {categories.map(cat => (
-        <CategoryNode key={cat.id} category={cat} depth={0} />
-      ))}
-    </ul>
+    <div className='space-y-2'>
+      <div className='flex justify-end'>
+        <Button size='sm' onClick={() => setIsAddingRoot(true)}>
+          <Plus className='mr-1 h-3 w-3' /> New Category
+        </Button>
+      </div>
+      <ul className='rounded border bg-card p-2'>
+        {isAddingRoot && <NewCategoryForm indentPx={0} onDone={() => setIsAddingRoot(false)} />}
+        {categories.length === 0 && !isAddingRoot && (
+          <li className='p-2 text-sm text-muted-foreground'>No categories yet — use &quot;New Category&quot; to create the first one.</li>
+        )}
+        {categories.map(cat => (
+          <CategoryNode key={cat.id} category={cat} depth={0} />
+        ))}
+      </ul>
+    </div>
   );
 }

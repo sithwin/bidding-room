@@ -1,5 +1,7 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
 import { PostgresEventStore } from './infrastructure/postgres-event-store';
 import { PostgresProjectionHandler } from './infrastructure/postgres-projection-handler';
@@ -18,12 +20,15 @@ import { GetLotStatusHandler } from './application/get-lot-status-handler';
 import { GetBidHistoryHandler } from './application/get-bid-history-handler';
 import { GetActiveLotsHandler } from './application/get-active-lots-handler';
 import { GetDashboardStatsHandler } from './application/get-dashboard-stats-handler';
+import { GetAuctionResultsHandler } from './application/get-auction-results-handler';
+import { GetUnsoldLotsHandler } from './application/get-unsold-lots-handler';
 import { createAuctionRouter } from './presentation/auction-router';
 
 const PORT = Number(process.env['PORT'] ?? 3003);
 
 async function main(): Promise<void> {
   const db = createDb(process.env['DATABASE_URL'] ?? 'postgres://localhost/carat_auction');
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
   const redis = {
     host: process.env['REDIS_HOST'] ?? 'localhost',
     port: Number(process.env['REDIS_PORT'] ?? '6379'),
@@ -63,6 +68,8 @@ async function main(): Promise<void> {
   const getBidHistoryHandler = new GetBidHistoryHandler(queryRepository);
   const getActiveLotsHandler = new GetActiveLotsHandler(queryRepository);
   const getDashboardStatsHandler = new GetDashboardStatsHandler(queryRepository);
+  const getAuctionResultsHandler = new GetAuctionResultsHandler(queryRepository);
+  const getUnsoldLotsHandler = new GetUnsoldLotsHandler(queryRepository);
 
   // BullMQ worker — processes timer jobs enqueued by BullMQTimerScheduler
   new BullMQAuctionWorker(
@@ -72,6 +79,7 @@ async function main(): Promise<void> {
     getLotStatusHandler,
     auctionPublisher,
     sseBroadcaster,
+    queryRepository,
   );
 
   const jwtPublicKey = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n');
@@ -82,6 +90,8 @@ async function main(): Promise<void> {
     getLotStatus: getLotStatusHandler,
     getBidHistory: getBidHistoryHandler,
     getDashboardStats: getDashboardStatsHandler,
+    getAuctionResults: getAuctionResultsHandler,
+    getUnsoldLots: getUnsoldLotsHandler,
     placeBidHandler,
     scheduleAuctionHandler,
     sseBroadcaster,

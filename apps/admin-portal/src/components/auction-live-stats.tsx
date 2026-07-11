@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/status-badge';
 
 interface AuctionDetail {
   lotId: string;
-  lotTitle: string;
+  lotTitle: string | null;
   status: string;
   currentBid: number | null;
   bidCount: number;

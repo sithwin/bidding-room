@@ -5,13 +5,17 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 export interface Bid {
   id: string;
-  userId: string;
+  userId: string | null;
   amount: number;
   placedAt: string;
 }
 
 const columns: ColumnDef<Bid>[] = [
-  { accessorKey: 'userId', header: 'User ID' },
+  {
+    accessorKey: 'userId',
+    header: 'User ID',
+    cell: ({ row }) => row.original.userId ?? '—',
+  },
   {
     accessorKey: 'amount',
     header: 'Amount',

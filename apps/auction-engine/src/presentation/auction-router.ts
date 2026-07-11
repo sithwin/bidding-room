@@ -1,12 +1,14 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { v4 as uuidv4 } from 'uuid';
-import { authMiddleware } from '@carat-room/shared-auth';
+import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
 import type { JwtPayload } from '@carat-room/shared-auth';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
 import { GetDashboardStatsHandler } from '../application/get-dashboard-stats-handler';
+import { GetAuctionResultsHandler } from '../application/get-auction-results-handler';
+import { GetUnsoldLotsHandler } from '../application/get-unsold-lots-handler';
 import { PlaceBidCommandHandler } from '../application/place-bid-handler';
 import { ScheduleAuctionCommandHandler } from '../application/schedule-auction-handler';
 import { SseBroadcaster } from '../application/sse-broadcaster';
@@ -19,6 +21,8 @@ export interface AuctionRouterDeps {
   getLotStatus: GetLotStatusHandler;
   getBidHistory: GetBidHistoryHandler;
   getDashboardStats: GetDashboardStatsHandler;
+  getAuctionResults: GetAuctionResultsHandler;
+  getUnsoldLots: GetUnsoldLotsHandler;
   placeBidHandler: PlaceBidCommandHandler;
   scheduleAuctionHandler: ScheduleAuctionCommandHandler;
   sseBroadcaster: SseBroadcaster;
@@ -54,9 +58,21 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
     const page = Math.max(1, Number(c.req.query('page') ?? '1'));
     const pageSize = Math.min(100, Math.max(1, Number(c.req.query('pageSize') ?? '20')));
     const result = await deps.getBidHistory.execute({ lotId, page, pageSize });
+
+    const authHeader = c.req.header('Authorization')?.replace('Bearer ', '');
+    let isAdminCaller = false;
+    if (authHeader) {
+      try {
+        isAdminCaller = (await verifyJwt(authHeader, deps.jwtPublicKey)).role === 'ADMIN';
+      } catch {
+        isAdminCaller = false;
+      }
+    }
+
     return c.json({
       data: result.bids.map(b => ({
         id: b.id,
+        ...(isAdminCaller ? { userId: b.userId } : {}),
         amount: b.amount,
         placedAt: b.placedAt.toISOString(),
       })),
@@ -85,6 +101,23 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
   app.get('/api/reports/dashboard', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
     const stats = await deps.getDashboardStats.execute();
     return c.json({ data: stats });
+  });
+
+  app.get('/api/reports/results', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
+    const from = new Date(c.req.query('from') ?? '');
+    const to = new Date(c.req.query('to') ?? '');
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'from and to must be valid dates' } }, 400);
+    }
+    // 'to' is a date-only value from the UI; include the whole end day
+    to.setUTCHours(23, 59, 59, 999);
+    const rows = await deps.getAuctionResults.execute(from, to);
+    return c.json({ data: rows });
+  });
+
+  app.get('/api/reports/unsold', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {
+    const rows = await deps.getUnsoldLots.execute();
+    return c.json({ data: rows });
   });
 
   app.post('/api/auctions', authMiddleware(deps.jwtPublicKey, { adminOnly: true }), async (c) => {

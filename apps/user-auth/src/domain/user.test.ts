@@ -118,4 +118,14 @@ describe('User', () => {
       expect(user.status).toBe(UserStatus.APPROVED_BIDDER);
     });
   });
+
+  describe('changeEmail', () => {
+    it('updates the email and updatedAt', () => {
+      const user = User.create({ id: 'u1', email: 'old@example.com', passwordHash: 'h', role: UserRole.BUYER });
+      const before = user.updatedAt;
+      user.changeEmail('new@example.com');
+      expect(user.email).toBe('new@example.com');
+      expect(user.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    });
+  });
 });

@@ -1,5 +1,7 @@
+import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db/db';
 import { PostgresFulfilmentRepository } from './infrastructure/db/postgres-fulfilment-repository';
 import { CreateFulfilmentUseCase } from './application/create-fulfilment.use-case';
@@ -19,15 +21,16 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
-  const amqpUrl = process.env.AMQP_URL;
+  const amqpUrl = process.env.RABBITMQ_URL;
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const port = Number(process.env.PORT ?? 3006);
 
   if (!databaseUrl || !amqpUrl || !jwtPublicKey) {
-    throw new Error('Missing required environment variables: DATABASE_URL, AMQP_URL, JWT_PUBLIC_KEY');
+    throw new Error('Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PUBLIC_KEY');
   }
 
   const db = createDb(databaseUrl);
+  await runMigrations(db, join(__dirname, '..', 'migrations'));
   const repo = new PostgresFulfilmentRepository(db);
 
   const createFulfilment = new CreateFulfilmentUseCase(repo);
@@ -44,10 +47,11 @@ async function main(): Promise<void> {
   const paymentReceivedHandler = new PaymentReceivedHandler(createFulfilment);
 
   await subscriber.subscribe<PaymentReceivedPayload>(
-    'shipping.payment-received',
+    'shipping.payment.received',
     async (payload) => {
       await paymentReceivedHandler.handle(payload);
     },
+    'payment.received',
   );
 
   const app = new Hono<AppEnv>();
@@ -62,6 +66,7 @@ async function main(): Promise<void> {
     chooseCollect,
     markDispatched,
     markCollected,
+    countPendingFulfilments: () => repo.countByStatuses(['PENDING_CHOICE', 'PENDING_DISPATCH']),
   }));
 
   serve({ fetch: app.fetch, port }, () => {

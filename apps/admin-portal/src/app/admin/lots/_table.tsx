@@ -9,18 +9,29 @@ import type { ColumnDef } from '@tanstack/react-table';
 export interface Lot {
   id: string;
   title: string;
-  categoryName: string;
+  categoryName: string | null;
   status: string;
+  auctionStatus: string | null;
   createdAt: string;
 }
 
 const columns: ColumnDef<Lot>[] = [
   { accessorKey: 'title', header: 'Title' },
-  { accessorKey: 'categoryName', header: 'Category' },
+  {
+    accessorKey: 'categoryName',
+    header: 'Category',
+    cell: ({ row }) => row.original.categoryName ?? '—',
+  },
   {
     accessorKey: 'status',
     header: 'Status',
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
+  },
+  {
+    accessorKey: 'auctionStatus',
+    header: 'Auction Status',
+    cell: ({ row }) =>
+      row.original.auctionStatus ? <StatusBadge status={row.original.auctionStatus} /> : '—',
   },
   {
     accessorKey: 'createdAt',

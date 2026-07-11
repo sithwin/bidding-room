@@ -3,7 +3,9 @@ import { EventSubscriber } from './subscriber.js';
 import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
 
 const mockChannel = {
+  assertExchange: vi.fn().mockResolvedValue(undefined),
   assertQueue: vi.fn().mockResolvedValue(undefined),
+  bindQueue: vi.fn().mockResolvedValue(undefined),
   prefetch: vi.fn().mockResolvedValue(undefined),
   consume: vi.fn().mockResolvedValue(undefined),
   ack: vi.fn(),
@@ -22,7 +24,11 @@ describe('EventSubscriber', () => {
 
   it('should_assertQueueAndStartConsuming_when_subscribeIsCalled', async () => {
     const subscriber = new EventSubscriber(mockConnection);
-    await subscriber.subscribe('notification.user.registered', vi.fn().mockResolvedValue(undefined));
+    await subscriber.subscribe(
+      'notification.user.registered',
+      vi.fn().mockResolvedValue(undefined),
+      'user.registered'
+    );
 
     expect(mockChannel.assertQueue).toHaveBeenCalledWith(
       'notification.user.registered',
@@ -32,6 +38,13 @@ describe('EventSubscriber', () => {
       'notification.user.registered',
       expect.any(Function)
     );
+  });
+
+  it('should_bindQueueToCaratEventsExchange_when_subscribeIsCalled', async () => {
+    const subscriber = new EventSubscriber(mockConnection);
+    await subscriber.subscribe('q', vi.fn().mockResolvedValue(undefined), 'some.key');
+
+    expect(mockChannel.bindQueue).toHaveBeenCalledWith('q', 'carat.events', 'some.key');
   });
 
   it('should_callHandlerWithParsedPayload_when_messageIsReceived', async () => {
@@ -46,7 +59,7 @@ describe('EventSubscriber', () => {
       }
     );
 
-    await subscriber.subscribe('notification.user.registered', handler);
+    await subscriber.subscribe('notification.user.registered', handler, 'user.registered');
 
     const payload = { userId: 'user-1', email: 'test@example.com', createdAt: '2026-06-20T00:00:00Z' };
     const fakeMsg = { content: Buffer.from(JSON.stringify(payload)) } as ConsumeMessage;
@@ -68,7 +81,7 @@ describe('EventSubscriber', () => {
       }
     );
 
-    await subscriber.subscribe('notification.user.registered', handler);
+    await subscriber.subscribe('notification.user.registered', handler, 'user.registered');
 
     const fakeMsg = { content: Buffer.from(JSON.stringify({ userId: 'user-1' })) } as ConsumeMessage;
     await capturedConsumer!(fakeMsg);
@@ -78,7 +91,7 @@ describe('EventSubscriber', () => {
 
   it('should_closeChannel_when_closeIsCalled', async () => {
     const subscriber = new EventSubscriber(mockConnection);
-    await subscriber.subscribe('test.queue', vi.fn().mockResolvedValue(undefined));
+    await subscriber.subscribe('test.queue', vi.fn().mockResolvedValue(undefined), 'test.key');
     await subscriber.close();
 
     expect(mockChannel.close).toHaveBeenCalled();

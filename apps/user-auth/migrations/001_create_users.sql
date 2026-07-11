@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id              UUID PRIMARY KEY,
   email           TEXT UNIQUE NOT NULL,
   password_hash   TEXT NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE users (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE verification_tokens (
+CREATE TABLE IF NOT EXISTS verification_tokens (
   id          UUID PRIMARY KEY,
   user_id     UUID NOT NULL REFERENCES users(id),
   type        TEXT NOT NULL,  -- EMAIL | PHONE
@@ -21,7 +21,7 @@ CREATE TABLE verification_tokens (
   used_at     TIMESTAMPTZ
 );
 
-CREATE TABLE refresh_tokens (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
   id          UUID PRIMARY KEY,
   user_id     UUID NOT NULL REFERENCES users(id),
   token_hash  TEXT NOT NULL,
@@ -29,8 +29,8 @@ CREATE TABLE refresh_tokens (
   revoked_at  TIMESTAMPTZ
 );
 
-CREATE INDEX idx_users_email               ON users(email);
-CREATE INDEX idx_verification_tokens_user  ON verification_tokens(user_id);
-CREATE INDEX idx_refresh_tokens_user       ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email               ON users(email);
+CREATE INDEX IF NOT EXISTS idx_verification_tokens_user  ON verification_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user       ON refresh_tokens(user_id);
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS identity_document_key TEXT;

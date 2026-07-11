@@ -126,6 +126,11 @@ export class User {
     this.props.updatedAt = new Date();
   }
 
+  changeEmail(email: string): void {
+    this.props.email = email;
+    this.props.updatedAt = new Date();
+  }
+
   updateProfile(patch: { country?: string }): void {
     if (patch.country !== undefined) {
       this.props.country = patch.country;

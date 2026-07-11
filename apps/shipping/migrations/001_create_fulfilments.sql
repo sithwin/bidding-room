@@ -1,4 +1,4 @@
-CREATE TABLE fulfilments (
+CREATE TABLE IF NOT EXISTS fulfilments (
   id              UUID PRIMARY KEY,
   lot_id          UUID NOT NULL,
   user_id         UUID NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE fulfilments (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE shipping_addresses (
+CREATE TABLE IF NOT EXISTS shipping_addresses (
   id              UUID PRIMARY KEY,
   fulfilment_id   UUID NOT NULL REFERENCES fulfilments(id),
   full_name       TEXT NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE shipping_addresses (
   country         TEXT NOT NULL  -- ISO 3166-1 alpha-2
 );
 
-CREATE TABLE collection_slots (
+CREATE TABLE IF NOT EXISTS collection_slots (
   id              UUID PRIMARY KEY,
   fulfilment_id   UUID NOT NULL REFERENCES fulfilments(id),
   location        TEXT NOT NULL,
@@ -28,5 +28,5 @@ CREATE TABLE collection_slots (
   time_slot       TEXT NOT NULL
 );
 
-CREATE INDEX idx_fulfilments_user_id ON fulfilments(user_id);
-CREATE INDEX idx_fulfilments_lot_id  ON fulfilments(lot_id);
+CREATE INDEX IF NOT EXISTS idx_fulfilments_user_id ON fulfilments(user_id);
+CREATE INDEX IF NOT EXISTS idx_fulfilments_lot_id  ON fulfilments(lot_id);

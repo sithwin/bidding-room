@@ -1,4 +1,4 @@
-CREATE TABLE invoices (
+CREATE TABLE IF NOT EXISTS invoices (
   id                    UUID PRIMARY KEY,
   lot_id                UUID NOT NULL,
   winner_user_id        UUID NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE invoices (
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE payment_events (
+CREATE TABLE IF NOT EXISTS payment_events (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_id       UUID REFERENCES invoices(id),
   stripe_event_id  TEXT UNIQUE NOT NULL,
@@ -21,5 +21,5 @@ CREATE TABLE payment_events (
   received_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX invoices_winner_user_id_idx ON invoices (winner_user_id);
-CREATE INDEX invoices_lot_id_idx ON invoices (lot_id);
+CREATE INDEX IF NOT EXISTS invoices_winner_user_id_idx ON invoices (winner_user_id);
+CREATE INDEX IF NOT EXISTS invoices_lot_id_idx ON invoices (lot_id);

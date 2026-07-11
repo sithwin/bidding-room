@@ -10,14 +10,18 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 export interface AuctionSummary {
   lotId: string;
-  lotTitle: string;
+  lotTitle: string | null;
   status: string;
   currentBid: number | null;
   endAt: string;
 }
 
 const columns: ColumnDef<AuctionSummary>[] = [
-  { accessorKey: 'lotTitle', header: 'Lot' },
+  {
+    accessorKey: 'lotTitle',
+    header: 'Lot',
+    cell: ({ row }) => row.original.lotTitle ?? '—',
+  },
   {
     accessorKey: 'status',
     header: 'Status',
