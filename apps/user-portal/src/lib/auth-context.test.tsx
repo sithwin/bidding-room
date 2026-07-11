@@ -1,12 +1,22 @@
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { z } from 'zod';
+import { accessTokenResponseSchema } from '@carat-room/shared-types';
 import { AuthProvider, useAuth } from './auth-context';
+
+// A JWT whose payload decodes to { userId: 'u1', email: 'a@b.com', verificationStatus: 'PHONE_VERIFIED', role: 'BUYER' }
+const REFRESHED_TOKEN =
+  'eyJhbGciOiJSUzI1NiJ9.eyJ1c2VySWQiOiJ1MSIsImVtYWlsIjoiYUBiLmNvbSIsInZlcmlmaWNhdGlvblN0YXR1cyI6IlBIT05FX1ZFUklGSUVEIiwicm9sZSI6IkJVWUVSIn0=.sig';
+
+const refreshFixture = {
+  data: { accessToken: REFRESHED_TOKEN },
+} satisfies z.infer<typeof accessTokenResponseSchema>;
 
 /* Silence the logout DELETE fetch in unit tests */
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ accessToken: 'new-tok', user: { userId: 'u1', email: 'a@b.com', verificationStatus: 'PHONE_VERIFIED', role: 'BUYER' } }),
+    json: async () => refreshFixture,
   }));
 });
 

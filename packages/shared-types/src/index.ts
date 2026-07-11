@@ -42,3 +42,36 @@ export {
 export type { RevenueReport, PendingInvoiceCount } from './api/payment-reports.js';
 export { pendingFulfilmentCountSchema, pendingFulfilmentCountResponseSchema } from './api/shipping-reports.js';
 export type { PendingFulfilmentCount } from './api/shipping-reports.js';
+export {
+  apiErrorSchema, stringErrorSchema, userStatusSchema, userRoleSchema, messageResponseSchema,
+  accessTokenResponseSchema, meSchema, meResponseSchema, emailLookupResponseSchema,
+  identityDocumentResponseSchema, adminUserSummarySchema, adminUserDetailSchema,
+  adminUserListResponseSchema, adminUserResponseSchema, adminUserIdResponseSchema,
+  registerRequestSchema, loginRequestSchema, verifyEmailRequestSchema, phoneRequestSchema,
+  phoneVerifyRequestSchema, updateProfileRequestSchema, adminCreateUserRequestSchema,
+  adminUpdateUserRequestSchema, usersQuery,
+} from './api/user-auth.js';
+export type { Me, AdminUserSummary, AdminUserDetail } from './api/user-auth.js';
+export {
+  auctionLotStatusValueSchema, auctionLotStatusSchema, lotStatusResponseSchema,
+  lotStatusListResponseSchema, auctionBidSchema, bidListResponseSchema, placeBidRequestSchema,
+  placeBidResponseSchema, scheduleAuctionRequestSchema, scheduleAuctionResponseSchema,
+  dashboardStatsResponseSchema, auctionsListQuery, bidHistoryQuery,
+} from './api/auction-engine.js';
+export type { AuctionLotStatus, AuctionBid } from './api/auction-engine.js';
+export {
+  invoiceStatusSchema, invoiceSchema, invoiceResponseSchema, invoiceListResponseSchema,
+  checkoutRequestSchema, checkoutResponseSchema, extendInvoiceRequestSchema,
+  setupIntentResponseSchema, confirmSetupIntentRequestSchema, confirmSetupIntentResponseSchema,
+  paySavedCardResponseSchema, paymentProfileResponseSchema, invoicesQuery,
+} from './api/payment.js';
+export type { PaymentInvoice, PaymentProfile } from './api/payment.js';
+export {
+  fulfilmentStatusSchema, fulfilmentMethodSchema, shippingAddressSchema, collectionSlotSchema,
+  fulfilmentSchema, fulfilmentResponseSchema, fulfilmentListResponseSchema,
+  pendingCountResponseSchema, fulfilmentSuccessResponseSchema, fulfilmentIdResponseSchema,
+  chooseShipRequestSchema, chooseCollectRequestSchema, fulfilmentsQuery,
+} from './api/shipping.js';
+export type {
+  ShippingFulfilment, FulfilmentShippingAddress, FulfilmentCollectionSlot,
+} from './api/shipping.js';

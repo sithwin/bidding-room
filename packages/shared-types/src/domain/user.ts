@@ -1,6 +1,8 @@
 export type UserStatus =
   | 'REGISTERED'
   | 'EMAIL_VERIFIED'
+  | 'PHONE_VERIFIED'
+  | 'PENDING_REVIEW'
   | 'APPROVED_BIDDER'
   | 'SUSPENDED';
 

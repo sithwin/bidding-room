@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
-import { auctionResultsResponseSchema, unsoldLotsResponseSchema } from '@carat-room/shared-types';
+import {
+  apiErrorSchema, auctionResultsResponseSchema, auctionsListQuery, bidHistoryQuery,
+  bidListResponseSchema, dashboardStatsResponseSchema, lotStatusListResponseSchema,
+  lotStatusResponseSchema, placeBidResponseSchema, scheduleAuctionResponseSchema,
+  unsoldLotsResponseSchema,
+} from '@carat-room/shared-types';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
@@ -76,12 +81,13 @@ describe('GET /api/auctions', () => {
   it('should_return200WithActiveLots_when_lotsExist', async () => {
     vi.mocked(mockGetActiveLots.execute).mockResolvedValue({ lots: [fakeLotStatusRow()], total: 1 });
 
-    const res = await router.request('/api/auctions');
+    const res = await router.request(`/api/auctions?${auctionsListQuery({ page: 1, pageSize: 20 })}`);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: unknown[]; meta: { total: number } };
+    const body = lotStatusListResponseSchema.parse(await res.json());
     expect(body.data).toHaveLength(1);
     expect(body.meta.total).toBe(1);
+    expect(body.data[0].currentHighestBid).toBe(200);
   });
 });
 
@@ -92,7 +98,7 @@ describe('GET /api/auctions/:lotId', () => {
     const res = await router.request('/api/auctions/lot-1');
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { lotId: string; status: string } };
+    const body = lotStatusResponseSchema.parse(await res.json());
     expect(body.data.lotId).toBe('lot-1');
     expect(body.data.status).toBe('LIVE');
   });
@@ -103,6 +109,8 @@ describe('GET /api/auctions/:lotId', () => {
     const res = await router.request('/api/auctions/unknown-lot');
 
     expect(res.status).toBe(404);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.code).toBe('NOT_FOUND');
   });
 });
 
@@ -113,10 +121,10 @@ describe('GET /api/auctions/:lotId/bids', () => {
       total: 1,
     });
 
-    const res = await router.request('/api/auctions/lot-1/bids');
+    const res = await router.request(`/api/auctions/lot-1/bids?${bidHistoryQuery({ page: 1, pageSize: 20 })}`);
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { amount: number }[]; meta: { total: number } };
+    const body = bidListResponseSchema.parse(await res.json());
     expect(body.data[0].amount).toBe(200);
     expect(body.data[0]).not.toHaveProperty('userId');
     expect(body.meta.total).toBe(1);
@@ -139,7 +147,7 @@ describe('GET /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { userId?: string }[] };
+    const body = bidListResponseSchema.parse(await res.json());
     expect(body.data[0].userId).toBe('user-1');
   });
 
@@ -160,7 +168,7 @@ describe('GET /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { userId?: string }[] };
+    const body = bidListResponseSchema.parse(await res.json());
     expect(body.data[0]).not.toHaveProperty('userId');
   });
 
@@ -176,7 +184,7 @@ describe('GET /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { data: { userId?: string }[] };
+    const body = bidListResponseSchema.parse(await res.json());
     expect(body.data[0]).not.toHaveProperty('userId');
   });
 });
@@ -193,7 +201,7 @@ describe('POST /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(201);
-    const body = await res.json() as { data: { bidId: string; amount: number; lotId: string } };
+    const body = placeBidResponseSchema.parse(await res.json());
     expect(body.data.amount).toBe(300);
     expect(body.data.lotId).toBe('lot-1');
     expect(mockBroadcaster.broadcast).toHaveBeenCalledWith('lot-1', 'bid_placed', expect.any(Object));
@@ -209,7 +217,7 @@ describe('POST /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(422);
-    const body = await res.json() as { error: { code: string } };
+    const body = apiErrorSchema.parse(await res.json());
     expect(body.error.code).toBe('BID_TOO_LOW');
   });
 
@@ -223,6 +231,8 @@ describe('POST /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(409);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.code).toBe('AUCTION_NOT_ACTIVE');
   });
 
   it('should_broadcastTimerExtended_when_bidTriggersExtension', async () => {
@@ -253,6 +263,8 @@ describe('POST /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(400);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.code).toBe('INVALID_AMOUNT');
     expect(mockPlaceBid.execute).not.toHaveBeenCalled();
   });
 
@@ -266,6 +278,54 @@ describe('POST /api/auctions/:lotId/bids', () => {
     });
 
     expect(res.status).toBe(403);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.code).toBe('FORBIDDEN');
+  });
+});
+
+describe('POST /api/auctions', () => {
+  it('should_return201WithLotId_when_scheduleRequestIsValid', async () => {
+    vi.mocked(mockScheduleAuction.execute).mockResolvedValue(undefined);
+
+    const res = await router.request('/api/auctions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer admin-token' },
+      body: JSON.stringify({
+        lotId: 'lot-1',
+        startAt: '2026-06-20T10:00:00Z',
+        endAt: '2026-06-20T12:00:00Z',
+      }),
+    });
+
+    expect(res.status).toBe(201);
+    const body = scheduleAuctionResponseSchema.parse(await res.json());
+    expect(body.data.lotId).toBe('lot-1');
+  });
+
+  it('should_return400_when_requiredFieldsAreMissing', async () => {
+    const res = await router.request('/api/auctions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer admin-token' },
+      body: JSON.stringify({ lotId: 'lot-1' }),
+    });
+
+    expect(res.status).toBe(400);
+    const body = apiErrorSchema.parse(await res.json());
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(mockScheduleAuction.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/reports/dashboard', () => {
+  it('should_return200WithDashboardStats_when_statsAreAvailable', async () => {
+    vi.mocked(mockGetDashboardStats.execute).mockResolvedValue({ activeAuctions: 4, endingSoon: 1 });
+
+    const res = await router.request('/api/reports/dashboard');
+
+    expect(res.status).toBe(200);
+    const body = dashboardStatsResponseSchema.parse(await res.json());
+    expect(body.data.activeAuctions).toBe(4);
+    expect(body.data.endingSoon).toBe(1);
   });
 });
 
@@ -295,7 +355,7 @@ describe('GET /api/reports/results', () => {
     const res = await router.request('/api/reports/results?to=2026-07-01');
 
     expect(res.status).toBe(400);
-    const body = await res.json() as { error: { code: string } };
+    const body = apiErrorSchema.parse(await res.json());
     expect(body.error.code).toBe('VALIDATION_ERROR');
     expect(mockGetAuctionResults.execute).not.toHaveBeenCalled();
   });

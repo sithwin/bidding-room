@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { z } from 'zod';
 import { lotListResponseSchema, auctionListResponseSchema, auctionResponseSchema } from '@carat-room/shared-types';
-import { parseLotList, parseAuctionList, parseAuction, toLotCardProps } from './catalogue';
+import { parseLotList, parseAuctionList, parseAuction, parseLot, toLotCardProps } from './catalogue';
 
 // Fixture typed against the real contract — drifts fail at compile time (C9)
 const lotFixture = {
   id: 'lot-1', title: 'Cartier Love Ring', description: null, auctionId: 'auction-1',
-  categoryId: null, condition: 'EXCELLENT', estimatedValue: 3000,
+  categoryId: null, condition: 'EXCELLENT', estimatedValue: 3000, status: 'ACTIVE',
   images: [{ id: 'img-1', lotId: 'lot-1', url: '/x.jpg', thumbnailUrl: '/t.jpg', displayOrder: 0, isPrimary: true }],
   createdBy: null, createdAt: '2026-06-20T00:00:00.000Z', updatedAt: '2026-06-20T00:00:00.000Z',
 } satisfies z.infer<typeof lotListResponseSchema>['data'][number];
@@ -67,6 +67,21 @@ describe('parseAuction', () => {
   it('returns null and logs on a drifted shape, never throws', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const result = parseAuction({ auction: auctionFixture });
+    expect(result).toBeNull();
+    expect(errorSpy).toHaveBeenCalled();
+  });
+});
+
+describe('parseLot', () => {
+  it('parses the real { data } envelope', () => {
+    const result = parseLot({ data: lotFixture });
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('lot-1');
+  });
+
+  it('returns null and logs on a drifted shape, never throws', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = parseLot({ lot: lotFixture });
     expect(result).toBeNull();
     expect(errorSpy).toHaveBeenCalled();
   });

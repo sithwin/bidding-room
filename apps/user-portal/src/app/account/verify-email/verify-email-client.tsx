@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { messageResponseSchema } from '@carat-room/shared-types';
 
 export function VerifyEmailClient() {
   const searchParams = useSearchParams();
@@ -11,6 +12,7 @@ export function VerifyEmailClient() {
   const [resent, setResent] = useState(false);
 
   async function resendEmail() {
+    // TODO(G4, plan 2026-07-11-api-contracts-phase-2): resend endpoint does not exist yet
     await fetch('/api/auth/resend-verification', { method: 'POST' });
     setResent(true);
   }
@@ -18,9 +20,14 @@ export function VerifyEmailClient() {
   useEffect(() => {
     if (!token || !userId) { setStatus('error'); return; }
     fetch(`/api/auth/verify-email?token=${token}&userId=${userId}`, { method: 'POST' })
-      .then(r => {
-        if (r.ok) { setStatus('success'); setTimeout(() => router.push('/account/login'), 3000); }
-        else setStatus('error');
+      .then(async r => {
+        if (r.ok) {
+          messageResponseSchema.safeParse(await r.json());
+          setStatus('success');
+          setTimeout(() => router.push('/account/login'), 3000);
+        } else {
+          setStatus('error');
+        }
       })
       .catch(() => setStatus('error'));
   }, [token, router]);

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import type { z } from 'zod';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/app-shell';
 import { Header } from '@/components/layout/header';
@@ -13,22 +14,30 @@ import { PhoneOtpInline } from '@/components/primitives/phone-otp-inline';
 import { useLotSse } from '@/hooks/use-lot-sse';
 import { useAuth } from '@/lib/auth-context';
 import { createApi } from '@/lib/api';
-import { lotsQuery } from '@carat-room/shared-types';
-import { parseLotList, toLotCardProps } from '@/lib/catalogue';
+import { lotsQuery, placeBidRequestSchema, type AuctionLotStatus } from '@carat-room/shared-types';
+import { parseLotList, toLotCardProps, type CatalogueLot } from '@/lib/catalogue';
+import { parsePlacedBid } from '@/lib/auction';
+import { parsePaymentProfile } from '@/lib/payment';
+import { DISPLAY_CURRENCY } from '@/lib/service-config';
 import Image from 'next/image';
 
-type Lot = {
-  id: string; auctionId: string; lotNumber: string; title: string;
-  department: string; medium: string; dimensions: string; catalogueNumber: string;
-  imageUrls: string[]; currentBid: number; bidCount: number; currency: string;
-  endAt: string; estimate: string; provenance: string; status: string;
-};
+export type LotDetailProps = { lot: CatalogueLot; liveStatus: AuctionLotStatus | null };
 
-export function LotDetailClient({ lot: initial }: { lot: Lot }) {
+export function LotDetailClient({ lot, liveStatus }: LotDetailProps) {
   const { user, accessToken, refreshAccessToken } = useAuth();
   const api = createApi(() => accessToken);
 
-  const [lot, setLot] = useState(initial);
+  const imageUrls = [...lot.images].sort((a, b) => a.displayOrder - b.displayOrder).map((img) => img.url);
+  const estimateLabel = lot.estimatedValue !== null
+    ? `${DISPLAY_CURRENCY} ${lot.estimatedValue.toLocaleString()}`
+    : null;
+  const auctionId = lot.auctionId ?? '';
+
+  const [currentBid, setCurrentBid] = useState(liveStatus?.currentHighestBid ?? null);
+  const [bidCount, setBidCount] = useState(liveStatus?.bidCount ?? 0);
+  const [endAt, setEndAt] = useState(liveStatus?.endAt ?? null);
+  const [auctionStatus, setAuctionStatus] = useState(liveStatus?.status ?? 'SCHEDULED');
+
   const [isLive, setIsLive] = useState(false);
   const [bidAmount, setBidAmount] = useState('');
   const [confirmedBid, setConfirmedBid] = useState<number | null>(null);
@@ -39,7 +48,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
   const [bidActivity, setBidActivity] = useState<Array<{ paddle: string; amount: number; isYou: boolean }>>([]);
   const [isLeading, setIsLeading] = useState(false);
   const [hasParticipated, setHasParticipated] = useState(false);
-  const [isAuctionClosed, setIsAuctionClosed] = useState(false);
+  const [isAuctionClosed, setIsAuctionClosed] = useState(auctionStatus === 'SOLD' || auctionStatus === 'UNSOLD');
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [relatedLots, setRelatedLots] = useState<LotCardProps[]>([]);
   const [nextLots, setNextLots] = useState<LotCardProps[]>([]);
@@ -49,7 +58,8 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
   useEffect(() => {
     if (!lastEvent) return;
     if (lastEvent.type === 'bid_placed') {
-      setLot(prev => ({ ...prev, currentBid: lastEvent.currentBid, bidCount: lastEvent.bidCount }));
+      setCurrentBid(lastEvent.currentBid);
+      setBidCount(lastEvent.bidCount);
       const isYou = !!user && lastEvent.bidderId === user.userId;
       setIsLeading(isYou);
       if (isYou) setHasParticipated(true);
@@ -57,42 +67,45 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
         { paddle: isYou ? 'You' : `Paddle ${lastEvent.bidderId.slice(-4)}`, amount: lastEvent.currentBid, isYou },
         ...prev.slice(0, 19),
       ]);
-      if (!isYou && user) setOutbidInfo({ yourBid: lot.currentBid, currentBid: lastEvent.currentBid });
+      if (!isYou && user) setOutbidInfo({ yourBid: currentBid ?? 0, currentBid: lastEvent.currentBid });
     }
-    if (lastEvent.type === 'timer_extended') setLot(prev => ({ ...prev, endAt: lastEvent.endAt }));
+    if (lastEvent.type === 'timer_extended') setEndAt(lastEvent.endAt);
     if (lastEvent.type === 'closing_soon') setIsLive(true);
     if (lastEvent.type === 'auction_closed') {
       setIsAuctionClosed(true);
-      setLot(prev => ({ ...prev, status: lastEvent.result }));
+      setAuctionStatus(lastEvent.result);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastEvent]);
 
   // Fetch related lots (same collection) — exclude the lot being viewed
   useEffect(() => {
+    if (!lot.auctionId) return;
     fetch(`/api/catalogue/lots?${lotsQuery({ auctionId: lot.auctionId, limit: 5 })}`)
       .then(r => r.json())
       .then((d: unknown) => setRelatedLots(
-        parseLotList(d).lots.filter(l => l.id !== lot.id).slice(0, 4).map(l => toLotCardProps(l, lot.auctionId)),
+        parseLotList(d).lots.filter(l => l.id !== lot.id).slice(0, 4).map(l => toLotCardProps(l, auctionId)),
       ))
       .catch(() => {});
-  }, [lot.auctionId, lot.id]);
+  }, [lot.auctionId, lot.id, auctionId]);
 
   // Fetch "Up Next" lots (live mode only)
   useEffect(() => {
-    if (!isLive) return;
+    if (!isLive || !lot.auctionId) return;
     fetch(`/api/catalogue/lots?${lotsQuery({ auctionId: lot.auctionId, limit: 3 })}`)
       .then(r => r.json())
       .then((d: unknown) => setNextLots(
-        parseLotList(d).lots.filter(l => l.id !== lot.id).slice(0, 2).map(l => toLotCardProps(l, lot.auctionId)),
+        parseLotList(d).lots.filter(l => l.id !== lot.id).slice(0, 2).map(l => toLotCardProps(l, auctionId)),
       ))
       .catch(() => {});
-  }, [isLive, lot.auctionId, lot.id]);
+  }, [isLive, lot.auctionId, lot.id, auctionId]);
 
   async function placeBid() {
     if (isAuctionClosed) return;
     const amount = Number(bidAmount);
-    if (!amount || amount <= lot.currentBid) {
-      setToast({ message: `Bid must exceed current bid of ${lot.currency.toUpperCase()} ${lot.currentBid.toLocaleString()}`, type: 'error' });
+    const minimumBid = currentBid ?? 0;
+    if (!amount || amount <= minimumBid) {
+      setToast({ message: `Bid must exceed current bid of ${DISPLAY_CURRENCY} ${minimumBid.toLocaleString()}`, type: 'error' });
       return;
     }
     if (!user) { window.location.href = `/account/login?returnUrl=${encodeURIComponent(window.location.pathname)}`; return; }
@@ -108,8 +121,8 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
         const profileRes = await fetch('/api/payments/profile', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        const profile = await profileRes.json() as { stripePaymentMethodId: string | null };
-        if (!profile.stripePaymentMethodId) {
+        const profile = parsePaymentProfile(await profileRes.json());
+        if (!profile?.stripePaymentMethodId) {
           window.location.href = '/account/register-to-bid?step=3';
           return;
         }
@@ -120,8 +133,14 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
     }
 
     try {
-      await api.post(`/api/auction/auctions/${lot.auctionId}/lots/${lot.id}/bids`, { amount });
-      setConfirmedBid(amount);
+      const body = { amount } satisfies z.infer<typeof placeBidRequestSchema>;
+      const json = await api.post(`/api/auctions/${lot.id}/bids`, body);
+      const placed = parsePlacedBid(json);
+      if (!placed) {
+        setToast({ message: 'Unable to place bid. Please try again.', type: 'error' });
+        return;
+      }
+      setConfirmedBid(placed.amount);
       setBidAmount('');
     } catch {
       setToast({ message: 'Unable to place bid. Please try again.', type: 'error' });
@@ -131,6 +150,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
   function toggleWatchlist() {
     if (!user) { window.location.href = `/account/login?returnUrl=${encodeURIComponent(window.location.pathname)}`; return; }
     // Watchlist toggle — POST/DELETE handled by catalogue service
+    // TODO(G3, plan 2026-07-11-api-contracts-phase-2): watchlist endpoints do not exist yet
     fetch(`/api/catalogue/watchlist/${lot.id}`, { method: 'POST', headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} })
       .catch(() => {});
   }
@@ -144,13 +164,13 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
         <div className='max-w-6xl mx-auto px-6 py-10 pb-20 md:pb-10 grid grid-cols-1 md:grid-cols-2 gap-10'>
           <div>
             <div className='relative aspect-square border border-[var(--line)]'>
-              <Image src={lot.imageUrls[selectedImage] ?? '/placeholder.jpg'} alt={lot.title} fill className='object-contain' />
+              <Image src={imageUrls[selectedImage] ?? '/placeholder.jpg'} alt={lot.title} fill className='object-contain' />
               <div className='absolute top-3 left-3 bg-ink/80 text-paper font-sans text-xs px-3 py-1'>
-                Lot {lot.lotNumber} · Now Selling
+                Now Selling
               </div>
             </div>
             <p className='font-serif text-lg font-semibold text-[var(--ink)] mt-4'>{lot.title}</p>
-            <p className='font-sans text-sm text-[var(--mut)]'>Est. {lot.estimate}</p>
+            <p className='font-sans text-sm text-[var(--mut)]'>Est. {estimateLabel ?? '—'}</p>
 
             {/* Up Next strip */}
             {nextLots.length > 0 && (
@@ -167,7 +187,6 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                         )}
                       </div>
                       <div>
-                        {l.lotNumber && <p className='font-sans text-xs text-[var(--mut)]'>Lot {l.lotNumber}</p>}
                         <p className='font-serif text-sm text-[var(--ink)] line-clamp-1'>{l.title}</p>
                       </div>
                     </Link>
@@ -181,7 +200,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
             <div>
               <p className='font-sans text-xs text-[var(--mut)] uppercase tracking-widest mb-1'>Current Bid</p>
               <p className='font-serif text-5xl font-semibold text-[var(--ink)]'>
-                {lot.currency.toUpperCase()} {lot.currentBid.toLocaleString()}
+                {DISPLAY_CURRENCY} {(currentBid ?? 0).toLocaleString()}
               </p>
             </div>
 
@@ -194,7 +213,11 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
 
             <div className='text-center'>
               <p className='font-sans text-xs text-[var(--mut)] mb-1'>Time remaining</p>
-              <CountdownTimer endAt={lot.endAt} urgentAtMs={60_000} />
+              {endAt !== null ? (
+                <CountdownTimer endAt={endAt} urgentAtMs={60_000} />
+              ) : (
+                <span className='font-sans text-sm text-[var(--mut)]'>Bidding not yet scheduled</span>
+              )}
             </div>
 
             {/* Bid activity feed */}
@@ -203,7 +226,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                 {bidActivity.map((entry, i) => (
                   <div key={i} className='flex justify-between px-3 py-2 font-sans text-xs'>
                     <span className={entry.isYou ? 'text-[var(--gold)]' : 'text-[var(--mut)]'}>{entry.paddle}</span>
-                    <span className='text-[var(--ink)]'>{lot.currency.toUpperCase()} {entry.amount.toLocaleString()}</span>
+                    <span className='text-[var(--ink)]'>{DISPLAY_CURRENCY} {entry.amount.toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -221,7 +244,7 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                 type='number'
                 value={bidAmount}
                 onChange={e => setBidAmount(e.target.value)}
-                placeholder={`Min ${lot.currentBid + 100}`}
+                placeholder={`Min ${(currentBid ?? 0) + 100}`}
                 disabled={isAuctionClosed}
                 className='w-full border border-[var(--line)] bg-transparent text-[var(--ink)] font-sans text-lg px-4 py-3 mb-3 disabled:opacity-50'
               />
@@ -230,12 +253,12 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                 disabled={isAuctionClosed}
                 className='w-full bg-[var(--ink)] text-paper font-sans font-semibold py-4 text-base hover:opacity-90 transition-opacity disabled:opacity-50'
               >
-                Bid {lot.currency.toUpperCase()} {bidAmount || '—'}
+                Bid {DISPLAY_CURRENCY} {bidAmount || '—'}
               </button>
 
               <div className='grid grid-cols-3 gap-2 mt-3'>
                 {[2000, 4000].map(inc => (
-                  <button key={inc} onClick={() => setBidAmount(String(lot.currentBid + inc))}
+                  <button key={inc} onClick={() => setBidAmount(String((currentBid ?? 0) + inc))}
                     className='border border-[var(--line)] font-sans text-sm py-2 text-[var(--ink)] hover:bg-[var(--cream)]'>
                     +{(inc / 1000).toFixed(0)}k
                   </button>
@@ -254,11 +277,11 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
             {/* Gallery */}
             <div>
               <div className='relative aspect-square border border-[var(--line)] mb-3'>
-                <Image src={lot.imageUrls[selectedImage] ?? '/placeholder.jpg'} alt={lot.title} fill className='object-contain' />
+                <Image src={imageUrls[selectedImage] ?? '/placeholder.jpg'} alt={lot.title} fill className='object-contain' />
               </div>
-              {lot.imageUrls.length > 1 && (
+              {imageUrls.length > 1 && (
                 <div className='flex gap-2'>
-                  {lot.imageUrls.slice(0, 4).map((url, i) => (
+                  {imageUrls.slice(0, 4).map((url, i) => (
                     <button key={i} onClick={() => setSelectedImage(i)}
                       className={`relative w-16 h-16 border-2 ${i === selectedImage ? 'border-ink' : 'border-[var(--line)]'}`}>
                       <Image src={url} alt='' fill className='object-cover' />
@@ -270,26 +293,28 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
 
             {/* Info + bid panel */}
             <div>
-              <p className='font-sans text-xs text-gold uppercase tracking-widest mb-2'>{lot.department} · Lot {lot.lotNumber}</p>
               <h1 className='font-serif text-3xl font-semibold text-ink mb-3'>{lot.title}</h1>
-              <p className='font-sans text-sm text-mut mb-6'>{lot.medium} · {lot.dimensions}</p>
 
               <div className='border border-[var(--line)] p-6 mb-4'>
                 <div className='flex items-start justify-between mb-4'>
                   <div>
                     <p className='font-sans text-xs text-mut uppercase tracking-wider mb-1'>Current Bid</p>
-                    <p className='font-serif text-3xl font-semibold text-ink'>{lot.currency.toUpperCase()} {lot.currentBid.toLocaleString()}</p>
-                    <p className='font-sans text-xs text-mut mt-1'>{lot.bidCount} bids</p>
+                    <p className='font-serif text-3xl font-semibold text-ink'>{DISPLAY_CURRENCY} {(currentBid ?? 0).toLocaleString()}</p>
+                    <p className='font-sans text-xs text-mut mt-1'>{bidCount} bids</p>
                   </div>
                   <div className='text-right'>
                     <p className='font-sans text-xs text-mut uppercase tracking-wider mb-1'>Estimate</p>
-                    <p className='font-sans text-sm text-ink'>{lot.estimate}</p>
+                    <p className='font-sans text-sm text-ink'>{estimateLabel ?? '—'}</p>
                   </div>
                 </div>
 
                 <div className='flex items-center gap-2 bg-cream px-3 py-2 mb-4'>
                   <span className='inline-block w-2 h-2 rounded-full bg-ink'></span>
-                  <CountdownTimer endAt={lot.endAt} />
+                  {endAt !== null ? (
+                    <CountdownTimer endAt={endAt} />
+                  ) : (
+                    <span className='font-sans text-sm text-mut'>Bidding not yet scheduled</span>
+                  )}
                 </div>
 
                 {/* Auction closed banner */}
@@ -301,14 +326,14 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
 
                 {/* Minimum bid notice */}
                 <p className='font-sans text-xs text-mut text-center mb-2'>
-                  Minimum bid: {lot.currency.toUpperCase()} {(lot.currentBid + 100).toLocaleString()}
+                  Minimum bid: {DISPLAY_CURRENCY} {((currentBid ?? 0) + 100).toLocaleString()}
                 </p>
 
                 <input
                   type='number'
                   value={bidAmount}
                   onChange={e => setBidAmount(e.target.value)}
-                  placeholder={`$ ${lot.currentBid + 100}`}
+                  placeholder={`$ ${(currentBid ?? 0) + 100}`}
                   disabled={isAuctionClosed}
                   className='w-full border border-[var(--line)] font-sans text-base px-4 py-3 mb-3 disabled:opacity-50'
                 />
@@ -348,10 +373,10 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
                 Enter Live Room
               </button>
 
-              {lot.provenance && (
+              {lot.description && (
                 <div>
-                  <p className='font-sans text-xs text-mut uppercase tracking-widest mb-2'>Provenance</p>
-                  <p className='font-sans text-sm text-ink'>{lot.provenance}</p>
+                  <p className='font-sans text-xs text-mut uppercase tracking-widest mb-2'>Description</p>
+                  <p className='font-sans text-sm text-ink'>{lot.description}</p>
                 </div>
               )}
             </div>
@@ -373,11 +398,11 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
       <div className='md:hidden fixed bottom-0 left-0 right-0 bg-paper border-t border-[var(--line)] flex items-center gap-3 px-4 py-3 z-40'>
         <div className='flex-1'>
           <p className='font-sans text-xs text-mut'>Current bid</p>
-          <p className='font-sans text-sm font-semibold text-ink'>{lot.currency.toUpperCase()} {lot.currentBid.toLocaleString()}</p>
+          <p className='font-sans text-sm font-semibold text-ink'>{DISPLAY_CURRENCY} {(currentBid ?? 0).toLocaleString()}</p>
         </div>
         <button onClick={placeBid} disabled={isAuctionClosed}
           className='bg-ink text-paper font-sans text-sm font-medium px-6 py-3 disabled:opacity-60'>
-          Place Bid · {lot.currency.toUpperCase()} {bidAmount || (lot.currentBid + 100).toLocaleString()}
+          Place Bid · {DISPLAY_CURRENCY} {bidAmount || ((currentBid ?? 0) + 100).toLocaleString()}
         </button>
       </div>
 
@@ -408,10 +433,10 @@ export function LotDetailClient({ lot: initial }: { lot: Lot }) {
       )}
 
       {confirmedBid && (
-        <BidConfirmedModal amount={confirmedBid} currency={lot.currency} lotTitle={lot.title} onClose={() => setConfirmedBid(null)} />
+        <BidConfirmedModal amount={confirmedBid} currency={DISPLAY_CURRENCY} lotTitle={lot.title} onClose={() => setConfirmedBid(null)} />
       )}
       {outbidInfo && (
-        <OutbidModal {...outbidInfo} currency={lot.currency} onClose={() => setOutbidInfo(null)} onBidAgain={amount => { setBidAmount(String(amount)); setOutbidInfo(null); }} />
+        <OutbidModal {...outbidInfo} currency={DISPLAY_CURRENCY} onClose={() => setOutbidInfo(null)} onBidAgain={amount => { setBidAmount(String(amount)); setOutbidInfo(null); }} />
       )}
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </AppShell>

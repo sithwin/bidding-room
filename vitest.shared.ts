@@ -1,0 +1,5 @@
+export const coverage = {
+  provider: 'v8' as const,
+  reporter: ['lcov', 'text'] as ('lcov' | 'text')[],
+  exclude: ['**/*.test.ts', '**/*.config.ts', '**/dist/**', '**/node_modules/**'],
+};

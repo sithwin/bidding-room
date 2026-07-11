@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "sithwin",
+        "projectKey": "sithwin_bidding-room"
+    }
+}

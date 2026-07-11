@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { messageResponseSchema } from '@carat-room/shared-types';
 import { useAuth } from '@/lib/auth-context';
+import { errorMessage } from '@/lib/user-auth';
 
 export default function VerifyPhonePage() {
   const { accessToken } = useAuth();
@@ -33,8 +35,9 @@ export default function VerifyPhonePage() {
       body: JSON.stringify({ phone }),
     });
     setIsLoading(false);
-    if (res.ok) setStep('otp');
-    else { const d = await res.json() as { error?: string }; setError(d.error ?? 'Failed to send code'); }
+    const json = await res.json();
+    if (res.ok) { messageResponseSchema.safeParse(json); setStep('otp'); }
+    else setError(errorMessage(json, 'Failed to send code'));
   }
 
   async function verifyCode() {
@@ -45,7 +48,7 @@ export default function VerifyPhonePage() {
       body: JSON.stringify({ otp }),
     });
     setIsLoading(false);
-    if (res.ok) { router.push('/account/register-to-bid'); return; }
+    if (res.ok) { messageResponseSchema.safeParse(await res.json()); router.push('/account/register-to-bid'); return; }
     const newAttempts = attempts + 1;
     setAttempts(newAttempts);
     if (newAttempts >= 3) {

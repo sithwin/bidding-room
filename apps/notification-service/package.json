@@ -6,7 +6,7 @@
     "build": "tsc",
     "dev": "tsx watch --env-file .env src/main.ts",
     "start": "node dist/main.js",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "@carat-room/shared-auth": "workspace:*",
@@ -24,6 +24,7 @@
   "devDependencies": {
     "@carat-room/tsconfig": "workspace:*",
     "@types/react": "^18.3.1",
+    "@vitest/coverage-v8": "^1.6.1",
     "tsx": "^4.11.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

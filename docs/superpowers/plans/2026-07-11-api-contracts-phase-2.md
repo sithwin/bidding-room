@@ -136,7 +136,7 @@ Covers C1, C2, C3, C4 for user-auth. Transcribed from `apps/user-auth/src/presen
 - Consumes: `envelope` from `./envelope` (Phase 1).
 - Produces: `apiErrorSchema`, `stringErrorSchema`, `userStatusSchema`, `userRoleSchema`, `messageResponseSchema`, `accessTokenResponseSchema`, `meResponseSchema`, `emailLookupResponseSchema`, `identityDocumentResponseSchema`, `adminUserSummarySchema`, `adminUserDetailSchema`, `adminUserListResponseSchema`, `adminUserIdResponseSchema`, `registerRequestSchema`, `loginRequestSchema`, `verifyEmailRequestSchema`, `phoneRequestSchema`, `phoneVerifyRequestSchema`, `updateProfileRequestSchema`, `adminCreateUserRequestSchema`, `adminUpdateUserRequestSchema`, `usersQuery(params)`; types `Me`, `AdminUserSummary`, `AdminUserDetail` via `z.infer`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `packages/shared-types/src/api/user-auth.test.ts` — key cases (same style as `catalogue.test.ts`):
 
@@ -190,12 +190,12 @@ describe('usersQuery', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/user-auth.test.ts`
 Expected: FAIL — `Cannot find module './user-auth'`.
 
-- [ ] **Step 3: Write the schema module**
+- [x] **Step 3: Write the schema module**
 
 `packages/shared-types/src/api/user-auth.ts`:
 
@@ -286,12 +286,12 @@ export function usersQuery(params: { status?: string; search?: string }): URLSea
 
 Add to `packages/shared-types/src/index.ts`: `export * from './api/user-auth';`
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/user-auth.test.ts`
 Expected: PASS. Then `pnpm turbo build --filter=@carat-room/shared-types` — no name collisions with existing exports (if `apiErrorSchema` already exists elsewhere in the package, keep the existing one and import it here instead of redeclaring).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/shared-types
@@ -313,7 +313,7 @@ Covers C1–C4, C13 for auction-engine. Transcribed from `apps/auction-engine/sr
 - Consumes: `envelope` from `./envelope`; `apiErrorSchema` from `./user-auth` (same `{ error: { code, message } }` shape service-wide — import, don't redeclare).
 - Produces: `auctionLotStatusSchema`, `lotStatusResponseSchema`, `lotStatusListResponseSchema`, `auctionBidSchema`, `bidListResponseSchema`, `placeBidRequestSchema`, `placeBidResponseSchema`, `scheduleAuctionRequestSchema`, `scheduleAuctionResponseSchema`, `dashboardStatsResponseSchema`, `auctionsListQuery(params)`, `bidHistoryQuery(params)`; types `AuctionLotStatus`, `AuctionBid`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `packages/shared-types/src/api/auction-engine.test.ts`:
 
@@ -372,12 +372,12 @@ describe('query builders', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/auction-engine.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the schema module**
+- [x] **Step 3: Write the schema module**
 
 `packages/shared-types/src/api/auction-engine.ts`:
 
@@ -462,12 +462,12 @@ export function bidHistoryQuery(params: { page?: number; pageSize?: number }): U
 
 Add to `packages/shared-types/src/index.ts`: `export * from './api/auction-engine';`
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/auction-engine.test.ts`
 Expected: PASS. Then build the package; if the existing `src/domain/auction.ts` exports a conflicting `LotStatus` name, keep both — the contract type is deliberately named `AuctionLotStatus` to avoid collision.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/shared-types
@@ -489,7 +489,7 @@ Covers C1–C4, C13 for payment. Transcribed from `apps/payment/src/presentation
 - Consumes: `envelope` from `./envelope`; `stringErrorSchema` from `./user-auth`.
 - Produces: `invoiceSchema`, `invoiceResponseSchema`, `invoiceListResponseSchema`, `checkoutResponseSchema`, `checkoutRequestSchema`, `extendInvoiceRequestSchema`, `setupIntentResponseSchema`, `confirmSetupIntentRequestSchema`, `confirmSetupIntentResponseSchema`, `paySavedCardResponseSchema`, `paymentProfileResponseSchema`, `invoicesQuery(params)`; types `PaymentInvoice`, `PaymentProfile`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `packages/shared-types/src/api/payment.test.ts`:
 
@@ -543,12 +543,12 @@ describe('invoicesQuery', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/payment.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the schema module**
+- [x] **Step 3: Write the schema module**
 
 `packages/shared-types/src/api/payment.ts`:
 
@@ -615,12 +615,12 @@ export function invoicesQuery(params: { status?: string }): URLSearchParams {
 
 Add to `packages/shared-types/src/index.ts`: `export * from './api/payment';`
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/payment.test.ts`
 Expected: PASS. Build the package; if `payment-reports.ts` already exports a name used here, resolve by importing from it (C13), never by renaming the report schema.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/shared-types
@@ -642,7 +642,7 @@ Covers C1–C4, C13 for shipping. Transcribed from `apps/shipping/src/presentati
 - Consumes: `envelope` from `./envelope`.
 - Produces: `shippingAddressSchema`, `collectionSlotSchema`, `fulfilmentSchema`, `fulfilmentResponseSchema`, `fulfilmentListResponseSchema`, `pendingCountResponseSchema`, `fulfilmentSuccessResponseSchema`, `fulfilmentIdResponseSchema`, `chooseShipRequestSchema`, `chooseCollectRequestSchema`, `fulfilmentsQuery(params)`; types `Fulfilment`, `FulfilmentShippingAddress`, `FulfilmentCollectionSlot`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `packages/shared-types/src/api/shipping.test.ts`:
 
@@ -698,12 +698,12 @@ describe('fulfilmentsQuery', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/shipping.test.ts`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the schema module**
+- [x] **Step 3: Write the schema module**
 
 `packages/shared-types/src/api/shipping.ts`:
 
@@ -786,12 +786,12 @@ export function fulfilmentsQuery(params: { status?: string }): URLSearchParams {
 
 Add to `packages/shared-types/src/index.ts`: `export * from './api/shipping';`
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm --filter @carat-room/shared-types test -- src/api/shipping.test.ts`
 Expected: PASS. Then run the whole package suite: `pnpm turbo test --filter=@carat-room/shared-types` — all four new modules green together, no export collisions from `src/index.ts`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/shared-types
@@ -812,7 +812,7 @@ Covers C5 for user-auth. The existing tests assert single fields only and skip m
 - Consumes: all `*ResponseSchema` and `usersQuery` from Task 1 (via `@carat-room/shared-types`).
 - Produces: nothing new — test-only changes; no router production code is touched.
 
-- [ ] **Step 1: Convert existing body assertions to schema parses**
+- [x] **Step 1: Convert existing body assertions to schema parses**
 
 Pattern — every place the test reads a body, parse first, then assert the field. Example for login in `user-router.test.ts`:
 
@@ -828,7 +828,7 @@ const me = meResponseSchema.parse(await res.json());
 expect(me.data.email).toBe('jane@example.com');
 ```
 
-- [ ] **Step 2: Add tests for the uncovered endpoints**
+- [x] **Step 2: Add tests for the uncovered endpoints**
 
 One test per endpoint/status, same mock style as the existing file (mocked use cases, inline jwt middleware). Each parses the response through the schema:
 
@@ -860,7 +860,7 @@ it('POST /verify-email 400 returns the shared error shape on a bad token', async
 
 Cover with the same shape: `POST /refresh` (200 → `accessTokenResponseSchema`; 401 → `apiErrorSchema`), `POST /logout` (200 → `messageResponseSchema`), `POST /phone/request` + `POST /phone/verify` (200 → `messageResponseSchema`; 400/429 → `apiErrorSchema`), `PATCH /me` (200 → `messageResponseSchema`), `POST /identity-document` (200 → `identityDocumentResponseSchema`; 400/422 → `stringErrorSchema` — this documents the bare-string deviation), `GET /:id/email` (200 → `emailLookupResponseSchema`).
 
-- [ ] **Step 3: Admin router — schema parses + usersQuery + uncovered endpoints**
+- [x] **Step 3: Admin router — schema parses + usersQuery + uncovered endpoints**
 
 In `admin-users-router.test.ts` (this file signs real RS256 admin JWTs — keep that style):
 
@@ -882,12 +882,12 @@ it('GET / lists user summaries and honours the usersQuery builder', async () => 
 
 Also add: `GET /:id` (200 → `adminUserResponseSchema`), `PATCH /:id/reinstate` and `/approve` (200 → `adminUserIdResponseSchema`), and convert the existing POST `/` and PATCH `/:id` `toEqual` assertions to schema-parse-then-assert.
 
-- [ ] **Step 4: Run the suite**
+- [x] **Step 4: Run the suite**
 
 Run: `pnpm turbo test --filter=user-auth`
 Expected: PASS. If a schema fails against a real response here, the schema in Task 1 was transcribed wrongly — fix the schema (reality wins), and note the correction in the commit body.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/user-auth
@@ -906,7 +906,7 @@ Covers C5 for auction-engine. The reports endpoints already parse shared schemas
 **Interfaces:**
 - Consumes: `lotStatusListResponseSchema`, `lotStatusResponseSchema`, `bidListResponseSchema`, `placeBidResponseSchema`, `scheduleAuctionResponseSchema`, `dashboardStatsResponseSchema`, `auctionsListQuery`, `bidHistoryQuery` from Task 2.
 
-- [ ] **Step 1: Convert body reads to schema parses**
+- [x] **Step 1: Convert body reads to schema parses**
 
 Replace every `await res.json() as {...}` in the file with a schema parse. Representative conversions:
 
@@ -940,12 +940,12 @@ dashboardStatsResponseSchema.parse(await res.json());
 
 Use `bidHistoryQuery({ page: 1, pageSize: 20 })` in at least one bids request. Error paths (`404`, `400 INVALID_AMOUNT`, `403`, `409`, `422`) parse via `apiErrorSchema`.
 
-- [ ] **Step 2: Run the suite**
+- [x] **Step 2: Run the suite**
 
 Run: `pnpm turbo test --filter=auction-engine`
 Expected: PASS (PGlite globalSetup already provides the repository DB).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/auction-engine
@@ -964,7 +964,7 @@ Covers C5 for payment. Revenue/pending-count already parse shared report schemas
 **Interfaces:**
 - Consumes: `invoiceResponseSchema`, `invoiceListResponseSchema`, `checkoutResponseSchema`, `setupIntentResponseSchema`, `confirmSetupIntentResponseSchema`, `paySavedCardResponseSchema`, `paymentProfileResponseSchema`, `invoicesQuery` from Task 3; `stringErrorSchema` from Task 1.
 
-- [ ] **Step 1: Convert body reads to schema parses**
+- [x] **Step 1: Convert body reads to schema parses**
 
 ```ts
 import {
@@ -996,12 +996,12 @@ expect(stringErrorSchema.parse(await res.json()).error).toBe('Card declined');
 
 Also convert PATCH extend/cancel bodies to `invoiceResponseSchema.parse(...)`, and their 404/409 branches to `apiErrorSchema`.
 
-- [ ] **Step 2: Run the suite**
+- [x] **Step 2: Run the suite**
 
 Run: `pnpm turbo test --filter=payment`
 Expected: PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/payment
@@ -1020,7 +1020,7 @@ Covers C5 for shipping. This file currently does no schema parsing at all.
 **Interfaces:**
 - Consumes: `fulfilmentResponseSchema`, `fulfilmentListResponseSchema`, `pendingCountResponseSchema`, `fulfilmentSuccessResponseSchema`, `fulfilmentIdResponseSchema`, `fulfilmentsQuery`, `chooseShipRequestSchema` from Task 4.
 
-- [ ] **Step 1: Convert body reads to schema parses and use the builder**
+- [x] **Step 1: Convert body reads to schema parses and use the builder**
 
 ```ts
 import {
@@ -1048,12 +1048,12 @@ fulfilmentIdResponseSchema.parse(await res.json());
 
 Add missing endpoint coverage: `choose-collect` (200 + 400), `dispatch`/`collect` (200 + 404 + 409 via `apiErrorSchema`), a SHIP fulfilment detail whose `shippingAddress` is populated (exercises nullable `line2`/`state`). Send choose-ship bodies built from a fixture typed `satisfies z.infer<typeof chooseShipRequestSchema>`.
 
-- [ ] **Step 2: Run the suite**
+- [x] **Step 2: Run the suite**
 
 Run: `pnpm turbo test --filter=shipping`
 Expected: PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/shipping
@@ -1078,7 +1078,7 @@ Covers C6, C7 groundwork and G5. Mirrors the Phase 1 reference `src/lib/catalogu
 - Consumes: `lotStatusResponseSchema`, `placeBidResponseSchema`, `AuctionLotStatus` (Task 2); `lotResponseSchema`, `CatalogueLot` (Phase 1).
 - Produces: `parseLotStatus(json): AuctionLotStatus | null`, `parsePlacedBid(json): { bidId: string; amount: number; lotId: string } | null`, `parseLot(json): CatalogueLot | null`, (list/bid-history parsers are deliberately NOT built — no Phase 2 consumer exists; the portal receives bid updates via SSE. Phase 3 adds them if the admin-portal needs them — YAGNI), constants `AUCTION_ENGINE_URL`, `CATALOGUE_SERVICE_URL`, `USER_SERVICE_URL`, `PAYMENT_SERVICE_URL`, `SHIPPING_SERVICE_URL`, `REFRESH_COOKIE = 'carat_refresh'`, `DISPLAY_CURRENCY = 'AUD'`.
 
-- [ ] **Step 1: Write `service-config.ts`**
+- [x] **Step 1: Write `service-config.ts`**
 
 ```ts
 // Single home for the portal's server-side service endpoints and shared display
@@ -1103,7 +1103,7 @@ export const DISPLAY_CURRENCY = 'AUD';
 
 Replace each proxy route's inline `const X_URL = process.env… ?? …` with an import from this module as the routes are touched in later tasks (Boy Scout — same file, same commit). In `lot-card.tsx`, replace the `(currency ?? 'AUD')` literal with `(currency ?? DISPLAY_CURRENCY)`.
 
-- [ ] **Step 2: Write the failing tests for the parsers**
+- [x] **Step 2: Write the failing tests for the parsers**
 
 `apps/user-portal/src/lib/auction.test.ts` — same structure as `catalogue.test.ts`: fixtures typed with `satisfies`, one strict-parse case and one drift case per parser:
 
@@ -1142,12 +1142,12 @@ describe('parsePlacedBid', () => {
 
 Add to `catalogue.test.ts`: `parseLot` parses `{ data: <lot fixture> }` and returns `null` + logs on `{ lot: … }`.
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `pnpm turbo test --filter=user-portal -- src/lib/auction.test.ts`
 Expected: FAIL — `./auction` not found.
 
-- [ ] **Step 4: Write `lib/auction.ts` and `parseLot`**
+- [x] **Step 4: Write `lib/auction.ts` and `parseLot`**
 
 `apps/user-portal/src/lib/auction.ts` (pattern copied from `lib/catalogue.ts`):
 
@@ -1194,7 +1194,7 @@ export function parseLot(json: unknown): CatalogueLot | null {
 }
 ```
 
-- [ ] **Step 5: Run tests, then commit**
+- [x] **Step 5: Run tests, then commit**
 
 Run: `pnpm turbo test --filter=user-portal -- src/lib/auction.test.ts src/lib/catalogue.test.ts`
 Expected: PASS.
@@ -1220,7 +1220,7 @@ Covers C6–C10. The Phase 1 plan's Known Exclusion requires this page to be Pha
 - Consumes: `parseLot` (Task 9), `parseLotStatus`/`parsePlacedBid` (Task 9), `AUCTION_ENGINE_URL`/`CATALOGUE_SERVICE_URL`/`DISPLAY_CURRENCY` (Task 9), `placeBidRequestSchema` (Task 2), `primaryImageUrl`/`toLotCardProps` (Phase 1).
 - Produces: `type LotDetailProps = { lot: CatalogueLot; liveStatus: AuctionLotStatus | null }` — the client component's prop contract. UI copy that referenced non-existent fields (`lotNumber`, `department`, `medium`, `dimensions`, `provenance`, `catalogueNumber`) is removed; `description` renders in place of provenance. These fields render `undefined` today, so nothing real is lost — if the business wants them, they are catalogue feature work (flag stays in Discovered Gaps).
 
-- [ ] **Step 1: Add the bid proxy route (fixes D2)**
+- [x] **Step 1: Add the bid proxy route (fixes D2)**
 
 `apps/user-portal/src/app/api/auctions/[lotId]/bids/route.ts`:
 
@@ -1242,7 +1242,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ lot
 }
 ```
 
-- [ ] **Step 2: Rewrite the server page**
+- [x] **Step 2: Rewrite the server page**
 
 `page.tsx` — both fetches degrade independently; a missing catalogue lot is `notFound()`, a missing auction status renders the page without live-bid data:
 
@@ -1273,7 +1273,7 @@ export default async function LotDetailPage({ params }: { params: Promise<{ auct
 }
 ```
 
-- [ ] **Step 3: Rewrite the client component against real fields**
+- [x] **Step 3: Rewrite the client component against real fields**
 
 `lot-detail-client.tsx` — delete the local `Lot` type; accept `{ lot: CatalogueLot; liveStatus: AuctionLotStatus | null }`. Field mapping (each line replaces an imagined field):
 
@@ -1298,7 +1298,7 @@ Rules for the rewrite:
 - Related/up-next lot fetches already use `parseLotList` — unchanged.
 - The duplicated `Lot` type in `page.tsx` is deleted with the rest.
 
-- [ ] **Step 4: Write the component test**
+- [x] **Step 4: Write the component test**
 
 `lot-detail-client.test.tsx` — fixtures typed against the real contracts (C7):
 
@@ -1318,7 +1318,7 @@ const statusFixture = {
 
 Cases: (a) renders title, image, formatted current bid and bid count from the fixtures; (b) `liveStatus={null}` renders the lot without crashing and shows the not-yet-scheduled state; (c) `currentHighestBid: null` (no bids) renders without crashing. Mock `useLotSse` and `next/image` as the existing component tests do.
 
-- [ ] **Step 5: Run, build, verify in the browser, commit**
+- [x] **Step 5: Run, build, verify in the browser, commit**
 
 Run: `pnpm turbo test --filter=user-portal` then `pnpm turbo build --filter=user-portal`
 Expected: PASS / compiles. Per the repo lesson, drive the real flow once: `docker compose up -d`, seed a lot, open `/auctions/{id}/lots/{id}` — page renders (no `currency` crash), bid POST reaches auction-engine.
@@ -1349,13 +1349,13 @@ Covers C6–C8, C10 for user-auth seams.
 - Consumes: `accessTokenResponseSchema`, `meResponseSchema`, `messageResponseSchema`, `apiErrorSchema`, `stringErrorSchema`, `identityDocumentResponseSchema` (Task 1); `REFRESH_COOKIE`, `USER_SERVICE_URL` (Task 9).
 - Produces: `parseAccessToken(json): string | null`, `parseMe(json): Me | null`, `errorMessage(json, fallback): string` (extracts `{error:{message}}` or `{error: string}`, else fallback), `decodeJwtPayload(token): JwtPayload | null` in `lib/jwt.ts` (moved verbatim from `login-client.tsx`).
 
-- [ ] **Step 1: Write the failing parser tests**
+- [x] **Step 1: Write the failing parser tests**
 
 `lib/user-auth.test.ts` — same two-case pattern per parser as Task 9 (strict envelope parse; drifted shape → fallback + `console.error`). `errorMessage` cases: `{ error: { code: 'X', message: 'boom' } }` → `'boom'`; `{ error: 'bare boom' }` → `'bare boom'`; `{}` → fallback.
 
 Run: `pnpm turbo test --filter=user-portal -- src/lib/user-auth.test.ts` — Expected: FAIL, module not found.
 
-- [ ] **Step 2: Write `lib/user-auth.ts` and `lib/jwt.ts`**
+- [x] **Step 2: Write `lib/user-auth.ts` and `lib/jwt.ts`**
 
 ```ts
 import { accessTokenResponseSchema, apiErrorSchema, type Me, meResponseSchema, stringErrorSchema } from '@carat-room/shared-types';
@@ -1390,7 +1390,7 @@ export function errorMessage(json: unknown, fallback: string): string {
 
 `lib/jwt.ts`: move `decodeJwtPayload` (the base64 JWT-payload decode currently inline in `login-client.tsx`) here and type its return as `JwtPayload | null` using the shared `JwtPayload` from `@carat-room/shared-auth` types (already `{ userId, email, verificationStatus, role }`).
 
-- [ ] **Step 3: Fix the refresh proxy (D1)**
+- [x] **Step 3: Fix the refresh proxy (D1)**
 
 `app/api/auth/refresh/route.ts` — both bugs at once (wrong cookie name, imagined response shape):
 
@@ -1422,7 +1422,7 @@ export async function GET() {
 
 Keep the DELETE handler, switching its cookie deletion to `REFRESH_COOKIE`.
 
-- [ ] **Step 4: Convert the client consumers**
+- [x] **Step 4: Convert the client consumers**
 
 - `auth-context.tsx`: refresh response through `parseAccessToken`; derive the user via `decodeJwtPayload(accessToken)` instead of the imagined `user` field; `null` parse → treat as logged out (current silent behaviour, now correct).
 - `login-client.tsx`: login 200 through `parseAccessToken` (removes the `json.data!` non-null assert); JWT decode via `lib/jwt.ts`; error branches through `errorMessage(json, 'Sign in failed')`; register error via `errorMessage(json, 'Registration failed')`.
@@ -1432,7 +1432,7 @@ Keep the DELETE handler, switching its cookie deletion to `REFRESH_COOKIE`.
 
 Remove every `as { … }` cast these files held (C8).
 
-- [ ] **Step 5: Test, verify, commit**
+- [x] **Step 5: Test, verify, commit**
 
 Run: `pnpm turbo test --filter=user-portal`. Expected: PASS (update `auth-context.test.tsx` fixtures to the real `{ data: { accessToken } }` shape, typed `satisfies z.infer<typeof accessTokenResponseSchema>`).
 Browser check (repo lesson — schema tests are not flow verification): log in, wait past the 15-min access-token expiry *or* delete the access token in devtools, confirm silent refresh now succeeds.
@@ -1461,13 +1461,13 @@ Covers C6–C8, C10 for payment seams.
 - Consumes: `invoiceResponseSchema`, `checkoutResponseSchema`, `setupIntentResponseSchema`, `paySavedCardResponseSchema`, `paymentProfileResponseSchema`, `confirmSetupIntentRequestSchema`, `checkoutRequestSchema`, `PaymentInvoice`, `PaymentProfile` (Task 3); `errorMessage` (Task 11); `PAYMENT_SERVICE_URL` (Task 9).
 - Produces: `parseInvoice(json): PaymentInvoice | null`, `parseCheckout(json): string | null` (the URL), `parseSetupIntent(json): string | null` (the client secret), `parsePaymentProfile(json): PaymentProfile | null`, `parsePaySavedCard(json): boolean`.
 
-- [ ] **Step 1: Failing parser tests, then `lib/payment.ts`**
+- [x] **Step 1: Failing parser tests, then `lib/payment.ts`**
 
 Same two-case pattern per parser; fixtures `satisfies z.infer<…>`. `parsePaySavedCard` returns `true` only for `{ status: 'paid' }`, `false` (plus `console.error`) otherwise — note the bare shapes are documented deviations, so `parseSetupIntent` and `parsePaymentProfile` parse WITHOUT an envelope.
 
 Run: `pnpm turbo test --filter=user-portal -- src/lib/payment.test.ts` — FAIL, then implement, then PASS.
 
-- [ ] **Step 2: Fix the invoice proxy path (D3) and add the checkout proxy (D4)**
+- [x] **Step 2: Fix the invoice proxy path (D3) and add the checkout proxy (D4)**
 
 `app/api/account/invoices/[id]/route.ts`: downstream URL becomes `${PAYMENT_SERVICE_URL}/api/payments/invoices/${id}` (was `/api/invoices/${id}`), still forwarding `authorization`, adding `cache: 'no-store'`.
 
@@ -1491,7 +1491,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 }
 ```
 
-- [ ] **Step 3: Convert the consumers**
+- [x] **Step 3: Convert the consumers**
 
 - `account/invoices/[id]/page.tsx`: SWR fetcher parses through `parseInvoice`; delete the local `Invoice` interface in favour of `PaymentInvoice`; `null` parse → the existing error/empty state. `pay-saved-card` response through `parsePaySavedCard`, failure message via `errorMessage(json, 'Payment failed. Please try again.')`.
 - `InvoiceDetail.tsx`: delete its duplicate `Invoice` interface (use `PaymentInvoice`); checkout call sends a body typed `satisfies z.infer<typeof checkoutRequestSchema>` and reads the redirect URL through `parseCheckout`; `null` → error string, no redirect to `undefined`.
@@ -1500,7 +1500,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
 Remove every payment `as { … }` cast (C8).
 
-- [ ] **Step 4: Test, verify, commit**
+- [x] **Step 4: Test, verify, commit**
 
 Run: `pnpm turbo test --filter=user-portal`. Browser check: open an invoice, click "Pay now", confirm the Stripe Checkout redirect happens (D3+D4 were both dead ends before).
 
@@ -1526,18 +1526,18 @@ Covers C6–C8, C10 for shipping seams.
 - Consumes: `fulfilmentResponseSchema`, `fulfilmentSuccessResponseSchema`, `chooseShipRequestSchema`, `chooseCollectRequestSchema`, `Fulfilment` (Task 4); `errorMessage` (Task 11); `SHIPPING_SERVICE_URL` (Task 9).
 - Produces: `parseFulfilment(json): Fulfilment | null`, `parseFulfilmentSuccess(json): boolean`.
 
-- [ ] **Step 1: Failing parser tests, then `lib/shipping.ts`**
+- [x] **Step 1: Failing parser tests, then `lib/shipping.ts`**
 
 Same pattern as Tasks 9/11/12. Run the file's tests: FAIL → implement → PASS.
 
-- [ ] **Step 2: Point the proxies at the real downstream paths (D5)**
+- [x] **Step 2: Point the proxies at the real downstream paths (D5)**
 
 - `…/address/route.ts`: downstream becomes `${SHIPPING_SERVICE_URL}/api/shipping/fulfilments/${id}/choose-ship`.
 - `…/collection-slot/route.ts`: downstream becomes `${SHIPPING_SERVICE_URL}/api/shipping/fulfilments/${id}/choose-collect`.
 
 Keep the portal-facing route filenames (`address`, `collection-slot`) — the page already posts to them; only the downstream target was wrong.
 
-- [ ] **Step 3: Align the form payloads with the request schemas**
+- [x] **Step 3: Align the form payloads with the request schemas**
 
 `account/fulfilments/[id]/page.tsx`: before sending, build the body through the shared request schema so field-name drift is a compile/test error:
 
@@ -1550,7 +1550,7 @@ const payload = chooseShipRequestSchema.parse({
 
 Same for `chooseCollectRequestSchema` (`location`, `date`, `timeSlot`). If the page's zod form schema uses different field names than the request schema, rename the form fields to match (the router's names win). Success responses through `parseFulfilmentSuccess`; failures through `errorMessage(json, 'Unable to save your choice.')` instead of a bare `res.ok` toast.
 
-- [ ] **Step 4: Test, verify, commit**
+- [x] **Step 4: Test, verify, commit**
 
 Run: `pnpm turbo test --filter=user-portal`. Browser check: choose shipping on a fulfilment, confirm the shipping service persists the address (was a 404 before).
 
@@ -1572,13 +1572,13 @@ Covers C6–C8 for the last unconverted catalogue consumer (Boy Scout; discovere
 **Interfaces:**
 - Consumes: `parseAuctionList` from `@/lib/catalogue` (Phase 1).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `page.test.tsx`: mock `useSWR` to return a real `{ data: [auction fixture], meta: { total: 1 } }` envelope (fixture `satisfies z.infer<typeof auctionListResponseSchema>['data'][number]`); assert the auction title renders. Second case: drifted shape renders the empty state without crashing.
 
 Run: `pnpm turbo test --filter=user-portal -- src/app/calendar` — Expected: FAIL (page currently reads `data?.auctions`, so the title never renders).
 
-- [ ] **Step 2: Convert the page**
+- [x] **Step 2: Convert the page**
 
 Replace `useSWR<{ auctions: Auction[] }>` with the reference pattern from `browse-client.tsx`, building the query through the Phase 1 builder (spec: portals construct catalogue URLs exclusively through builders):
 
@@ -1591,7 +1591,7 @@ const auctions = data === undefined ? [] : parseAuctionList(data);
 
 Delete the local `Auction` inline type in favour of the shared inferred type.
 
-- [ ] **Step 3: Run, commit**
+- [x] **Step 3: Run, commit**
 
 Run: `pnpm turbo test --filter=user-portal` — PASS.
 
@@ -1610,12 +1610,12 @@ Covers C11 and closes the plan.
 - Modify: `docs/superpowers/SESSION-SUMMARY.md` (status update)
 - Modify: `docs/superpowers/plans/2026-07-11-api-contracts-phase-2.md` (tick remaining checkboxes)
 
-- [ ] **Step 1: Full fast suite and lint**
+- [x] **Step 1: Full fast suite and lint**
 
 Run: `pnpm turbo test` and `pnpm lint`
 Expected: everything green with no Docker running (the PGlite global setups cover the repository tests). Lint must show no new layer violations and no additions to the legacy-debt block.
 
-- [ ] **Step 2: Deliberate-drift smoke check (C11 — manual, NOT committed)**
+- [x] **Step 2: Deliberate-drift smoke check (C11 — manual, NOT committed)**
 
 In `apps/auction-engine/src/presentation/auction-router.ts`, temporarily rename the serialised field `currentHighestBid` to `highestBid`.
 
@@ -1628,7 +1628,7 @@ git checkout -- apps/auction-engine/src/presentation/auction-router.ts
 
 Repeat once on the consumer side: in `apps/user-portal/src/lib/auction.test.ts`, temporarily change a fixture field name and confirm the `satisfies` annotation fails compilation (`pnpm turbo build --filter=user-portal`). Revert.
 
-- [ ] **Step 3: Integration suite (Docker) — optional but recommended before merging**
+- [x] **Step 3: Integration suite (Docker) — optional but recommended before merging**
 
 ```bash
 docker compose -f docker-compose.test.yml up -d --build
@@ -1638,7 +1638,7 @@ docker compose -f docker-compose.test.yml down -v
 
 Expected: PASS — proves the D1–D5 proxy fixes against real services, not mocks.
 
-- [ ] **Step 4: Bookkeeping and final commit**
+- [x] **Step 4: Bookkeeping and final commit**
 
 Update `docs/superpowers/SESSION-SUMMARY.md`: Phase 2 complete; Phase 3 (admin) and Phase 4 (user-auth PGlite) pending; gaps G1–G5 listed as candidate future plans. Tick all checkboxes in this plan.
 
