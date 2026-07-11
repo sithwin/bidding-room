@@ -14,13 +14,14 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@carat-room/tsconfig": "workspace:*",
+    "@vitest/coverage-v8": "^1.6.1",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   }
