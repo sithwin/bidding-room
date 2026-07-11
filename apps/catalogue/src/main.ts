@@ -74,9 +74,13 @@ app.post('/api/lots', authMiddleware(jwtPublicKey, { adminOnly: true }), async c
     categoryId?: string;
     condition?: string;
     estimatedValue?: number;
+    status?: string;
   };
   if (!body.title?.trim()) {
     return c.json({ error: { code: 'VALIDATION_ERROR', message: 'title is required' } }, 400);
+  }
+  if (body.status !== undefined && body.status !== 'ACTIVE' && body.status !== 'INACTIVE') {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'status must be ACTIVE or INACTIVE' } }, 400);
   }
   const result = await useCases.createLot.execute({
     title: body.title,
@@ -84,6 +88,7 @@ app.post('/api/lots', authMiddleware(jwtPublicKey, { adminOnly: true }), async c
     categoryId: body.categoryId,
     condition: body.condition,
     estimatedValue: body.estimatedValue,
+    status: body.status as 'ACTIVE' | 'INACTIVE' | undefined,
     createdBy: jwtPayload.userId,
   });
   return c.json({ data: result }, 201);
