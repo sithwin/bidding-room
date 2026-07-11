@@ -6,8 +6,10 @@ import { SearchLotsUseCase } from '../application/search-lots-use-case';
 import { ListCategoriesUseCase } from '../application/list-categories-use-case';
 import { RequestImageUploadUseCase } from '../application/request-image-upload-use-case';
 import { ConfirmImageUploadUseCase } from '../application/confirm-image-upload-use-case';
-import { LotCondition } from '../domain/lot';
-import { LotNotFoundError } from '../domain/errors';
+import { DeleteImageUseCase } from '../application/delete-image-use-case';
+import { ReorderImagesUseCase } from '../application/reorder-images-use-case';
+import { Lot, LotCondition } from '../domain/lot';
+import { LotNotFoundError, LotImageNotFoundError, ImageOrderMismatchError } from '../domain/errors';
 
 interface UseCases {
   getLot: Pick<GetLotUseCase, 'execute'>;
@@ -16,6 +18,8 @@ interface UseCases {
   listCategories: Pick<ListCategoriesUseCase, 'execute'>;
   requestImageUpload: Pick<RequestImageUploadUseCase, 'execute'>;
   confirmImageUpload: Pick<ConfirmImageUploadUseCase, 'execute'>;
+  deleteImage: Pick<DeleteImageUseCase, 'execute'>;
+  reorderImages: Pick<ReorderImagesUseCase, 'execute'>;
 }
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
@@ -23,6 +27,30 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 const VALID_CONDITIONS = new Set<string>(Object.values(LotCondition));
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
+
+function toLotResponse(lot: Lot) {
+  return {
+    id: lot.id,
+    title: lot.title,
+    description: lot.description,
+    auctionId: lot.auctionId,
+    categoryId: lot.categoryId,
+    condition: lot.condition,
+    estimatedValue: lot.estimatedValue,
+    status: lot.status,
+    images: lot.images.map(img => ({
+      id: img.id,
+      lotId: img.lotId,
+      url: img.url,
+      thumbnailUrl: img.thumbnailUrl,
+      displayOrder: img.displayOrder,
+      isPrimary: img.isPrimary,
+    })),
+    createdBy: lot.createdBy,
+    createdAt: lot.createdAt,
+    updatedAt: lot.updatedAt,
+  };
+}
 
 export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
   const router = new Hono<AppEnv>();
@@ -46,7 +74,7 @@ export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
     if (!lot) {
       return c.json({ error: { code: 'NOT_FOUND', message: 'Lot not found' } }, 404);
     }
-    return c.json({ data: lot });
+    return c.json({ data: toLotResponse(lot) });
   });
 
   router.get('/api/lots', async c => {
@@ -67,7 +95,7 @@ export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
       limit,
       offset,
     );
-    return c.json({ data: result.items, meta: { total: result.total, limit, offset } });
+    return c.json({ data: result.items.map(toLotResponse), meta: { total: result.total, limit, offset } });
   });
 
   router.get('/api/categories', async c => {
@@ -106,6 +134,45 @@ export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
       throw err;
     }
     return c.json({ data: null });
+  });
+
+  router.delete('/api/lots/:id/images/:imageId', async c => {
+    const jwtPayload = c.get('jwtPayload');
+    if (!jwtPayload || jwtPayload.role !== 'ADMIN') {
+      return c.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    }
+    try {
+      await useCases.deleteImage.execute(c.req.param('id'), c.req.param('imageId'));
+      return c.json({ data: null });
+    } catch (err) {
+      if (err instanceof LotNotFoundError || err instanceof LotImageNotFoundError) {
+        return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
+      }
+      throw err;
+    }
+  });
+
+  router.patch('/api/lots/:id/images/reorder', async c => {
+    const jwtPayload = c.get('jwtPayload');
+    if (!jwtPayload || jwtPayload.role !== 'ADMIN') {
+      return c.json({ error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
+    }
+    const body = await c.req.json() as { imageIds?: string[] };
+    if (!Array.isArray(body.imageIds) || body.imageIds.length === 0) {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: 'imageIds is required' } }, 400);
+    }
+    try {
+      await useCases.reorderImages.execute(c.req.param('id'), body.imageIds);
+      return c.json({ data: null });
+    } catch (err) {
+      if (err instanceof LotNotFoundError) {
+        return c.json({ error: { code: 'NOT_FOUND', message: err.message } }, 404);
+      }
+      if (err instanceof ImageOrderMismatchError) {
+        return c.json({ error: { code: 'IMAGE_ORDER_MISMATCH', message: err.message } }, 400);
+      }
+      throw err;
+    }
   });
 
   return router;
