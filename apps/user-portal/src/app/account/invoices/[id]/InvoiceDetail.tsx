@@ -1,30 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-
-interface Invoice {
-  id: string;
-  lotId: string;
-  amount: number;
-  currency: string;
-  status: 'AWAITING_PAYMENT' | 'PAID' | 'EXPIRED' | 'CANCELLED';
-  dueAt: string;
-  paidAt: string | null;
-}
+import { z } from 'zod';
+import { checkoutRequestSchema, type PaymentInvoice } from '@carat-room/shared-types';
+import { parseCheckout } from '@/lib/payment';
+import { errorMessage } from '@/lib/user-auth';
 
 interface Props {
-  invoice: Invoice;
+  invoice: PaymentInvoice;
   paymentSuccess: boolean;
 }
 
-const STATUS_LABELS: Record<Invoice['status'], string> = {
+const STATUS_LABELS: Record<PaymentInvoice['status'], string> = {
   AWAITING_PAYMENT: 'Awaiting Payment',
   PAID: 'Paid',
   EXPIRED: 'Expired',
   CANCELLED: 'Cancelled',
 };
 
-const STATUS_COLOURS: Record<Invoice['status'], string> = {
+const STATUS_COLOURS: Record<PaymentInvoice['status'], string> = {
   AWAITING_PAYMENT: 'text-yellow-600',
   PAID: 'text-green-600',
   EXPIRED: 'text-red-600',
@@ -49,17 +43,19 @@ export function InvoiceDetail({ invoice, paymentSuccess }: Props) {
     setIsLoading(true);
     setError(null);
     try {
+      const body = { lotTitle: `Lot ${invoice.lotId}` } satisfies z.infer<typeof checkoutRequestSchema>;
       const res = await fetch(`/api/payments/invoices/${invoice.id}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lotTitle: `Lot ${invoice.lotId}` }),
+        body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        setError('Unable to create checkout session. Please try again.');
+      const json = await res.json();
+      const checkoutUrl = parseCheckout(json);
+      if (!checkoutUrl) {
+        setError(errorMessage(json, 'Unable to create checkout session. Please try again.'));
         return;
       }
-      const body = await res.json() as { data: { checkoutUrl: string } };
-      window.location.href = body.data.checkoutUrl;
+      window.location.href = checkoutUrl;
     } catch {
       setError('A network error occurred. Please try again.');
     } finally {

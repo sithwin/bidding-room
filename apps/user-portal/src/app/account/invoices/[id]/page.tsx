@@ -1,16 +1,20 @@
-﻿'use client';
+'use client';
 import { use, useState } from 'react';
-import Image from 'next/image';
 import useSWR from 'swr';
+import { z } from 'zod';
+import { checkoutRequestSchema, type PaymentInvoice } from '@carat-room/shared-types';
 import { Header } from '@/components/layout/header';
 import { AccountShell } from '@/components/layout/account-shell';
 import { Toast } from '@/components/primitives/toast';
 import { useAuth } from '@/lib/auth-context';
+import { errorMessage } from '@/lib/user-auth';
+import { parseInvoice, parseCheckout, parsePaySavedCard } from '@/lib/payment';
 
-type Invoice = {
-  id: string; lotTitle: string; lotImageUrl: string; wonDate: string;
-  hammerPrice: number; buyersPremium: number; gst: number; shipping: number;
-  total: number; currency: string; status: string; stripeCheckoutUrl?: string;
+const STATUS_LABELS: Record<PaymentInvoice['status'], string> = {
+  AWAITING_PAYMENT: 'Awaiting payment',
+  PAID: 'Paid',
+  EXPIRED: 'Expired',
+  CANCELLED: 'Cancelled',
 };
 
 export default function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,10 +23,11 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
   const [isPaying, setIsPaying] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
 
-  const { data: invoice, mutate } = useSWR<Invoice>(
+  const { data: json, mutate } = useSWR(
     accessToken ? `/api/account/invoices/${id}` : null,
     (url: string) => fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } }).then(r => r.json()),
   );
+  const invoice = json === undefined ? undefined : parseInvoice(json);
 
   async function paySavedCard() {
     setIsPaying(true);
@@ -30,13 +35,44 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    const data = await res.json() as { status?: string; error?: string };
+    const data = await res.json();
     setIsPaying(false);
-    if (data.status === 'paid') { setToast({ message: 'Payment successful!', type: 'success' }); mutate(); }
-    else setToast({ message: data.error ?? 'Payment failed. Please try again.', type: 'error' });
+    if (parsePaySavedCard(data)) {
+      setToast({ message: 'Payment successful!', type: 'success' });
+      mutate();
+    } else {
+      setToast({ message: errorMessage(data, 'Payment failed. Please try again.'), type: 'error' });
+    }
   }
 
-  if (!invoice) return null;
+  async function payByCheckout() {
+    if (!invoice) return;
+    setIsPaying(true);
+    const body = { lotTitle: `Lot ${invoice.lotId}` } satisfies z.infer<typeof checkoutRequestSchema>;
+    const res = await fetch(`/api/payments/invoices/${id}/checkout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    setIsPaying(false);
+    const checkoutUrl = parseCheckout(data);
+    if (checkoutUrl) window.location.href = checkoutUrl;
+    else setToast({ message: errorMessage(data, 'Unable to create checkout session. Please try again.'), type: 'error' });
+  }
+
+  if (json === undefined) return null;
+
+  if (!invoice) {
+    return (
+      <>
+        <Header />
+        <AccountShell>
+          <p className='font-sans text-sm text-red-600'>Unable to load this invoice. Please try again later.</p>
+        </AccountShell>
+      </>
+    );
+  }
 
   const isPaid = invoice.status === 'PAID';
 
@@ -47,36 +83,22 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
         <h1 className='font-serif text-2xl font-semibold text-ink mb-8'>Invoice</h1>
 
         <div className='max-w-lg'>
-          {/* Lot summary */}
-          <div className='flex gap-4 mb-8 pb-8 border-b border-[var(--line)]'>
-            {/* Thumbnail */}
-            <div className='relative w-20 h-20 shrink-0 border border-[var(--line)] overflow-hidden'>
-              {invoice.lotImageUrl
-                ? <Image src={invoice.lotImageUrl} alt={invoice.lotTitle} fill className='object-cover' />
-                : <div className='w-full h-full bg-cream' />}
-            </div>
-            <div className='flex-1'>
-              <p className='font-serif text-base font-semibold text-ink'>{invoice.lotTitle}</p>
-              <p className='font-sans text-xs text-mut mt-1'>Won {new Date(invoice.wonDate).toLocaleDateString('en-AU')}</p>
-            </div>
-          </div>
-
-          {/* Price breakdown */}
           <div className='space-y-3 mb-8'>
-            {[
-              ['Hammer price', invoice.hammerPrice],
-              ["Buyer's premium (22%)", invoice.buyersPremium],
-              ['GST', invoice.gst],
-              ['Shipping', invoice.shipping],
-            ].map(([label, amount]) => (
-              <div key={label as string} className='flex justify-between font-sans text-sm'>
-                <span className='text-mut'>{label}</span>
-                <span className='text-ink'>{invoice.currency.toUpperCase()} {(amount as number).toLocaleString()}</span>
-              </div>
-            ))}
+            <div className='flex justify-between font-sans text-sm'>
+              <span className='text-mut'>Lot</span>
+              <span className='text-ink'>{invoice.lotId}</span>
+            </div>
+            <div className='flex justify-between font-sans text-sm'>
+              <span className='text-mut'>Status</span>
+              <span className='text-ink'>{STATUS_LABELS[invoice.status]}</span>
+            </div>
+            <div className='flex justify-between font-sans text-sm'>
+              <span className='text-mut'>Due</span>
+              <span className='text-ink'>{new Date(invoice.dueAt).toLocaleDateString('en-AU')}</span>
+            </div>
             <div className='flex justify-between font-sans text-base font-semibold pt-4 border-t border-[var(--line)]'>
               <span className='text-ink'>Total due</span>
-              <span className='text-ink'>{invoice.currency.toUpperCase()} {invoice.total.toLocaleString()}</span>
+              <span className='text-ink'>{invoice.currency.toUpperCase()} {invoice.amount.toLocaleString()}</span>
             </div>
           </div>
 
@@ -88,14 +110,12 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
             <div className='space-y-3'>
               <button onClick={paySavedCard} disabled={isPaying}
                 className='w-full bg-ink text-paper font-sans text-sm font-medium py-3 hover:bg-ink/90 disabled:opacity-60'>
-                {isPaying ? 'Processing...' : `Pay ${invoice.currency.toUpperCase()} ${invoice.total.toLocaleString()} with saved card`}
+                {isPaying ? 'Processing...' : `Pay ${invoice.currency.toUpperCase()} ${invoice.amount.toLocaleString()} with saved card`}
               </button>
-              {invoice.stripeCheckoutUrl && (
-                <a href={invoice.stripeCheckoutUrl}
-                  className='block w-full text-center border border-[var(--line)] font-sans text-sm py-3 text-ink hover:bg-cream transition-colors'>
-                  Pay by card or bank transfer
-                </a>
-              )}
+              <button onClick={payByCheckout} disabled={isPaying}
+                className='block w-full text-center border border-[var(--line)] font-sans text-sm py-3 text-ink hover:bg-cream transition-colors disabled:opacity-60'>
+                Pay by card or bank transfer
+              </button>
             </div>
           )}
         </div>

@@ -17,6 +17,7 @@ import { createApi } from '@/lib/api';
 import { lotsQuery, placeBidRequestSchema, type AuctionLotStatus } from '@carat-room/shared-types';
 import { parseLotList, toLotCardProps, type CatalogueLot } from '@/lib/catalogue';
 import { parsePlacedBid } from '@/lib/auction';
+import { parsePaymentProfile } from '@/lib/payment';
 import { DISPLAY_CURRENCY } from '@/lib/service-config';
 import Image from 'next/image';
 
@@ -120,8 +121,8 @@ export function LotDetailClient({ lot, liveStatus }: LotDetailProps) {
         const profileRes = await fetch('/api/payments/profile', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        const profile = await profileRes.json() as { stripePaymentMethodId: string | null };
-        if (!profile.stripePaymentMethodId) {
+        const profile = parsePaymentProfile(await profileRes.json());
+        if (!profile?.stripePaymentMethodId) {
           window.location.href = '/account/register-to-bid?step=3';
           return;
         }
