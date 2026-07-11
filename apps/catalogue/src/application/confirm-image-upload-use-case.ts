@@ -10,7 +10,7 @@ export class ConfirmImageUploadUseCase {
     private readonly imageStorage: ImageStorage,
   ) {}
 
-  async execute(lotId: string, imageKey: string, isPrimary: boolean): Promise<void> {
+  async execute(lotId: string, imageKey: string, isPrimary: boolean): Promise<LotImage> {
     const lot = await this.lotRepository.findById(lotId);
     if (!lot) {
       throw new LotNotFoundError(lotId);
@@ -47,5 +47,7 @@ export class ConfirmImageUploadUseCase {
     });
 
     await this.lotRepository.save(updatedLot);
+
+    return newImage;
   }
 }

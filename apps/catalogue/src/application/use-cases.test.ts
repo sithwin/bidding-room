@@ -288,7 +288,8 @@ describe('ConfirmImageUploadUseCase', () => {
       deleteObject: vi.fn(),
     };
 
-    await new ConfirmImageUploadUseCase(mockRepo, mockStorage).execute('lot-1', 'lots/lot-1/img', false);
+    const returnedImage = await new ConfirmImageUploadUseCase(mockRepo, mockStorage).execute('lot-1', 'lots/lot-1/img', false);
+    expect(returnedImage.key).toBe('lots/lot-1/img');
 
     const savedLot = (mockRepo.save as ReturnType<typeof vi.fn>).mock.calls[0][0] as Lot;
     expect(savedLot.images).toHaveLength(1);

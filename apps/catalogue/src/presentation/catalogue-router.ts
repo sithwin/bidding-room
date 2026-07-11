@@ -125,15 +125,16 @@ export function buildCatalogueRouter(useCases: UseCases): Hono<AppEnv> {
     if (!body.imageKey) {
       return c.json({ error: { code: 'VALIDATION_ERROR', message: 'imageKey is required' } }, 400);
     }
+    let createdImage;
     try {
-      await useCases.confirmImageUpload.execute(c.req.param('id'), body.imageKey, body.isPrimary ?? false);
+      createdImage = await useCases.confirmImageUpload.execute(c.req.param('id'), body.imageKey, body.isPrimary ?? false);
     } catch (err) {
       if (err instanceof LotNotFoundError) {
         return c.json({ error: { code: 'NOT_FOUND', message: 'Lot not found' } }, 404);
       }
       throw err;
     }
-    return c.json({ data: null });
+    return c.json({ data: { id: createdImage.id, url: createdImage.url, thumbnailUrl: createdImage.thumbnailUrl, displayOrder: createdImage.displayOrder, isPrimary: createdImage.isPrimary } });
   });
 
   router.delete('/api/lots/:id/images/:imageId', async c => {
