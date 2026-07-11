@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { CountdownTimer } from './countdown-timer';
+import { DISPLAY_CURRENCY } from '@/lib/service-config';
 
 export interface LotCardProps {
   lotId: string;
@@ -34,7 +35,7 @@ export function LotCard({ lotId, auctionId, lotNumber, title, imageUrl, currentB
           {priceLabel && priceAmount != null && (
             <div>
               <p className='font-sans text-[10px] text-mut uppercase tracking-wider'>{priceLabel}</p>
-              <p className='font-sans text-sm font-semibold text-ink'>{(currency ?? 'AUD').toUpperCase()} {priceAmount.toLocaleString()}</p>
+              <p className='font-sans text-sm font-semibold text-ink'>{(currency ?? DISPLAY_CURRENCY).toUpperCase()} {priceAmount.toLocaleString()}</p>
             </div>
           )}
           {endAt && <CountdownTimer endAt={endAt} />}
