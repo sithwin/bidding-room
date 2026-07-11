@@ -3,9 +3,15 @@ import type { BadgeProps } from '@/components/ui/badge';
 
 const STATUS_VARIANTS: Record<string, BadgeProps['variant']> = {
   ACTIVE: 'default',
+  INACTIVE: 'destructive',
   SCHEDULED: 'secondary',
+  DRAFT: 'secondary',
   LIVE: 'default',
+  CLOSING: 'destructive',
   CLOSED: 'secondary',
+  SOLD: 'default',
+  UNSOLD: 'secondary',
+  UNSCHEDULED: 'outline',
   CANCELLED: 'destructive',
   PAID: 'default',
   UNPAID: 'secondary',
