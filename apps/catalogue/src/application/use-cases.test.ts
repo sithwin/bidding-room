@@ -265,6 +265,7 @@ describe('ConfirmImageUploadUseCase', () => {
     const mockStorage: ImageStorage = {
       generatePresignedUploadUrl: vi.fn(),
       getPublicUrl: vi.fn().mockResolvedValue('https://assets.example.com/key'),
+      deleteObject: vi.fn(),
     };
 
     await expect(
@@ -282,6 +283,7 @@ describe('ConfirmImageUploadUseCase', () => {
     const mockStorage: ImageStorage = {
       generatePresignedUploadUrl: vi.fn(),
       getPublicUrl: vi.fn().mockResolvedValue('https://assets.example.com/key'),
+      deleteObject: vi.fn(),
     };
 
     await new ConfirmImageUploadUseCase(mockRepo, mockStorage).execute('lot-1', 'lots/lot-1/img', false);
@@ -301,7 +303,7 @@ describe('ConfirmImageUploadUseCase', () => {
       condition: LotCondition.Excellent,
       estimatedValue: 3000,
       images: [
-        { id: 'img-existing', lotId: 'lot-1', url: 'https://assets.example.com/old.jpg', thumbnailUrl: 'https://assets.example.com/old_thumb.jpg', displayOrder: 0, isPrimary: true },
+        { id: 'img-existing', lotId: 'lot-1', key: 'lots/lot-1/img-existing', url: 'https://assets.example.com/old.jpg', thumbnailUrl: 'https://assets.example.com/old_thumb.jpg', displayOrder: 0, isPrimary: true },
       ],
       createdBy: null,
       createdAt: new Date('2026-06-20T00:00:00Z'),
@@ -315,6 +317,7 @@ describe('ConfirmImageUploadUseCase', () => {
     const mockStorage: ImageStorage = {
       generatePresignedUploadUrl: vi.fn(),
       getPublicUrl: vi.fn().mockResolvedValue('https://assets.example.com/new.jpg'),
+      deleteObject: vi.fn(),
     };
 
     await new ConfirmImageUploadUseCase(mockRepo, mockStorage).execute('lot-1', 'lots/lot-1/new', true);

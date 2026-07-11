@@ -23,8 +23,8 @@ describe('Lot', () => {
 
   it('should_returnPrimaryImage_when_imagesContainPrimaryFlag', () => {
     const images: LotImage[] = [
-      { id: 'img-1', lotId: 'lot-1', url: 'https://assets.example.com/img1.jpg', thumbnailUrl: 'https://assets.example.com/img1_thumb.jpg', displayOrder: 0, isPrimary: false },
-      { id: 'img-2', lotId: 'lot-1', url: 'https://assets.example.com/img2.jpg', thumbnailUrl: 'https://assets.example.com/img2_thumb.jpg', displayOrder: 1, isPrimary: true },
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/img-1', url: 'https://assets.example.com/img1.jpg', thumbnailUrl: 'https://assets.example.com/img1_thumb.jpg', displayOrder: 0, isPrimary: false },
+      { id: 'img-2', lotId: 'lot-1', key: 'lots/lot-1/img-2', url: 'https://assets.example.com/img2.jpg', thumbnailUrl: 'https://assets.example.com/img2_thumb.jpg', displayOrder: 1, isPrimary: true },
     ];
     const lot = new Lot({
       id: 'lot-1',
@@ -61,8 +61,8 @@ describe('Lot', () => {
 
   it('should_returnSortedImages_when_multipleImagesExist', () => {
     const images: LotImage[] = [
-      { id: 'img-2', lotId: 'lot-1', url: 'b.jpg', thumbnailUrl: 'b_t.jpg', displayOrder: 1, isPrimary: false },
-      { id: 'img-1', lotId: 'lot-1', url: 'a.jpg', thumbnailUrl: 'a_t.jpg', displayOrder: 0, isPrimary: true },
+      { id: 'img-2', lotId: 'lot-1', key: 'lots/lot-1/img-2', url: 'b.jpg', thumbnailUrl: 'b_t.jpg', displayOrder: 1, isPrimary: false },
+      { id: 'img-1', lotId: 'lot-1', key: 'lots/lot-1/img-1', url: 'a.jpg', thumbnailUrl: 'a_t.jpg', displayOrder: 0, isPrimary: true },
     ];
     const lot = new Lot({
       id: 'lot-1', title: 'T', description: null, categoryId: null,
