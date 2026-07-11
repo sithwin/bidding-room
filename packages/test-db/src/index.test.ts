@@ -74,5 +74,5 @@ describe('startTestDb migration failure', () => {
     await followUpHandle.stop();
 
     rmSync(badMigrationsDir, { recursive: true, force: true });
-  }, 20000); // spins up two full PGlite instances sequentially - default 5000ms is too tight under CI load
+  });
 });
