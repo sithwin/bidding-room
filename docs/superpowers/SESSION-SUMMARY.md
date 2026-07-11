@@ -134,3 +134,29 @@ All plans implemented:
 | 07-domain-notification | ✅ complete |
 | 08-domain-admin (A+B) | ✅ complete |
 | 09-integration-testing | ✅ complete |
+
+---
+
+## API Contract Testing (2026-07-11)
+
+Shared Zod schemas in `packages/shared-types/src/api/` are the single source of truth for cross-service JSON contracts. Producer router tests parse every asserted body through them; user-portal fetchers/proxies `safeParse` with graceful fallbacks.
+
+| Phase | Scope | Status |
+|---|---|---|
+| Phase 1 | catalogue schemas + user-portal catalogue seams | ✅ complete (earlier) |
+| Phase 2 | user-auth, auction-engine, payment, shipping schemas + query/request builders; portal auth/bid/payment/shipping/calendar seams + lot detail | ✅ complete (branch `worktree-api-contracts-phase-2`) |
+| Phase 3 | admin-portal consumer conversion | ⏳ pending — separate plan |
+| Phase 4 | move user-auth repository tests onto `@carat-room/test-db` (PGlite); user-auth still hand-rolls its schema and its 2 repo integration tests need a live Postgres | ⏳ pending — separate plan |
+
+**Phase 2 delivered:** 4 shared contract modules (`user-auth`, `auction-engine`, `payment`, `shipping`) with inferred types + typed query/request builders; producer-side schema enforcement across all four service router test suites; consumer-side parser libraries in the portal (`lib/auction.ts`, `lib/user-auth.ts`, `lib/payment.ts`, `lib/shipping.ts`, `lib/jwt.ts`, `lib/service-config.ts`) plus `parseLot`. Live bugs fixed (D1–D7): broken token refresh (wrong cookie + imagined shape), bid POST to a non-existent route, invoice-detail and checkout proxy paths, shipping choose-ship/choose-collect proxy paths, calendar's `{auctions}` vs `{data,meta}` mismatch, and the lot-detail runtime crash (`lot.currency.toUpperCase()` on an imagined type). Reality-wins correction: widened domain `UserStatus` to the 6 values the real user-auth service emits.
+
+**Gaps flagged, NOT built (candidate future plans):**
+- G1 — `/api/account/bids`, `/api/account/stats` proxy to auction-engine paths that don't exist.
+- G2 — `/api/account/won` proxies to a non-existent payment path.
+- G3 — watchlist routes: catalogue has no watchlist endpoints at all.
+- G4 — `/api/auth/resend-verification`: user-auth has no resend endpoint.
+- G5 — no service owns a lot's display currency; portal defaults to `'AUD'` via the shared `DISPLAY_CURRENCY` constant.
+
+**Known pre-existing test failures (out of Phase 2 scope, confirmed present before this work):**
+- user-portal: `src/app/page.test.tsx` (1) and `src/app/auctions/[auctionId]/catalogue-lots.test.tsx` (2) — Phase-1 catalogue consumers not enumerated in the Phase 2 plan.
+- user-auth: 2 `PostgresUserRepository` integration tests need a live Postgres on :5432 (Phase 4 debt).
