@@ -1,7 +1,9 @@
 'use client';
 import { useState } from 'react';
+import { identityDocumentResponseSchema } from '@carat-room/shared-types';
 import { useAuth } from '@/lib/auth-context';
 import { getStripe } from '@/lib/stripe';
+import { parseMe, errorMessage } from '@/lib/user-auth';
 import { DropZone } from '@/components/primitives/drop-zone';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import useSWR from 'swr';
@@ -52,8 +54,9 @@ function Step2Identity({ onDone }: { onDone: () => void }) {
       body: form,
     });
     setIsLoading(false);
-    if (res.ok) onDone();
-    else { const d = await res.json() as { error?: string }; setError(d.error ?? 'Upload failed'); }
+    const json = await res.json();
+    if (res.ok) { identityDocumentResponseSchema.safeParse(json); onDone(); }
+    else setError(errorMessage(json, 'Upload failed'));
   }
 
   return (
@@ -152,12 +155,13 @@ function Step3Payment({ onDone }: { onDone: () => void }) {
 
 function Step4Approved() {
   const { accessToken } = useAuth();
-  const { data } = useSWR(
+  const { data: json } = useSWR(
     accessToken ? '/api/auth/me' : null,
     (url: string) => fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } }).then(r => r.json()),
     { refreshInterval: 10000 },
   );
-  const isApproved = data?.verificationStatus === 'APPROVED_BIDDER';
+  const me = json === undefined ? null : parseMe(json);
+  const isApproved = me?.status === 'APPROVED_BIDDER';
 
   return (
     <div className='text-center py-8'>
