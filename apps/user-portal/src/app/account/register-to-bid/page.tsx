@@ -1,7 +1,11 @@
 'use client';
 import { useState } from 'react';
+import { z } from 'zod';
+import { identityDocumentResponseSchema, confirmSetupIntentRequestSchema } from '@carat-room/shared-types';
 import { useAuth } from '@/lib/auth-context';
 import { getStripe } from '@/lib/stripe';
+import { parseMe, errorMessage } from '@/lib/user-auth';
+import { parseSetupIntent } from '@/lib/payment';
 import { DropZone } from '@/components/primitives/drop-zone';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import useSWR from 'swr';
@@ -52,8 +56,9 @@ function Step2Identity({ onDone }: { onDone: () => void }) {
       body: form,
     });
     setIsLoading(false);
-    if (res.ok) onDone();
-    else { const d = await res.json() as { error?: string }; setError(d.error ?? 'Upload failed'); }
+    const json = await res.json();
+    if (res.ok) { identityDocumentResponseSchema.safeParse(json); onDone(); }
+    else setError(errorMessage(json, 'Upload failed'));
   }
 
   return (
@@ -113,8 +118,9 @@ function Step3Payment({ onDone }: { onDone: () => void }) {
     const res = await fetch('/api/payments/setup-intent', {
       method: 'POST', headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
     });
-    const { clientSecret, error: serverError } = await res.json() as { clientSecret?: string; error?: string };
-    if (!clientSecret) { setError(serverError ?? 'Failed to initialise payment'); setIsLoading(false); return; }
+    const setupIntentJson = await res.json();
+    const clientSecret = parseSetupIntent(setupIntentJson);
+    if (!clientSecret) { setError(errorMessage(setupIntentJson, 'Failed to initialise payment')); setIsLoading(false); return; }
 
     const card = elements.getElement(CardElement);
     if (!card) return;
@@ -122,10 +128,11 @@ function Step3Payment({ onDone }: { onDone: () => void }) {
     const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, { payment_method: { card } });
     if (stripeError) { setError(stripeError.message ?? 'Card declined'); setIsLoading(false); return; }
 
+    const confirmBody = { setupIntentId: setupIntent!.id } satisfies z.infer<typeof confirmSetupIntentRequestSchema>;
     const confirmRes = await fetch('/api/payments/setup-intent/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
-      body: JSON.stringify({ setupIntentId: setupIntent!.id }),
+      body: JSON.stringify(confirmBody),
     });
     setIsLoading(false);
     if (confirmRes.ok) onDone();
@@ -152,12 +159,13 @@ function Step3Payment({ onDone }: { onDone: () => void }) {
 
 function Step4Approved() {
   const { accessToken } = useAuth();
-  const { data } = useSWR(
+  const { data: json } = useSWR(
     accessToken ? '/api/auth/me' : null,
     (url: string) => fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } }).then(r => r.json()),
     { refreshInterval: 10000 },
   );
-  const isApproved = data?.verificationStatus === 'APPROVED_BIDDER';
+  const me = json === undefined ? null : parseMe(json);
+  const isApproved = me?.status === 'APPROVED_BIDDER';
 
   return (
     <div className='text-center py-8'>

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const SHIPPING_SERVICE_URL = process.env.SHIPPING_SERVICE_URL ?? 'http://localhost:3006';
+import { SHIPPING_SERVICE_URL } from '@/lib/service-config';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const auth = request.headers.get('authorization') ?? '';
   const body = await request.json();
-  const res = await fetch(`${SHIPPING_SERVICE_URL}/api/shipping/fulfilments/${id}/collection-slot`, {
+  const res = await fetch(`${SHIPPING_SERVICE_URL}/api/shipping/fulfilments/${id}/choose-collect`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: auth },
     body: JSON.stringify(body),

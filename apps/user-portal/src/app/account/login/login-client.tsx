@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/lib/auth-context';
+import { parseAccessToken, errorMessage } from '@/lib/user-auth';
+import { decodeJwtPayload } from '@/lib/jwt';
 
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(8) });
 const registerSchema = z.object({ email: z.string().email(), password: z.string().min(8, 'Password must be at least 8 characters'), confirmPassword: z.string() })
@@ -29,11 +31,12 @@ export function LoginClient() {
     setServerError('');
     try {
       const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-      const json = await res.json() as { data?: { accessToken: string }; error?: { code: string; message: string } };
-      if (!res.ok) { setServerError(json.error?.message ?? 'Sign in failed'); return; }
-      const accessToken = json.data!.accessToken;
-      const payload = JSON.parse(atob(accessToken.split('.')[1])) as { userId: string; email: string; verificationStatus: string; role: string };
-      login(accessToken, { userId: payload.userId, email: payload.email, verificationStatus: payload.verificationStatus, role: payload.role });
+      const json = await res.json();
+      if (!res.ok) { setServerError(errorMessage(json, 'Sign in failed')); return; }
+      const accessToken = parseAccessToken(json);
+      const payload = accessToken ? decodeJwtPayload(accessToken) : null;
+      if (!accessToken || !payload) { setServerError('Sign in failed'); return; }
+      login(accessToken, payload);
       router.push(returnUrl);
     } catch {
       setServerError('Unable to connect. Please try again.');
@@ -44,8 +47,8 @@ export function LoginClient() {
     setServerError('');
     try {
       const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: data.email, password: data.password }) });
-      const json = await res.json() as { error?: { code: string; message: string } };
-      if (!res.ok) { setServerError(json.error?.message ?? 'Registration failed'); return; }
+      const json = await res.json();
+      if (!res.ok) { setServerError(errorMessage(json, 'Registration failed')); return; }
       setRegistered(true);
     } catch {
       setServerError('Unable to connect. Please try again.');

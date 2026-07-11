@@ -1,5 +1,5 @@
 import {
-  lotListResponseSchema, auctionListResponseSchema, auctionResponseSchema,
+  lotListResponseSchema, lotResponseSchema, auctionListResponseSchema, auctionResponseSchema,
   type CatalogueLot, type CatalogueAuction,
 } from '@carat-room/shared-types';
 import type { z } from 'zod';
@@ -33,6 +33,15 @@ export function parseAuction(json: unknown): AuctionDetail | null {
   const parsed = auctionResponseSchema.safeParse(json);
   if (!parsed.success) {
     console.error('Catalogue auction failed contract validation', parsed.error.issues);
+    return null;
+  }
+  return parsed.data.data;
+}
+
+export function parseLot(json: unknown): CatalogueLot | null {
+  const parsed = lotResponseSchema.safeParse(json);
+  if (!parsed.success) {
+    console.error('Catalogue lot failed contract validation', parsed.error.issues);
     return null;
   }
   return parsed.data.data;
