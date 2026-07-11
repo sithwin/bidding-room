@@ -17,6 +17,8 @@ interface Lot {
   categoryId: string;
   condition: string;
   estimatedValue: number;
+  status: string;
+  auctionStatus: string | null;
   images: LotImage[];
 }
 
