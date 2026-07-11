@@ -19,6 +19,7 @@ interface LotRow {
 interface LotImageRow {
   id: string;
   lot_id: string;
+  key: string;
   url: string;
   thumbnail_url: string;
   display_order: number;
@@ -29,6 +30,7 @@ function rowToLotImage(row: LotImageRow): LotImage {
   return {
     id: row.id,
     lotId: row.lot_id,
+    key: row.key,
     url: row.url,
     thumbnailUrl: row.thumbnail_url,
     displayOrder: row.display_order,
@@ -38,7 +40,7 @@ function rowToLotImage(row: LotImageRow): LotImage {
 
 async function fetchImages(db: Db, lotId: string): Promise<LotImage[]> {
   const rows = await db<LotImageRow[]>`
-    SELECT id, lot_id, url, thumbnail_url, display_order, is_primary
+    SELECT id, lot_id, key, url, thumbnail_url, display_order, is_primary
     FROM lot_images WHERE lot_id = ${lotId}
     ORDER BY display_order ASC
   `;
@@ -125,7 +127,7 @@ export class PostgresLotRepository implements LotRepository {
 
     const lotIds = rows.map(row => row.id);
     const imageRows = await this.db<LotImageRow[]>`
-      SELECT id, lot_id, url, thumbnail_url, display_order, is_primary
+      SELECT id, lot_id, key, url, thumbnail_url, display_order, is_primary
       FROM lot_images WHERE lot_id IN ${this.db(lotIds)}
       ORDER BY lot_id, display_order ASC
     `;
@@ -164,8 +166,8 @@ export class PostgresLotRepository implements LotRepository {
       await sql`DELETE FROM lot_images WHERE lot_id = ${lot.id}`;
       for (const img of lot.images) {
         await sql`
-          INSERT INTO lot_images (id, lot_id, url, thumbnail_url, display_order, is_primary)
-          VALUES (${img.id}, ${img.lotId}, ${img.url}, ${img.thumbnailUrl}, ${img.displayOrder}, ${img.isPrimary})
+          INSERT INTO lot_images (id, lot_id, key, url, thumbnail_url, display_order, is_primary)
+          VALUES (${img.id}, ${img.lotId}, ${img.key}, ${img.url}, ${img.thumbnailUrl}, ${img.displayOrder}, ${img.isPrimary})
         `;
       }
     });
