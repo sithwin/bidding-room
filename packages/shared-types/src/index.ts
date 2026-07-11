@@ -59,3 +59,10 @@ export {
   dashboardStatsResponseSchema, auctionsListQuery, bidHistoryQuery,
 } from './api/auction-engine.js';
 export type { AuctionLotStatus, AuctionBid } from './api/auction-engine.js';
+export {
+  invoiceStatusSchema, invoiceSchema, invoiceResponseSchema, invoiceListResponseSchema,
+  checkoutRequestSchema, checkoutResponseSchema, extendInvoiceRequestSchema,
+  setupIntentResponseSchema, confirmSetupIntentRequestSchema, confirmSetupIntentResponseSchema,
+  paySavedCardResponseSchema, paymentProfileResponseSchema, invoicesQuery,
+} from './api/payment.js';
+export type { PaymentInvoice, PaymentProfile } from './api/payment.js';
