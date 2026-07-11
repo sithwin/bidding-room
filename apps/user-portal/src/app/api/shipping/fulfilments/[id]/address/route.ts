@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { SHIPPING_SERVICE_URL } from '@/lib/service-config';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

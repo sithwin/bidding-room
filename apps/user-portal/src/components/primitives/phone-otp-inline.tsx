@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { errorMessage } from '@/lib/user-auth';
 
 interface PhoneOtpInlineProps {
   onVerified: () => void;
@@ -30,8 +31,7 @@ export function PhoneOtpInline({ onVerified, onClose }: PhoneOtpInlineProps) {
     if (res.ok) {
       setStep('otp');
     } else {
-      const d = await res.json() as { error?: string };
-      setError(d.error ?? 'Failed to send code');
+      setError(errorMessage(await res.json(), 'Failed to send code'));
     }
   }
 
@@ -50,8 +50,7 @@ export function PhoneOtpInline({ onVerified, onClose }: PhoneOtpInlineProps) {
     if (res.ok) {
       onVerified();
     } else {
-      const d = await res.json() as { error?: string };
-      setError(d.error ?? 'Invalid code');
+      setError(errorMessage(await res.json(), 'Invalid code'));
     }
   }
 
