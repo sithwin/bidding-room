@@ -9,8 +9,10 @@ RUN pnpm --filter @carat-room/shipping build
 
 FROM node:22-alpine
 WORKDIR /app
-COPY --from=builder --chown=node:node /app/apps/shipping/dist ./dist
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+WORKDIR /app/apps/shipping
+COPY --from=builder --chown=node:node /app/apps/shipping/dist ./dist
+COPY --from=builder --chown=node:node /app/apps/shipping/node_modules ./node_modules
 USER node
 EXPOSE 3006
 CMD ["node", "dist/main.js"]

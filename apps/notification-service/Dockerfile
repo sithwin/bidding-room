@@ -13,8 +13,10 @@ RUN pnpm --filter @carat-room/notification-service build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-COPY --from=builder --chown=node:node /app/apps/notification-service/dist ./dist
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+WORKDIR /app/apps/notification-service
+COPY --from=builder --chown=node:node /app/apps/notification-service/dist ./dist
+COPY --from=builder --chown=node:node /app/apps/notification-service/node_modules ./node_modules
 USER node
 EXPOSE 3005
 CMD ["node", "dist/main.js"]

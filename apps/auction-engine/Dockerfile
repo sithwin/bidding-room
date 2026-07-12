@@ -8,9 +8,11 @@ RUN pnpm --filter @carat-room/auction-engine build
 
 FROM node:22-alpine
 WORKDIR /app
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+WORKDIR /app/apps/auction-engine
 COPY --from=builder --chown=node:node /app/apps/auction-engine/dist ./dist
 COPY --from=builder --chown=node:node /app/apps/auction-engine/package.json ./
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/apps/auction-engine/node_modules ./node_modules
 USER node
 EXPOSE 3003
 CMD ["node", "dist/main.js"]

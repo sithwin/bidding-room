@@ -8,9 +8,11 @@ RUN pnpm --filter @carat-room/catalogue build
 
 FROM node:22-alpine
 WORKDIR /app
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+WORKDIR /app/apps/catalogue
 COPY --from=builder --chown=node:node /app/apps/catalogue/dist ./dist
 COPY --from=builder --chown=node:node /app/apps/catalogue/package.json ./
-COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/apps/catalogue/node_modules ./node_modules
 USER node
 EXPOSE 3002
 CMD ["node", "dist/main.js"]

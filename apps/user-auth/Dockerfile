@@ -9,8 +9,10 @@ RUN pnpm --filter @carat-room/user-auth build
 
 FROM node:22-alpine
 WORKDIR /app
-COPY --from=builder --chown=node:node /app/apps/user-auth/dist ./dist
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+WORKDIR /app/apps/user-auth
+COPY --from=builder --chown=node:node /app/apps/user-auth/dist ./dist
+COPY --from=builder --chown=node:node /app/apps/user-auth/node_modules ./node_modules
 USER node
 EXPOSE 3001
 CMD ["node", "dist/main.js"]
