@@ -393,6 +393,9 @@ importers:
       '@carat-room/shared-events':
         specifier: workspace:*
         version: link:../../packages/shared-events
+      '@carat-room/shared-rate-limit':
+        specifier: workspace:*
+        version: link:../../packages/shared-rate-limit
       '@carat-room/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
