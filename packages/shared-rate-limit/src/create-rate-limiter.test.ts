@@ -5,6 +5,28 @@ import { createRateLimiter } from './create-rate-limiter';
 
 vi.mock('ioredis');
 
+// `rate-limit-redis`'s `RedisStore` speaks the Redis Lua-scripting protocol:
+// on construction (and on retry) it issues `SCRIPT LOAD <lua>`, which must
+// reply with a SHA1 hex digest (a string). Every actual increment/get then
+// runs `EVALSHA <sha> ...`, whose reply is the two-element script result
+// `[totalHits, timeToExpireMs]`. A flat mock that resolves every call to a
+// bare number breaks `RedisStore`'s own check that `SCRIPT LOAD` returns a
+// string, so the mock below inspects the command name and branches.
+const FAKE_SCRIPT_SHA = 'a'.repeat(40);
+
+function mockRedisCall(totalHits: number, timeToExpireMs = 60_000) {
+  return vi.fn(async (...args: unknown[]) => {
+    const [command] = args as [string, ...unknown[]];
+    if (command === 'SCRIPT') {
+      return FAKE_SCRIPT_SHA;
+    }
+    if (command === 'EVALSHA') {
+      return [totalHits, timeToExpireMs];
+    }
+    return totalHits;
+  });
+}
+
 function buildApp(limiter: ReturnType<typeof createRateLimiter>) {
   const app = new Hono();
   app.use('/limited', limiter);
@@ -20,7 +42,7 @@ describe('createRateLimiter', () => {
   });
 
   it('should_allowRequest_when_underLimit', async () => {
-    vi.mocked(redis.call).mockResolvedValue(1);
+    vi.mocked(redis.call).mockImplementation(mockRedisCall(1));
     const limiter = createRateLimiter({ redis, windowMs: 60_000, max: 2, keyPrefix: 'test:under' });
     const app = buildApp(limiter);
 
@@ -30,7 +52,7 @@ describe('createRateLimiter', () => {
   });
 
   it('should_returnTooManyRequestsEnvelope_when_overLimit', async () => {
-    vi.mocked(redis.call).mockResolvedValue(3);
+    vi.mocked(redis.call).mockImplementation(mockRedisCall(3));
     const limiter = createRateLimiter({ redis, windowMs: 60_000, max: 2, keyPrefix: 'test:over' });
     const app = buildApp(limiter);
 
@@ -45,7 +67,7 @@ describe('createRateLimiter', () => {
   });
 
   it('should_useCustomMessage_when_messageOptionProvided', async () => {
-    vi.mocked(redis.call).mockResolvedValue(3);
+    vi.mocked(redis.call).mockImplementation(mockRedisCall(3));
     const limiter = createRateLimiter({
       redis,
       windowMs: 60_000,
@@ -62,13 +84,21 @@ describe('createRateLimiter', () => {
   });
 
   it('should_prefixRedisKeysWithKeyPrefix_when_storingCounters', async () => {
-    vi.mocked(redis.call).mockResolvedValue(1);
+    vi.mocked(redis.call).mockImplementation(mockRedisCall(1));
     const limiter = createRateLimiter({ redis, windowMs: 60_000, max: 5, keyPrefix: 'test:prefix' });
     const app = buildApp(limiter);
 
     await app.request('/limited', { headers: { 'x-forwarded-for': '203.0.113.4' } });
 
-    const [, keyArg] = vi.mocked(redis.call).mock.calls[0] as unknown as [string, string];
+    const evalshaCall = vi
+      .mocked(redis.call)
+      .mock.calls.find(([command]) => command === 'EVALSHA') as unknown as [
+      string,
+      string,
+      string,
+      string,
+    ];
+    const [, , , keyArg] = evalshaCall;
     expect(keyArg).toContain('rl:test:prefix:');
   });
 
