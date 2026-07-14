@@ -29,6 +29,8 @@ import { buildUserRouter } from './presentation/user-router';
 import { buildAdminUsersRouter } from './presentation/admin-users-router';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
+import Redis from 'ioredis';
+import { buildUserAuthRateLimits } from './presentation/rate-limits';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
@@ -38,6 +40,8 @@ async function main(): Promise<void> {
   const jwtPrivateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const port = Number(process.env.PORT ?? 3001);
+  const redisHost = process.env.REDIS_HOST ?? 'localhost';
+  const redisPort = Number(process.env.REDIS_PORT ?? 6379);
 
   const R2_ACCOUNT_ID        = process.env['R2_ACCOUNT_ID']!;
   const R2_ACCESS_KEY_ID     = process.env['R2_ACCESS_KEY_ID']!;
@@ -65,6 +69,17 @@ async function main(): Promise<void> {
   const app = new Hono<AppEnv>();
 
   app.get('/health', (c) => c.json({ status: 'ok', service: 'user-auth' }));
+
+  const redis = new Redis({ host: redisHost, port: redisPort });
+  const rateLimits = buildUserAuthRateLimits(redis);
+
+  app.use('*', rateLimits.default);
+  app.use('/api/users/login', rateLimits.strict);
+  app.use('/api/users/register', rateLimits.strict);
+  app.use('/api/users/verify-email', rateLimits.strict);
+  app.use('/api/users/phone/request', rateLimits.strict);
+  app.use('/api/users/phone/verify', rateLimits.strict);
+  app.use('/api/users/refresh', rateLimits.refresh);
 
   app.use('/api/users/phone/*', authMiddleware(jwtPublicKey));
   app.use('/api/users/me', authMiddleware(jwtPublicKey));

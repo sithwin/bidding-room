@@ -79,6 +79,8 @@ services:
     image: ghcr.io/the-carat-room/user-service:latest
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/users
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
@@ -88,6 +90,8 @@ services:
       R2_BUCKET_NAME: ${R2_BUCKET_NAME}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy

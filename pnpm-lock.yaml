@@ -506,6 +506,9 @@ importers:
       '@carat-room/shared-events':
         specifier: workspace:*
         version: link:../../packages/shared-events
+      '@carat-room/shared-rate-limit':
+        specifier: workspace:*
+        version: link:../../packages/shared-rate-limit
       '@carat-room/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -518,6 +521,9 @@ importers:
       hono:
         specifier: ^4.4.0
         version: 4.12.26
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.11.1
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.3

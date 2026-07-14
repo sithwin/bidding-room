@@ -93,6 +93,8 @@ services:
     environment:
       PORT: '3001'
       DATABASE_URL: postgresql://carat:carat_test@postgres:5432/user_test
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
       RABBITMQ_URL: amqp://carat:carat_test@rabbitmq:5672
       JWT_PRIVATE_KEY: *jwt-private-key
       JWT_PUBLIC_KEY: *jwt-public-key
@@ -101,6 +103,8 @@ services:
       - '3001:3001'
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
