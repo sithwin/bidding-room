@@ -40,6 +40,7 @@ async function main(): Promise<void> {
   const amqpUrl = process.env.RABBITMQ_URL;
   const jwtPrivateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
+  const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
   const port = Number(process.env.PORT ?? 3001);
   const redisHost = process.env.REDIS_HOST ?? 'localhost';
   const redisPort = Number(process.env.REDIS_PORT ?? 6379);
@@ -48,11 +49,10 @@ async function main(): Promise<void> {
   const R2_ACCESS_KEY_ID     = process.env['R2_ACCESS_KEY_ID']!;
   const R2_SECRET_ACCESS_KEY = process.env['R2_SECRET_ACCESS_KEY']!;
   const R2_BUCKET_NAME       = process.env['R2_BUCKET_NAME']!;
-  const TURNSTILE_SECRET_KEY = process.env['TURNSTILE_SECRET_KEY']!;
 
-  if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey) {
+  if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey || !turnstileSecretKey) {
     throw new Error(
-      'Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY',
+      'Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TURNSTILE_SECRET_KEY',
     );
   }
 
@@ -94,7 +94,7 @@ async function main(): Promise<void> {
     bucketName: R2_BUCKET_NAME,
   });
 
-  const humanVerifier = new TurnstileVerifier(TURNSTILE_SECRET_KEY);
+  const humanVerifier = new TurnstileVerifier(turnstileSecretKey);
 
   app.route('/api/users', buildUserRouter({
     register:                new RegisterUseCase(userRepo, tokenRepo, passwordService, publisher),
