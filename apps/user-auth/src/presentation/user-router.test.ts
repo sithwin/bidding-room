@@ -15,6 +15,9 @@ import { LoginUseCase } from '../application/login.use-case';
 import { GetMeUseCase } from '../application/get-me.use-case';
 import { User, UserRole, UserStatus } from '../domain/user';
 import { JwtPayload } from '@carat-room/shared-auth';
+import { HumanVerifier } from '../application/human-verifier';
+
+const alwaysHumanVerifier = (): HumanVerifier => ({ verify: vi.fn().mockResolvedValue(true) });
 
 const makeUseCases = () => ({
   register:               { execute: vi.fn() } as unknown as RegisterUseCase,
@@ -45,12 +48,12 @@ describe('POST /api/users/register', () => {
     (useCases.register.execute as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'jane@example.com', password: 'secret123' }),
+      body: JSON.stringify({ email: 'jane@example.com', password: 'secret123', turnstileToken: 'test-token' }),
     });
 
     expect(res.status).toBe(201);
@@ -60,12 +63,12 @@ describe('POST /api/users/register', () => {
   it('should_return400_when_emailMissing', async () => {
     const useCases = makeUseCases();
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: 'secret123' }),
+      body: JSON.stringify({ password: 'secret123', turnstileToken: 'test-token' }),
     });
 
     expect(res.status).toBe(400);
@@ -79,7 +82,7 @@ describe('POST /api/users/verify-email', () => {
     (useCases.verifyEmail.execute as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/verify-email', {
       method: 'POST',
@@ -98,7 +101,7 @@ describe('POST /api/users/verify-email', () => {
     );
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/verify-email', {
       method: 'POST',
@@ -120,12 +123,12 @@ describe('POST /api/users/login', () => {
     });
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'jane@example.com', password: 'secret' }),
+      body: JSON.stringify({ email: 'jane@example.com', password: 'secret', turnstileToken: 'test-token' }),
     });
 
     expect(res.status).toBe(200);
@@ -140,12 +143,12 @@ describe('POST /api/users/login', () => {
     );
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'jane@example.com', password: 'wrong' }),
+      body: JSON.stringify({ email: 'jane@example.com', password: 'wrong', turnstileToken: 'test-token' }),
     });
 
     expect(res.status).toBe(401);
@@ -162,7 +165,7 @@ describe('POST /api/users/refresh', () => {
     });
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/refresh', {
       method: 'POST',
@@ -177,7 +180,7 @@ describe('POST /api/users/refresh', () => {
   it('should_return401_when_noRefreshCookiePresent', async () => {
     const useCases = makeUseCases();
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/refresh', { method: 'POST' });
 
@@ -192,7 +195,7 @@ describe('POST /api/users/logout', () => {
     (useCases.logout.execute as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/logout', {
       method: 'POST',
@@ -211,7 +214,7 @@ describe('POST /api/users/phone/request', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/phone/request', {
       method: 'POST',
@@ -231,7 +234,7 @@ describe('POST /api/users/phone/request', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/phone/request', {
       method: 'POST',
@@ -251,7 +254,7 @@ describe('POST /api/users/phone/verify', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/phone/verify', {
       method: 'POST',
@@ -271,7 +274,7 @@ describe('POST /api/users/phone/verify', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/phone/verify', {
       method: 'POST',
@@ -297,7 +300,7 @@ describe('GET /api/users/me', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/me');
 
@@ -314,7 +317,7 @@ describe('PATCH /api/users/me', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/me', {
       method: 'PATCH',
@@ -337,7 +340,7 @@ describe('POST /api/users/identity-document', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const form = new FormData();
     form.set('file', new File(['%PDF-1.4'], 'passport.pdf', { type: 'application/pdf' }));
@@ -357,7 +360,7 @@ describe('POST /api/users/identity-document', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const form = new FormData();
 
@@ -378,7 +381,7 @@ describe('POST /api/users/identity-document', () => {
 
     const app = new Hono();
     app.use('*', jwtMiddleware());
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const form = new FormData();
     form.set('file', new File(['%PDF-1.4'], 'passport.pdf', { type: 'application/pdf' }));
@@ -405,7 +408,7 @@ describe('GET /api/users/:id/email', () => {
     (useCases.getMe.execute as ReturnType<typeof vi.fn>).mockResolvedValue(user);
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/u-1/email');
 
@@ -419,11 +422,48 @@ describe('GET /api/users/:id/email', () => {
     (useCases.getMe.execute as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('User not found'));
 
     const app = new Hono();
-    app.route('/api/users', buildUserRouter(useCases));
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
 
     const res = await app.request('/api/users/missing/email');
 
     expect(res.status).toBe(404);
     expect(apiErrorSchema.parse(await res.json()).error.code).toBe('NOT_FOUND');
+  });
+});
+
+describe('human verification on register and login', () => {
+  it('should_return400CaptchaRequired_when_registerHasNoToken', async () => {
+    const useCases = makeUseCases();
+    const app = new Hono();
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier()));
+
+    const res = await app.request('/api/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'jane@example.com', password: 'secret123' }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe('CAPTCHA_REQUIRED');
+    expect(useCases.register.execute).not.toHaveBeenCalled();
+  });
+
+  it('should_return400CaptchaFailed_when_loginTokenRejected', async () => {
+    const useCases = makeUseCases();
+    const rejectingVerifier: HumanVerifier = { verify: vi.fn().mockResolvedValue(false) };
+    const app = new Hono();
+    app.route('/api/users', buildUserRouter(useCases, rejectingVerifier));
+
+    const res = await app.request('/api/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'jane@example.com', password: 'secret', turnstileToken: 'bad' }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error.code).toBe('CAPTCHA_FAILED');
+    expect(useCases.login.execute).not.toHaveBeenCalled();
   });
 });
