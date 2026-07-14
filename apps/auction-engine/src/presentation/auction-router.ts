@@ -156,6 +156,10 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
     return c.json({ data: { lotId: body.lotId } }, 201);
   });
 
+  // Hono only applies middleware to routes registered after it on the same path — this
+  // limiter therefore only covers the POST handler below (bid submissions), not the GET
+  // bid-history handler registered above. Route registration order is load-bearing here:
+  // moving the GET handler below this line would silently start rate-limiting it too.
   app.use('/api/auctions/:lotId/bids', deps.bidRateLimit);
 
   app.post('/api/auctions/:lotId/bids', authMiddleware(deps.jwtPublicKey), async (c) => {

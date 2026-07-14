@@ -14,7 +14,7 @@ vi.mock('ioredis');
 // This mocks each command's reply shape so `totalHits` matches the count the
 // test exercises.
 function mockRedisCallSequence(redis: Redis, totalHits: number): void {
-  vi.mocked(redis.call).mockImplementation(async (...args: string[]) => {
+  vi.mocked(redis.call).mockImplementation((async (...args: unknown[]) => {
     if (args[0] === 'SCRIPT') {
       return 'fake-script-sha';
     }
@@ -22,7 +22,7 @@ function mockRedisCallSequence(redis: Redis, totalHits: number): void {
       return [totalHits, 60_000];
     }
     return null;
-  });
+  }) as typeof redis.call);
 }
 
 describe('buildUserAuthRateLimits', () => {
