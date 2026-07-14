@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { MiddlewareHandler } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
@@ -27,10 +28,14 @@ export interface AuctionRouterDeps {
   scheduleAuctionHandler: ScheduleAuctionCommandHandler;
   sseBroadcaster: SseBroadcaster;
   jwtPublicKey: string;
+  defaultRateLimit: MiddlewareHandler;
+  bidRateLimit: MiddlewareHandler;
 }
 
 export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
+
+  app.use('*', deps.defaultRateLimit);
 
   app.get('/health', (c) => c.json({ status: 'ok', service: 'auction-engine' }));
 
@@ -150,6 +155,8 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
 
     return c.json({ data: { lotId: body.lotId } }, 201);
   });
+
+  app.use('/api/auctions/:lotId/bids', deps.bidRateLimit);
 
   app.post('/api/auctions/:lotId/bids', authMiddleware(deps.jwtPublicKey), async (c) => {
     const jwtPayload = c.get('jwtPayload');

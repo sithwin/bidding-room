@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { serve } from '@hono/node-server';
+import Redis from 'ioredis';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
 import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
@@ -23,6 +24,7 @@ import { GetDashboardStatsHandler } from './application/get-dashboard-stats-hand
 import { GetAuctionResultsHandler } from './application/get-auction-results-handler';
 import { GetUnsoldLotsHandler } from './application/get-unsold-lots-handler';
 import { createAuctionRouter } from './presentation/auction-router';
+import { buildAuctionEngineRateLimits } from './presentation/rate-limits';
 
 const PORT = Number(process.env['PORT'] ?? 3003);
 
@@ -84,6 +86,9 @@ async function main(): Promise<void> {
 
   const jwtPublicKey = (process.env['JWT_PUBLIC_KEY'] ?? '').replace(/\\n/g, '\n');
 
+  const redisClient = new Redis(redis);
+  const rateLimits = buildAuctionEngineRateLimits(redisClient);
+
   // HTTP server
   const app = createAuctionRouter({
     getActiveLots: getActiveLotsHandler,
@@ -96,6 +101,8 @@ async function main(): Promise<void> {
     scheduleAuctionHandler,
     sseBroadcaster,
     jwtPublicKey,
+    defaultRateLimit: rateLimits.default,
+    bidRateLimit: rateLimits.bid,
   });
 
   serve({ fetch: app.fetch, port: PORT }, () => {

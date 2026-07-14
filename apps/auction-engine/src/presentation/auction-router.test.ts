@@ -53,6 +53,8 @@ const router = createAuctionRouter({
   scheduleAuctionHandler: mockScheduleAuction,
   sseBroadcaster: mockBroadcaster,
   jwtPublicKey: 'test-public-key',
+  defaultRateLimit: (c, next) => next(),
+  bidRateLimit: (c, next) => next(),
 });
 
 // authMiddleware(...) is invoked once per route at router-construction time (above), not
