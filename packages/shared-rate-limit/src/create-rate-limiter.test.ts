@@ -27,6 +27,25 @@ function mockRedisCall(totalHits: number, timeToExpireMs = 60_000) {
   });
 }
 
+// Branches the same Lua-script-aware mock on the Redis key being
+// incremented (the fourth `EVALSHA` argument), so a single mock can give
+// independent responses to independent counters (different IPs, different
+// keyPrefixes) within one test.
+function mockRedisCallByKey(resolve: (key: string) => { totalHits: number; timeToExpireMs?: number }) {
+  return vi.fn(async (...args: unknown[]) => {
+    const [command] = args as [string, ...unknown[]];
+    if (command === 'SCRIPT') {
+      return FAKE_SCRIPT_SHA;
+    }
+    if (command === 'EVALSHA') {
+      const key = args[3] as string;
+      const { totalHits, timeToExpireMs = 60_000 } = resolve(key);
+      return [totalHits, timeToExpireMs];
+    }
+    return 0;
+  });
+}
+
 function buildApp(limiter: ReturnType<typeof createRateLimiter>) {
   const app = new Hono();
   app.use('/limited', limiter);
@@ -52,7 +71,10 @@ describe('createRateLimiter', () => {
   });
 
   it('should_returnTooManyRequestsEnvelope_when_overLimit', async () => {
-    vi.mocked(redis.call).mockImplementation(mockRedisCall(3));
+    // A short `timeToExpireMs` (5s) inside a much longer window (60s) proves
+    // the `Retry-After` header reflects the store's actual remaining time,
+    // not a static `windowMs`-derived value (which would be 60).
+    vi.mocked(redis.call).mockImplementation(mockRedisCall(3, 5_000));
     const limiter = createRateLimiter({ redis, windowMs: 60_000, max: 2, keyPrefix: 'test:over' });
     const app = buildApp(limiter);
 
@@ -63,7 +85,10 @@ describe('createRateLimiter', () => {
     expect(body).toEqual({
       error: { code: 'TOO_MANY_REQUESTS', message: 'Too many requests, please try again later.' },
     });
-    expect(res.headers.get('retry-after')).not.toBeNull();
+    const retryAfter = Number(res.headers.get('retry-after'));
+    expect(retryAfter).not.toBeNaN();
+    expect(retryAfter).toBeGreaterThan(0);
+    expect(retryAfter).toBeLessThanOrEqual(5);
   });
 
   it('should_useCustomMessage_when_messageOptionProvided', async () => {
@@ -100,6 +125,49 @@ describe('createRateLimiter', () => {
     ];
     const [, , , keyArg] = evalshaCall;
     expect(keyArg).toContain('rl:test:prefix:');
+  });
+
+  it('should_isolateCounters_when_requestsComeFromDifferentIps', async () => {
+    const overLimitIp = '203.0.113.20';
+    const underLimitIp = '203.0.113.21';
+    vi.mocked(redis.call).mockImplementation(
+      mockRedisCallByKey((key) => ({ totalHits: key.includes(overLimitIp) ? 3 : 1 })),
+    );
+    const limiter = createRateLimiter({ redis, windowMs: 60_000, max: 2, keyPrefix: 'test:per-ip' });
+    const app = buildApp(limiter);
+
+    const overLimitRes = await app.request('/limited', { headers: { 'x-forwarded-for': overLimitIp } });
+    const underLimitRes = await app.request('/limited', { headers: { 'x-forwarded-for': underLimitIp } });
+
+    expect(overLimitRes.status).toBe(429);
+    expect(underLimitRes.status).toBe(200);
+  });
+
+  it('should_isolateCounters_when_limitersHaveDifferentKeyPrefixes', async () => {
+    const sameIp = '203.0.113.22';
+    vi.mocked(redis.call).mockImplementation(
+      mockRedisCallByKey((key) => ({ totalHits: key.includes('rl:test:prefix-over:') ? 3 : 1 })),
+    );
+    const overLimitLimiter = createRateLimiter({
+      redis,
+      windowMs: 60_000,
+      max: 2,
+      keyPrefix: 'test:prefix-over',
+    });
+    const underLimitLimiter = createRateLimiter({
+      redis,
+      windowMs: 60_000,
+      max: 2,
+      keyPrefix: 'test:prefix-under',
+    });
+    const overLimitApp = buildApp(overLimitLimiter);
+    const underLimitApp = buildApp(underLimitLimiter);
+
+    const overLimitRes = await overLimitApp.request('/limited', { headers: { 'x-forwarded-for': sameIp } });
+    const underLimitRes = await underLimitApp.request('/limited', { headers: { 'x-forwarded-for': sameIp } });
+
+    expect(overLimitRes.status).toBe(429);
+    expect(underLimitRes.status).toBe(200);
   });
 
   it('should_allowRequest_when_redisCallThrows', async () => {

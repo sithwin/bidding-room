@@ -112,7 +112,13 @@ export function createRateLimiter(options: RateLimiterOptions): MiddlewareHandle
     handler: (c) => {
       const ip = extractClientIp(c);
       console.error(`Rate limit exceeded: prefix=${keyPrefix} ip=${truncateIp(ip)}`);
-      c.header('Retry-After', String(Math.ceil(windowMs / 1000)));
+      // `hono-rate-limiter` already sets an accurate `Retry-After` header
+      // (derived from the store's real `resetTime`, i.e. actual time left in
+      // the window) before invoking this handler, because `standardHeaders`
+      // is enabled above. Do not overwrite it here with a static
+      // `windowMs`-based value — `c.header()` overwrites by default, and a
+      // client blocked with 5s left in a 60s window deserves to be told 5s,
+      // not the full window length.
       return c.json(
         { error: { code: 'TOO_MANY_REQUESTS', message: message ?? DEFAULT_MESSAGE } },
         429,
