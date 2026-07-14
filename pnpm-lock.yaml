@@ -49,12 +49,18 @@ importers:
       '@carat-room/shared-events':
         specifier: workspace:*
         version: link:../../packages/shared-events
+      '@carat-room/shared-rate-limit':
+        specifier: workspace:*
+        version: link:../../packages/shared-rate-limit
       '@hono/node-server':
         specifier: ^1.12.0
         version: 1.19.14(hono@4.12.26)
       hono:
         specifier: ^4.4.0
         version: 4.12.26
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.11.1
       postgres:
         specifier: ^3.4.4
         version: 3.4.9
@@ -280,6 +286,9 @@ importers:
       '@carat-room/shared-auth':
         specifier: workspace:*
         version: link:../../packages/shared-auth
+      '@carat-room/shared-rate-limit':
+        specifier: workspace:*
+        version: link:../../packages/shared-rate-limit
       '@carat-room/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -289,6 +298,9 @@ importers:
       hono:
         specifier: ^4.4.0
         version: 4.12.26
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.11.1
       postgres:
         specifier: ^3.4.4
         version: 3.4.9
@@ -329,6 +341,9 @@ importers:
       '@carat-room/shared-events':
         specifier: workspace:*
         version: link:../../packages/shared-events
+      '@carat-room/shared-rate-limit':
+        specifier: workspace:*
+        version: link:../../packages/shared-rate-limit
       '@carat-room/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -344,6 +359,9 @@ importers:
       hono:
         specifier: ^4.4.0
         version: 4.12.26
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.11.1
       postgres:
         specifier: ^3.4.4
         version: 3.4.9
@@ -457,6 +475,9 @@ importers:
       '@carat-room/shared-events':
         specifier: workspace:*
         version: link:../../packages/shared-events
+      '@carat-room/shared-rate-limit':
+        specifier: workspace:*
+        version: link:../../packages/shared-rate-limit
       '@carat-room/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
@@ -466,6 +487,9 @@ importers:
       hono:
         specifier: ^4.4.0
         version: 4.12.26
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.11.1
       postgres:
         specifier: ^3.4.4
         version: 3.4.9

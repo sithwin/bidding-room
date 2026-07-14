@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import Redis from 'ioredis';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
 import { runMigrations } from '@carat-room/db-migrate';
 import { ServiceClient } from './infrastructure/service-client';
@@ -16,6 +17,7 @@ import { buildInvoicesRouter } from './presentation/invoices-router';
 import { buildFulfilmentsRouter } from './presentation/fulfilments-router';
 import { buildReportsRouter } from './presentation/reports-router';
 import { buildEnquiriesRouter } from './presentation/enquiries-router';
+import { buildAdminRateLimits } from './presentation/rate-limits';
 
 const PORT = Number(process.env['PORT'] ?? 3007);
 
@@ -44,7 +46,15 @@ async function main(): Promise<void> {
 
   const submitEnquiry = new SubmitValuationEnquiryUseCase(enquiryRepo, publishEvent);
 
+  const redis = new Redis({
+    host: process.env['REDIS_HOST'] ?? 'localhost',
+    port: Number(process.env['REDIS_PORT'] ?? 6379),
+  });
+  const rateLimits = buildAdminRateLimits(redis);
+
   const app = new Hono();
+  app.get('/health', (c) => c.json({ status: 'ok', service: 'admin' }));
+  app.use('*', rateLimits.default);
   app.route('/', buildLotsRouter({ catalogue, auction }));
   app.route('/', buildCategoriesRouter(catalogue));
   app.route('/', buildAuctionsRouter({ auction, catalogue }));
