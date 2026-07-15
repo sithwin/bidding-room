@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { REFRESH_COOKIE } from '@/lib/service-config';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const refreshToken = request.cookies.get('refresh_token')?.value;
+  const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
 
   if (!refreshToken) {
     const loginUrl = new URL('/account/login', request.url);
