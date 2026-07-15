@@ -85,6 +85,24 @@ export async function registerAndVerifyUser(
  * returned over HTTP — see task-5-report.md), not passed as a parameter,
  * matching the produced-interface signature `verifyPhone(accessToken)`.
  */
+/**
+ * Looks up the (unconsumed) email-verification code for a user who was
+ * registered directly through the real UI (login-client.tsx's register tab)
+ * rather than via `registerAndVerifyUser` — used by specs that need to drive
+ * the real `/account/verify-email?token=&userId=` link in the browser, the
+ * same way the email the user receives would. Same DB read as
+ * `registerAndVerifyUser`'s internal verification step (see its doc comment
+ * for why this can only be read from `verification_tokens`, never over
+ * HTTP), just exposed for callers that only have an email, not a userId.
+ */
+export async function retrieveEmailVerificationLink(
+  email: string,
+): Promise<{ userId: string; code: string }> {
+  const userId = await findUserIdByEmail(email);
+  const code = await retrieveVerificationCode(userId, 'EMAIL');
+  return { userId, code };
+}
+
 export async function verifyPhone(accessToken: string, phone = '+447700900000'): Promise<void> {
   const userId = decodeUserIdFromJwt(accessToken);
   // POST /api/users/phone/request expects { phone }; userId comes from the
