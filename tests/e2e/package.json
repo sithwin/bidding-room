@@ -1,0 +1,15 @@
+{
+  "name": "@carat-room/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "coverage:report": "node ./scripts/build-lcov.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "monocart-coverage-reports": "^2.11.0",
+    "pg": "^8.13.0"
+  }
+}

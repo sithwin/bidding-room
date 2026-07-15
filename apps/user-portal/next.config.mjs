@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  productionBrowserSourceMaps: true,
   env: {
     USER_SERVICE_URL:      process.env.USER_SERVICE_URL      ?? 'http://localhost:3001',
     CATALOGUE_SERVICE_URL: process.env.CATALOGUE_SERVICE_URL ?? 'http://localhost:3002',
