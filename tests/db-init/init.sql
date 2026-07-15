@@ -162,6 +162,7 @@ CREATE TABLE bids (
 );
 
 CREATE INDEX bids_lot_id_idx ON bids (lot_id, placed_at DESC);
+CREATE INDEX bids_user_id_idx ON bids (user_id, placed_at DESC);
 
 -- ── Payment service ───────────────────────────────────────────────────────────
 \c payment_test

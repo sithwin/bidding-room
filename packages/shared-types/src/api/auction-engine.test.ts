@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  accountBidsQuery,
+  accountBidsResponseSchema,
+  accountStatsResponseSchema,
   auctionsListQuery,
   auctionLotStatusSchema,
   bidHistoryQuery,
@@ -39,6 +42,24 @@ describe('auction-engine contract schemas', () => {
   it('parses a 201 place-bid response', () => {
     expect(placeBidResponseSchema.parse({ data: { bidId: 'b1', amount: 130, lotId: 'lot-1' } }).data.amount).toBe(130);
   });
+
+  it('parses an account bids response with a null current highest bid', () => {
+    const body = accountBidsResponseSchema.parse({
+      data: [{
+        lotId: 'lot-1', amount: 100, placedAt: '2026-07-11T09:00:00.000Z',
+        isWinning: false, currentHighestBid: null, status: 'LIVE', endAt: '2026-07-12T10:00:00.000Z',
+      }],
+      meta: { page: 1, total: 1 },
+    });
+    expect(body.data[0].currentHighestBid).toBeNull();
+  });
+
+  it('parses an account stats response', () => {
+    const body = accountStatsResponseSchema.parse({
+      data: { totalBids: 5, activeBids: 2, leadingBids: 1, lotsWon: 3 },
+    });
+    expect(body.data.lotsWon).toBe(3);
+  });
 });
 
 describe('query builders', () => {
@@ -48,5 +69,9 @@ describe('query builders', () => {
 
   it('bidHistoryQuery omits absent params', () => {
     expect(bidHistoryQuery({}).toString()).toBe('');
+  });
+
+  it('accountBidsQuery emits exactly page and pageSize', () => {
+    expect(accountBidsQuery({ page: 1, pageSize: 5 }).toString()).toBe('page=1&pageSize=5');
   });
 });

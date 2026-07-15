@@ -33,6 +33,24 @@ export interface UnsoldLotRow {
   highestBid: number | null;
 }
 
+// One row per lot the given user has bid on, most recent bid first.
+export interface UserBidRow {
+  lotId: string;
+  amount: number;
+  placedAt: Date;
+  isWinning: boolean;
+  currentHighestBid: number | null;
+  status: string;
+  endAt: Date;
+}
+
+export interface UserStats {
+  totalBids: number;
+  activeBids: number;
+  leadingBids: number;
+  lotsWon: number;
+}
+
 export interface LotQueryRepository {
   findLotStatus(lotId: string): Promise<LotStatusRow | null>;
   findBidHistory(lotId: string, limit: number, offset: number): Promise<{ bids: BidRow[]; total: number }>;
@@ -41,4 +59,6 @@ export interface LotQueryRepository {
   findClosedResults(from: Date, to: Date): Promise<AuctionResultRow[]>;
   findUnsoldLots(): Promise<UnsoldLotRow[]>;
   findBidderIds(lotId: string): Promise<string[]>;
+  findBidsByUser(userId: string, limit: number, offset: number): Promise<{ bids: UserBidRow[]; total: number }>;
+  getUserStats(userId: string): Promise<UserStats>;
 }

@@ -6,6 +6,8 @@ import type { JwtPayload } from '@carat-room/shared-auth';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
+import { GetAccountBidsHandler } from '../application/get-account-bids-handler';
+import { GetAccountStatsHandler } from '../application/get-account-stats-handler';
 import { GetDashboardStatsHandler } from '../application/get-dashboard-stats-handler';
 import { GetAuctionResultsHandler } from '../application/get-auction-results-handler';
 import { GetUnsoldLotsHandler } from '../application/get-unsold-lots-handler';
@@ -20,6 +22,8 @@ export interface AuctionRouterDeps {
   getActiveLots: GetActiveLotsHandler;
   getLotStatus: GetLotStatusHandler;
   getBidHistory: GetBidHistoryHandler;
+  getAccountBids: GetAccountBidsHandler;
+  getAccountStats: GetAccountStatsHandler;
   getDashboardStats: GetDashboardStatsHandler;
   getAuctionResults: GetAuctionResultsHandler;
   getUnsoldLots: GetUnsoldLotsHandler;
@@ -78,6 +82,32 @@ export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
       })),
       meta: { page, total: result.total },
     });
+  });
+
+  app.get('/api/account/bids', authMiddleware(deps.jwtPublicKey), async (c) => {
+    const jwtPayload = c.get('jwtPayload');
+    const page = Math.max(1, Number(c.req.query('page') ?? '1'));
+    const pageSize = Math.min(100, Math.max(1, Number(c.req.query('pageSize') ?? '20')));
+    const result = await deps.getAccountBids.execute({ userId: jwtPayload.userId, page, pageSize });
+
+    return c.json({
+      data: result.bids.map(b => ({
+        lotId: b.lotId,
+        amount: b.amount,
+        placedAt: b.placedAt.toISOString(),
+        isWinning: b.isWinning,
+        currentHighestBid: b.currentHighestBid,
+        status: b.status,
+        endAt: b.endAt.toISOString(),
+      })),
+      meta: { page, total: result.total },
+    });
+  });
+
+  app.get('/api/account/stats', authMiddleware(deps.jwtPublicKey), async (c) => {
+    const jwtPayload = c.get('jwtPayload');
+    const stats = await deps.getAccountStats.execute(jwtPayload.userId);
+    return c.json({ data: stats });
   });
 
   app.get('/api/auctions/:lotId/stream', (c) => {

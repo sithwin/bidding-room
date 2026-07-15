@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
 import {
+  accountBidsQuery, accountBidsResponseSchema, accountStatsResponseSchema,
   apiErrorSchema, auctionResultsResponseSchema, auctionsListQuery, bidHistoryQuery,
   bidListResponseSchema, dashboardStatsResponseSchema, lotStatusListResponseSchema,
   lotStatusResponseSchema, placeBidResponseSchema, scheduleAuctionResponseSchema,
@@ -9,6 +10,8 @@ import {
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
+import { GetAccountBidsHandler } from '../application/get-account-bids-handler';
+import { GetAccountStatsHandler } from '../application/get-account-stats-handler';
 import { GetDashboardStatsHandler } from '../application/get-dashboard-stats-handler';
 import { GetAuctionResultsHandler } from '../application/get-auction-results-handler';
 import { GetUnsoldLotsHandler } from '../application/get-unsold-lots-handler';
@@ -35,6 +38,8 @@ vi.mock('@carat-room/shared-auth', () => ({
 const mockGetActiveLots = { execute: vi.fn() } as unknown as GetActiveLotsHandler;
 const mockGetLotStatus = { execute: vi.fn() } as unknown as GetLotStatusHandler;
 const mockGetBidHistory = { execute: vi.fn() } as unknown as GetBidHistoryHandler;
+const mockGetAccountBids = { execute: vi.fn() } as unknown as GetAccountBidsHandler;
+const mockGetAccountStats = { execute: vi.fn() } as unknown as GetAccountStatsHandler;
 const mockGetDashboardStats = { execute: vi.fn() } as unknown as GetDashboardStatsHandler;
 const mockGetAuctionResults = { execute: vi.fn() } as unknown as GetAuctionResultsHandler;
 const mockGetUnsoldLots = { execute: vi.fn() } as unknown as GetUnsoldLotsHandler;
@@ -46,6 +51,8 @@ const router = createAuctionRouter({
   getActiveLots: mockGetActiveLots,
   getLotStatus: mockGetLotStatus,
   getBidHistory: mockGetBidHistory,
+  getAccountBids: mockGetAccountBids,
+  getAccountStats: mockGetAccountStats,
   getDashboardStats: mockGetDashboardStats,
   getAuctionResults: mockGetAuctionResults,
   getUnsoldLots: mockGetUnsoldLots,
@@ -280,6 +287,56 @@ describe('POST /api/auctions/:lotId/bids', () => {
     expect(res.status).toBe(403);
     const body = apiErrorSchema.parse(await res.json());
     expect(body.error.code).toBe('FORBIDDEN');
+  });
+});
+
+describe('GET /api/account/bids', () => {
+  it('should_return200WithUserBids_when_authenticated', async () => {
+    vi.mocked(mockGetAccountBids.execute).mockResolvedValue({
+      bids: [{
+        lotId: 'lot-1', amount: 150, placedAt: new Date('2026-06-20T11:00:00Z'),
+        isWinning: true, currentHighestBid: 150, status: 'LIVE', endAt: new Date('2026-06-20T12:00:00Z'),
+      }],
+      total: 1,
+    });
+
+    const res = await router.request(`/api/account/bids?${accountBidsQuery({ page: 1, pageSize: 20 })}`, {
+      headers: { Authorization: 'Bearer token' },
+    });
+
+    expect(res.status).toBe(200);
+    const body = accountBidsResponseSchema.parse(await res.json());
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].lotId).toBe('lot-1');
+    expect(body.data[0].isWinning).toBe(true);
+    expect(body.meta.total).toBe(1);
+    expect(mockGetAccountBids.execute).toHaveBeenCalledWith({ userId: 'user-1', page: 1, pageSize: 20 });
+  });
+
+  it('should_returnEmptyList_when_userHasNoBids', async () => {
+    vi.mocked(mockGetAccountBids.execute).mockResolvedValue({ bids: [], total: 0 });
+
+    const res = await router.request('/api/account/bids', { headers: { Authorization: 'Bearer token' } });
+
+    expect(res.status).toBe(200);
+    const body = accountBidsResponseSchema.parse(await res.json());
+    expect(body.data).toEqual([]);
+  });
+});
+
+describe('GET /api/account/stats', () => {
+  it('should_return200WithUserStats_when_authenticated', async () => {
+    vi.mocked(mockGetAccountStats.execute).mockResolvedValue({
+      totalBids: 5, activeBids: 2, leadingBids: 1, lotsWon: 3,
+    });
+
+    const res = await router.request('/api/account/stats', { headers: { Authorization: 'Bearer token' } });
+
+    expect(res.status).toBe(200);
+    const body = accountStatsResponseSchema.parse(await res.json());
+    expect(body.data.totalBids).toBe(5);
+    expect(body.data.lotsWon).toBe(3);
+    expect(mockGetAccountStats.execute).toHaveBeenCalledWith('user-1');
   });
 });
 

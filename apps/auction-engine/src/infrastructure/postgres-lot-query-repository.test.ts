@@ -217,4 +217,96 @@ describe('PostgresLotQueryRepository', () => {
 
     expect(result).toEqual([]);
   });
+
+  describe('findBidsByUser', () => {
+    afterEach(async () => {
+      await db`DELETE FROM bids WHERE user_id = ANY(${['account-user-1', 'account-user-2']})`;
+    });
+
+    it('should_returnOneRowPerLot_when_userHasBidOnMultipleLots', async () => {
+      await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+      await projectionHandler.handle(LOT_ID, [
+        { type: 'BidPlaced', payload: { bid_id: 'bid-acc-1', user_id: 'account-user-1', amount: 100, placed_at: '2026-06-20T11:00:00Z' } },
+        { type: 'BidPlaced', payload: { bid_id: 'bid-acc-2', user_id: 'account-user-1', amount: 150, placed_at: '2026-06-20T11:05:00Z' } },
+      ]);
+      await projectionHandler.handle(LOT_ID_2, [SCHEDULED_EVENT]);
+      await projectionHandler.handle(LOT_ID_2, [
+        { type: 'BidPlaced', payload: { bid_id: 'bid-acc-3', user_id: 'account-user-1', amount: 300, placed_at: '2026-06-20T11:10:00Z' } },
+      ]);
+
+      const result = await queryRepo.findBidsByUser('account-user-1', 10, 0);
+
+      expect(result.total).toBe(2);
+      expect(result.bids).toHaveLength(2);
+      // most recent bid first
+      expect(result.bids[0].lotId).toBe(LOT_ID_2);
+      expect(result.bids[0].amount).toBe(300);
+      // highest own bid on the lot, not the first one placed
+      const lot1Row = result.bids.find(b => b.lotId === LOT_ID);
+      expect(lot1Row?.amount).toBe(150);
+    });
+
+    it('should_markIsWinningTrue_when_userHasTheLeadingBid', async () => {
+      await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+      await projectionHandler.handle(LOT_ID, [
+        { type: 'BidPlaced', payload: { bid_id: 'bid-acc-4', user_id: 'account-user-1', amount: 100, placed_at: '2026-06-20T11:00:00Z' } },
+        { type: 'BidPlaced', payload: { bid_id: 'bid-acc-5', user_id: 'account-user-2', amount: 200, placed_at: '2026-06-20T11:01:00Z' } },
+      ]);
+
+      const outbidResult = await queryRepo.findBidsByUser('account-user-1', 10, 0);
+      const leadingResult = await queryRepo.findBidsByUser('account-user-2', 10, 0);
+
+      expect(outbidResult.bids[0].isWinning).toBe(false);
+      expect(outbidResult.bids[0].currentHighestBid).toBe(200);
+      expect(leadingResult.bids[0].isWinning).toBe(true);
+    });
+
+    it('should_returnEmpty_when_userHasNoBids', async () => {
+      const result = await queryRepo.findBidsByUser('account-user-with-no-bids', 10, 0);
+
+      expect(result.bids).toEqual([]);
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('getUserStats', () => {
+    afterEach(async () => {
+      await db`DELETE FROM bids WHERE user_id = ANY(${['stats-user-1', 'stats-user-2']})`;
+    });
+
+    it('should_countBidsActiveAndWinningLots_when_userHasMixedActivity', async () => {
+      // LOT_ID: still live, stats-user-1 leading
+      await projectionHandler.handle(LOT_ID, [SCHEDULED_EVENT]);
+      await projectionHandler.handle(LOT_ID, [
+        { type: 'BidPlaced', payload: { bid_id: 'bid-s-1', user_id: 'stats-user-1', amount: 100, placed_at: '2026-06-20T11:00:00Z' } },
+      ]);
+
+      // LOT_ID_2: still live, stats-user-1 outbid
+      await projectionHandler.handle(LOT_ID_2, [SCHEDULED_EVENT]);
+      await projectionHandler.handle(LOT_ID_2, [
+        { type: 'BidPlaced', payload: { bid_id: 'bid-s-2', user_id: 'stats-user-1', amount: 100, placed_at: '2026-06-20T11:00:00Z' } },
+        { type: 'BidPlaced', payload: { bid_id: 'bid-s-3', user_id: 'stats-user-2', amount: 150, placed_at: '2026-06-20T11:01:00Z' } },
+      ]);
+
+      // LOT_ID_3: closed SOLD, won by stats-user-1
+      await projectionHandler.handle(LOT_ID_3, [SCHEDULED_EVENT]);
+      await projectionHandler.handle(LOT_ID_3, [
+        { type: 'BidPlaced', payload: { bid_id: 'bid-s-4', user_id: 'stats-user-1', amount: 500, placed_at: '2026-06-20T11:00:00Z' } },
+        { type: 'AuctionClosed', payload: { highest_bid_id: 'bid-s-4', highest_amount: 500, reserve_met: true, winner_user_id: 'stats-user-1' } },
+      ]);
+
+      const stats = await queryRepo.getUserStats('stats-user-1');
+
+      expect(stats.totalBids).toBe(3);
+      expect(stats.activeBids).toBe(2);
+      expect(stats.leadingBids).toBe(1);
+      expect(stats.lotsWon).toBe(1);
+    });
+
+    it('should_returnZeroes_when_userHasNoActivity', async () => {
+      const stats = await queryRepo.getUserStats('stats-user-with-no-activity');
+
+      expect(stats).toEqual({ totalBids: 0, activeBids: 0, leadingBids: 0, lotsWon: 0 });
+    });
+  });
 });

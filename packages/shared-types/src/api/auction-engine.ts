@@ -62,8 +62,34 @@ export const dashboardStatsResponseSchema = envelope(z.object({
   endingSoon: z.number(),
 }));
 
+// GET /api/account/bids — one row per lot the authenticated user has bid on,
+// most recent bid first. lotTitle/imageUrl/currency are deliberately absent:
+// auction-engine's read model has no catalogue data to draw them from.
+export const accountBidSchema = z.object({
+  lotId: z.string(),
+  amount: z.number(),
+  placedAt: z.string(), // ISO-8601 UTC — the user's own most recent bid on this lot
+  isWinning: z.boolean(),
+  currentHighestBid: z.number().nullable(),
+  status: auctionLotStatusValueSchema,
+  endAt: z.string(), // ISO-8601 UTC
+});
+export const accountBidsResponseSchema = z.object({
+  data: z.array(accountBidSchema),
+  meta: pageMetaSchema,
+});
+
+// GET /api/account/stats — counts derived from the bids/lot_status read model.
+export const accountStatsResponseSchema = envelope(z.object({
+  totalBids: z.number(),
+  activeBids: z.number(),
+  leadingBids: z.number(),
+  lotsWon: z.number(),
+}));
+
 export type AuctionLotStatus = z.infer<typeof auctionLotStatusSchema>;
 export type AuctionBid = z.infer<typeof auctionBidSchema>;
+export type AccountBid = z.infer<typeof accountBidSchema>;
 
 /** Query builder for GET /api/auctions. Router reads exactly page and pageSize. */
 export function auctionsListQuery(params: { page?: number; pageSize?: number }): URLSearchParams {
@@ -75,5 +101,10 @@ export function auctionsListQuery(params: { page?: number; pageSize?: number }):
 
 /** Query builder for GET /api/auctions/:lotId/bids. Router reads exactly page and pageSize. */
 export function bidHistoryQuery(params: { page?: number; pageSize?: number }): URLSearchParams {
+  return auctionsListQuery(params);
+}
+
+/** Query builder for GET /api/account/bids. Router reads exactly page and pageSize. */
+export function accountBidsQuery(params: { page?: number; pageSize?: number }): URLSearchParams {
   return auctionsListQuery(params);
 }
