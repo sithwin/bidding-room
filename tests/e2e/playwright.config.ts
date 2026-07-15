@@ -4,6 +4,7 @@ const USER_PORTAL_URL = process.env.USER_PORTAL_URL ?? 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './specs',
+  globalSetup: './global-setup.ts',
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
