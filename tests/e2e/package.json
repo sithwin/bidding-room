@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
+    "@types/node": "^20.0.0",
     "monocart-coverage-reports": "^2.11.0",
     "pg": "^8.13.0"
   }

@@ -101,3 +101,107 @@ blockers, none of which were behavioural — see the Task 2 report
   requires the SID to start with `AC`, so the service crashed on boot before
   the HTTP server even started. Changed to a well-formed dummy SID
   (`AC` + 32 zeros).
+
+## Coverage pipeline (Task 4 — coverage spike)
+
+The portal under test (`user-portal` or `admin-portal`) runs **on the host**,
+not in Docker — only the six backend services run in Docker. Playwright
+drives the host-launched portal against the Dockerised backend stack, and we
+collect coverage from both sides: server-side V8 coverage from the portal's
+Node process (`NODE_V8_COVERAGE`) and client-side V8 coverage from the
+browser (`page.coverage`), merging both into a single lcov report via
+`monocart-coverage-reports`.
+
+### Coverage mode: production build (`next start`)
+
+**Chosen mode: production build.** `productionBrowserSourceMaps: true` (set
+on both portals) turned out to be sufficient — Step 7 of the Task 4 brief
+(grep the generated lcov's `SF:` lines for
+`apps/user-portal/src/app/api/catalogue/auctions/route.ts` and
+`apps/user-portal/src/app/page.tsx`) passed on the **first** production build,
+with real per-line/per-function coverage data (`FN:`, `FNDA:`, `DA:` records),
+not just bare `SF:` headers. The `next dev` fallback described in the brief
+(Step 8) was **not needed**. This means every later task (5–11) should launch
+portals with `pnpm --filter <app> build` beforehand and `next start`, exactly
+as `support/portal.ts` does today.
+
+### A Windows-specific pitfall in `startPortal`/`stop()` (read this before changing `portal.ts`)
+
+The brief's starter code for `support/portal.ts` spawns
+`pnpm --filter <app> exec next start -p <port>` and stops it with
+`child.kill('SIGTERM')`. Verified empirically on this Windows host, **two**
+things about that approach silently drop the coverage dump:
+
+1. **Process-hop signal loss.** `pnpm exec` (and, on Windows, the shell
+   wrapper needed to resolve `pnpm.cmd`) inserts one or two extra process
+   hops between the spawned child and the actual `next start` server. A
+   signal delivered to the immediate child never reaches the real server
+   process, which is orphaned and never gets a chance to flush coverage.
+   **Fix**: `startPortal` now `fork()`s a small bootstrap
+   (`support/portal-child.cjs`) that `require()`s Next's CLI entry
+   (`next/dist/bin/next`) directly, in-process — no shell, no `pnpm exec`, no
+   extra hop. There is exactly one child process to manage, and `fork()`
+   gives it an IPC channel for free.
+2. **`child.kill('SIGTERM')` is forceful on Windows — always, even
+   self-directed.** Node's own docs already say this for cross-process
+   signals ("on Windows... the process will be killed forcefully and
+   abruptly, similar to `SIGKILL`"), but it is easy to assume a
+   *self*-directed `process.kill(process.pid, 'SIGTERM')` inside the child is
+   just a local JS event and therefore safe. It is not: on this Windows host,
+   `process.kill(process.pid, 'SIGTERM')` goes through the same OS-level
+   `uv_kill()` path and forcibly terminates the process before any
+   `'SIGTERM'` listener runs — verified with a minimal repro (see Task 4
+   report). **Fix**: the parent (`portal.ts`) sends an IPC `'shutdown'`
+   message instead of an OS signal; `portal-child.cjs` responds by calling
+   `process.emit('SIGTERM')`, which invokes the same `process.on('SIGTERM',
+   ...)` listeners (Next.js's own graceful-shutdown handler,
+   `apps/*/node_modules/next/dist/server/lib/start-server.js`) synchronously,
+   in-process, without ever touching the OS signal layer. This is portable —
+   it is the identical code path on POSIX — so it is used unconditionally
+   rather than branching on `process.platform`.
+
+`PortalHandle.stop()` still falls back to `child.kill('SIGTERM')` if the IPC
+channel isn't connected, which is a correct graceful stop on POSIX but is
+**not** guaranteed to flush coverage on Windows; the IPC path is the
+primary and preferred mechanism on every OS.
+
+### Env vars for host portals
+
+```
+NODE_V8_COVERAGE=<server coverage dir>   # set internally by startPortal(), from opts.coverageDir
+USER_SERVICE_URL=http://localhost:3001
+CATALOGUE_SERVICE_URL=http://localhost:3002
+AUCTION_ENGINE_URL=http://localhost:3003
+PAYMENT_SERVICE_URL=http://localhost:3004
+SHIPPING_SERVICE_URL=http://localhost:3006
+```
+
+`build-lcov.mjs` reads:
+
+```
+SERVER_COVERAGE_DIR   # default /tmp/e2e-server-cov
+CLIENT_COVERAGE_DIR   # default /tmp/e2e-client-cov
+LCOV_OUT_DIR           # default ./coverage/spike
+SOURCE_ROOT            # default ../../apps/user-portal
+```
+
+On a Windows host, prefer explicit Windows-style absolute paths (e.g. a
+`%TEMP%`-rooted directory) for these — `/tmp/...`-style paths are resolved
+inconsistently depending on whether the interpreting process is a
+Git-Bash-launched shell command or a native `node.exe` child process spawned
+via `child_process`; a native `node.exe` treats a leading `/` as relative to
+the current drive root (e.g. `E:\tmp\...`), not the Git-Bash `/tmp` mount.
+
+### Two-command local run
+
+```bash
+docker compose -f docker-compose.test.yml up -d --build   # then wait-for-health (see above)
+pnpm --filter @carat-room/e2e test:e2e                     # after starting the portal on the host — wired in Task 6's globalSetup
+```
+
+Task 4 validated the full chain (build portal → start on host with
+`NODE_V8_COVERAGE` → run one Playwright spec against it with `page.coverage`
+→ stop via the IPC-based graceful shutdown → `node scripts/build-lcov.mjs`)
+using a throwaway shell driver; Task 6 is responsible for wiring
+`startPortal`/`stop()` into Playwright's `globalSetup`/`globalTeardown` so
+`pnpm test:e2e` alone drives the whole thing.

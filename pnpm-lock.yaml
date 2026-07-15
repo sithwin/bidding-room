@@ -831,6 +831,9 @@ importers:
       '@playwright/test':
         specifier: ^1.48.0
         version: 1.61.1
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.43
       monocart-coverage-reports:
         specifier: ^2.11.0
         version: 2.12.12
