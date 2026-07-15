@@ -121,13 +121,17 @@ export function LotDetailClient({ lot, liveStatus }: LotDetailProps) {
         const profileRes = await fetch('/api/payments/profile', {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
+        if (!profileRes.ok) {
+          setToast({ message: 'Unable to verify your payment method — please try again.', type: 'error' });
+          return;
+        }
         const profile = parsePaymentProfile(await profileRes.json());
         if (!profile?.stripePaymentMethodId) {
           window.location.href = '/account/register-to-bid?step=3';
           return;
         }
       } catch {
-        setToast({ message: 'Unable to verify payment method. Please try again.', type: 'error' });
+        setToast({ message: 'Unable to reach the payment service. Please try again.', type: 'error' });
         return;
       }
     }
