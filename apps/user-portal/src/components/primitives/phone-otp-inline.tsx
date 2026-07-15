@@ -44,7 +44,7 @@ export function PhoneOtpInline({ onVerified, onClose }: PhoneOtpInlineProps) {
         'Content-Type': 'application/json',
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
-      body: JSON.stringify({ otp }),
+      body: JSON.stringify({ code: otp }),
     });
     setIsLoading(false);
     if (res.ok) {

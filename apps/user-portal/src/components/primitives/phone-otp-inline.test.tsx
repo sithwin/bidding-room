@@ -94,6 +94,30 @@ describe('PhoneOtpInline', () => {
     });
   });
 
+  it('sends the OTP as { code } to match the backend contract, not { otp }', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true } as Response) // phone request
+      .mockResolvedValueOnce({ ok: true } as Response); // otp verify
+
+    render(<PhoneOtpInline onVerified={onVerified} onClose={onClose} />);
+    fireEvent.change(screen.getByPlaceholderText('+61 400 000 000'), { target: { value: '+61400000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Send Code' }));
+
+    await waitFor(() => screen.getByPlaceholderText('000000'));
+    fireEvent.change(screen.getByPlaceholderText('000000'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Verify' }));
+
+    await waitFor(() => {
+      expect(onVerified).toHaveBeenCalledTimes(1);
+    });
+
+    const verifyCall = vi.mocked(fetch).mock.calls.find(call => call[0] === '/api/auth/phone/verify');
+    expect(verifyCall).toBeDefined();
+    const body = JSON.parse(verifyCall![1]!.body as string);
+    expect(body).toEqual({ code: '123456' });
+    expect(body).not.toHaveProperty('otp');
+  });
+
   it('shows error when OTP verification fails', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({ ok: true } as Response) // phone request

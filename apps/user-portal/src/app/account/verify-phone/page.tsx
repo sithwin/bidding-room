@@ -45,7 +45,7 @@ export default function VerifyPhonePage() {
     const res = await fetch('/api/auth/phone/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
-      body: JSON.stringify({ otp }),
+      body: JSON.stringify({ code: otp }),
     });
     setIsLoading(false);
     if (res.ok) { messageResponseSchema.safeParse(await res.json()); router.push('/account/register-to-bid'); return; }
