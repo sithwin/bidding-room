@@ -91,4 +91,23 @@ describe('LotDetailClient', () => {
     // Must not be redirected to the "no card on file" step — the profile fetch failed, it did not succeed with no card.
     expect(window.location.pathname).not.toBe('/account/register-to-bid');
   });
+
+  it('shows a distinct, honest error when the payment-profile fetch fails at the network level', async () => {
+    mockAuthUser = { userId: 'user-1', email: 'bidder@example.com', verificationStatus: 'APPROVED_BIDDER', role: 'BIDDER' };
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes('/api/payments/profile')) {
+        return Promise.reject(new Error('network unreachable'));
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ data: [], meta: { total: 0 } }) } as Response);
+    });
+
+    render(<LotDetailClient lot={lotFixture} liveStatus={statusFixture} />);
+    fireEvent.change(screen.getByPlaceholderText('$ 5600'), { target: { value: '6000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Place Bid' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to reach the payment service. Please try again.')).toBeInTheDocument();
+    });
+    expect(window.location.pathname).not.toBe('/account/register-to-bid');
+  });
 });
