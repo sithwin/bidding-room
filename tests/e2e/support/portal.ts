@@ -60,20 +60,35 @@ export async function startPortal(opts: StartPortalOptions): Promise<PortalHandl
       }
       const exited = new Promise<void>((resolve) => child.once('exit', () => resolve()));
       if (child.connected) {
-        // Ask the child to run its graceful-shutdown path via IPC (see
-        // portal-child.cjs). A direct `child.kill('SIGTERM')` from this
-        // process — or even a self-directed `process.kill(pid, 'SIGTERM')`
-        // inside the child — goes through the OS signal layer, which on
-        // Windows forcibly terminates the process before any listener runs
-        // (verified empirically), dropping the NODE_V8_COVERAGE dump.
+        // Ask the child to run its graceful-shutdown path via IPC rather
+        // than a direct OS signal — see portal-child.cjs for why a signal
+        // (even self-directed) is unsafe on Windows and would drop the
+        // NODE_V8_COVERAGE dump.
         child.send('shutdown');
       } else {
         // Fallback only if the IPC channel is unavailable. On POSIX this is
-        // still a graceful SIGTERM; on Windows it is abrupt (see above) and
-        // should not be relied on to preserve coverage.
+        // still a graceful SIGTERM; on Windows it is abrupt (see
+        // portal-child.cjs) and should not be relied on to preserve
+        // coverage.
         child.kill('SIGTERM');
       }
-      await Promise.race([exited, sleep(15_000)]);
+      const timedOut = Symbol('timed-out');
+      const result = await Promise.race([exited.then(() => undefined), sleep(15_000).then(() => timedOut)]);
+      if (result === timedOut && child.exitCode === null) {
+        // Graceful shutdown didn't finish in time — either the IPC message
+        // was never honoured, or the SIGTERM listener threw/hung before
+        // calling process.exit(). Escalate to a real OS SIGTERM as a
+        // fail-safe so the child is never left running silently (see
+        // portal-child.cjs for why a plain SIGTERM still isn't used
+        // up-front). Never escalate further to SIGKILL — that risks losing
+        // the NODE_V8_COVERAGE dump entirely.
+        console.warn(
+          `[portal] graceful shutdown of ${child.pid ?? '(unknown pid)'} did not complete within 15s; ` +
+            'sending SIGTERM as a fallback',
+        );
+        child.kill('SIGTERM');
+        await Promise.race([exited, sleep(15_000)]);
+      }
     },
   };
 }
