@@ -98,6 +98,19 @@ export async function retrieveEmailVerificationLink(
 }
 
 /**
+ * Looks up the (unconsumed) phone-OTP code for a user who has already had
+ * `/api/users/phone/request` triggered for them (either via `verifyPhone`
+ * below, or — as the register-to-bid spec does — via the real
+ * verify-phone/PhoneOtpInline UI's "Send Code" button). Same DB read as
+ * `verifyPhone`'s internal step, exposed for callers driving the OTP entry
+ * step through the real UI rather than the API, mirroring
+ * `retrieveEmailVerificationLink` above.
+ */
+export async function retrievePhoneOtp(userId: string): Promise<string> {
+  return retrieveVerificationCode(userId, 'PHONE');
+}
+
+/**
  * Drives the phone-OTP flow via the real endpoints. The `userId` needed to
  * look up the OTP in the DB is decoded from the JWT (the OTP itself is never
  * returned over HTTP — see task-5-report.md), not passed as a parameter,
