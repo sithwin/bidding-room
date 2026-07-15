@@ -16,9 +16,9 @@ describe('BullMQTimerScheduler', () => {
     await scheduler.scheduleClose('lot-1', new Date(Date.now() + 3_600_000));
     await scheduler.scheduleClosingSoon('lot-1', new Date(Date.now() + 2_700_000));
 
-    expect(mockAdd).toHaveBeenCalledWith('start-auction', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'start:lot-1' }));
-    expect(mockAdd).toHaveBeenCalledWith('close-auction', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'close:lot-1' }));
-    expect(mockAdd).toHaveBeenCalledWith('closing-soon', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'closing-soon:lot-1' }));
+    expect(mockAdd).toHaveBeenCalledWith('start-auction', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'start-lot-1' }));
+    expect(mockAdd).toHaveBeenCalledWith('close-auction', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'close-lot-1' }));
+    expect(mockAdd).toHaveBeenCalledWith('closing-soon', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'closing-soon-lot-1' }));
   });
 
   it('should_removeOldJobAndAddNew_when_reschedulingClose', async () => {
@@ -35,7 +35,7 @@ describe('BullMQTimerScheduler', () => {
     await scheduler.rescheduleClose('lot-1', new Date(Date.now() + 5_000_000));
 
     expect(mockRemove).toHaveBeenCalled();
-    expect(mockAdd).toHaveBeenCalledWith('close-auction', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'close:lot-1' }));
+    expect(mockAdd).toHaveBeenCalledWith('close-auction', { lotId: 'lot-1' }, expect.objectContaining({ jobId: 'close-lot-1' }));
   });
 
   it('should_useDelayBasedOnFireAt_when_schedulingJobs', async () => {
