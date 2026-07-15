@@ -223,7 +223,7 @@ services:
       RABBITMQ_URL: amqp://carat:carat_test@rabbitmq:5672
       RESEND_API_KEY: re_test_key
       RESEND_FROM: noreply@test.carat-room.internal
-      TWILIO_ACCOUNT_SID: test-sid
+      TWILIO_ACCOUNT_SID: AC00000000000000000000000000000000
       TWILIO_AUTH_TOKEN: test-token
       TWILIO_PHONE_NUMBER: '+15005550006'
       USER_SERVICE_URL: http://user-auth:3001
