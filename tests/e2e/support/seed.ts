@@ -80,12 +80,6 @@ export async function registerAndVerifyUser(
 }
 
 /**
- * Drives the phone-OTP flow via the real endpoints. The `userId` needed to
- * look up the OTP in the DB is decoded from the JWT (the OTP itself is never
- * returned over HTTP — see task-5-report.md), not passed as a parameter,
- * matching the produced-interface signature `verifyPhone(accessToken)`.
- */
-/**
  * Looks up the (unconsumed) email-verification code for a user who was
  * registered directly through the real UI (login-client.tsx's register tab)
  * rather than via `registerAndVerifyUser` — used by specs that need to drive
@@ -103,6 +97,12 @@ export async function retrieveEmailVerificationLink(
   return { userId, code };
 }
 
+/**
+ * Drives the phone-OTP flow via the real endpoints. The `userId` needed to
+ * look up the OTP in the DB is decoded from the JWT (the OTP itself is never
+ * returned over HTTP — see task-5-report.md), not passed as a parameter,
+ * matching the produced-interface signature `verifyPhone(accessToken)`.
+ */
 export async function verifyPhone(accessToken: string, phone = '+447700900000'): Promise<void> {
   const userId = decodeUserIdFromJwt(accessToken);
   // POST /api/users/phone/request expects { phone }; userId comes from the
