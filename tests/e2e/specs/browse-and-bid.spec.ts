@@ -1,6 +1,13 @@
 import { test, expect } from '../support/fixtures';
 import { registerAndVerifyUser, verifyPhone, approveBidder, seedLot, seedAuction } from '../support/seed';
 
+// Same guard as register-to-bid.spec.ts: this test now drives a real Stripe card-authorisation
+// step and asserts a genuinely placed bid, which only works with real Stripe test-mode
+// credentials. Without them, skip gracefully rather than hard-failing deep into the flow (e.g. a
+// contributor running the suite locally without the repo's secrets, or a fork PR where GitHub
+// doesn't forward repo secrets to workflow runs).
+const hasStripeKey = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+
 // Selectors/routes verified against the real markup — apps/user-portal/src/app/auctions/[auctionId]/lots/[lotId]/page.tsx,
 // lot-detail-client.tsx, hooks/use-lot-sse.ts, components/primitives/bid-confirmed-modal.tsx (see
 // task-8-report.md for the full diff vs. the brief's guessed skeleton, and for the two real,
@@ -55,6 +62,8 @@ import { registerAndVerifyUser, verifyPhone, approveBidder, seedLot, seedAuction
 // (always 404/500) when this spec was first written — implemented in PR #16 alongside the two frontend
 // pages that consume them. Both are real, authenticated, correctly-scoped endpoints.
 test('browse to a lot, receive SSE updates and place a bid', async ({ page }) => {
+  test.skip(!hasStripeKey, 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY not set — real bid via Stripe card authorisation skipped');
+
   const admin = await registerAndVerifyUser({ role: 'ADMIN' });
   const { lotId } = await seedLot(admin.accessToken, { estimatedValue: 500 });
   const { auctionId } = await seedAuction(admin.accessToken, lotId, { minBidIncrement: 50 });
