@@ -160,3 +160,55 @@ Shared Zod schemas in `packages/shared-types/src/api/` are the single source of 
 **Known pre-existing test failures (out of Phase 2 scope, confirmed present before this work):**
 - user-portal: `src/app/page.test.tsx` (1) and `src/app/auctions/[auctionId]/catalogue-lots.test.tsx` (2) — Phase-1 catalogue consumers not enumerated in the Phase 2 plan.
 - user-auth: 2 `PostgresUserRepository` integration tests need a live Postgres on :5432 (Phase 4 debt).
+
+## Coverage-Gap E2E Testing (2026-07-12 → 2026-07-16)
+
+Plan: `docs/superpowers/plans/2026-07-12-coverage-gap-e2e.md` — ✅ **complete**
+(all 14 tasks). Spec: `docs/superpowers/specs/2026-07-12-coverage-gap-e2e-design.md`.
+Branch `test/coverage-gap-e2e-v2` (worktree `.worktrees/coverage-gap-e2e`),
+draft PR #17 → `main`.
+
+**Goal:** turn the SonarCloud Quality Gate green by raising new-code
+coverage from 44.4% via `sonar-project.properties` measurement corrections,
+a new Playwright E2E package (`@carat-room/e2e`) driving both real
+production-built portals against the real `docker-compose.test.yml` backend
+stack with merged server + client V8 coverage, and unit-test stragglers.
+
+**Delivered:**
+- `sonar-project.properties` corrections (test-file reclassification,
+  composition-root coverage exclusions).
+- `tests/e2e` package: 7 Playwright specs (spike smoke, auth, register-to-bid,
+  browse-and-bid, invoice-checkout, fulfilment ×2) covering all 5 required
+  flows, with a from-scratch coverage pipeline (`NODE_V8_COVERAGE` +
+  `page.coverage` → `monocart-coverage-reports` → per-portal lcov) and a
+  Windows-safe IPC-based graceful portal shutdown.
+- 6 unit-test straggler files added/extended for coverage E2E cannot reach.
+- CI wiring in `.github/workflows/ci.yml`: full E2E suite with coverage runs
+  between `pnpm turbo test` and the SonarCloud scan.
+- `tests/e2e/README.md` and `CLAUDE.md`'s Key Commands document the
+  two-command local run.
+
+**Real bugs found and fixed along the way** (10 total, each on its own PR,
+merged to `main` independently of this plan's branch — see
+`.superpowers/sdd/progress.md` for full detail): a BullMQ colon-jobId bug
+(PR #11), a proxy refresh-cookie bug (PR #12), a phone-OTP request-body key
+mismatch that blocked all bidding (PR #13), a Sonar test-file
+misclassification (PR #14), a payment-profile `res.ok` robustness gap (PR
+#15), a missing `/api/account/bids`/`/api/account/stats` feature in
+auction-engine (PR #16), plus 4 more Stripe/R2 test-infra bugs surfaced once
+real credentials were added as repo secrets (identity+card steps never
+driven, R2 env-var-naming mismatch, a Playwright-process env-var removal
+that masked a real bug, and a missing postal-code field for Stripe's
+CardElement).
+
+**Quality Gate result:** this branch/PR's own SonarCloud analysis
+(`ci` run `29496584658`, commit `c1cb608`) is **PASSED** —
+confirmed both from the CI log (`QUALITY GATE STATUS: PASSED`,
+`-Dsonar.qualitygate.wait=true` exited 0) and directly from the SonarCloud
+API. `main`'s own rolling quality gate is still `ERROR` at `new_coverage =
+62.7%` as of this writing — expected, because `main`'s 30-day new-code
+window already includes 6 of this plan's fix PRs but not yet this branch's
+own E2E-lcov coverage contribution, which only lands when PR #17 merges.
+Merging PR #17 (with the whole-branch review that follows) is the next step,
+outside this plan's scope. Full detail: `tests/e2e/README.md`'s "Quality
+Gate verification (Task 14)" section and `.superpowers/sdd/task-14-report.md`.

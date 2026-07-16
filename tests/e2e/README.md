@@ -1,9 +1,41 @@
 # E2E Test Suite
 
-This package will hold the Playwright end-to-end tests that drive both the
-user-portal and admin-portal against the real backend stack (Tasks 3-14 of
-the coverage-gap E2E plan). This README is started in Task 2 (verifying the
-backend stack boots) and will be completed in Task 14.
+This package holds the Playwright end-to-end tests that drive the
+user-portal against the real backend stack (Tasks 3-14 of the coverage-gap
+E2E plan, `docs/superpowers/plans/2026-07-12-coverage-gap-e2e.md`). This
+README was started in Task 2 (verifying the backend stack boots) and is
+completed here in Task 14.
+
+## Two-command local run
+
+Once the backend stack is booted and healthy (see "Boot the backend stack"
+below) **and** `user-portal` has been built with the real service URLs (see
+"Important — building the portal with the right service URLs" above — this
+is a one-time build step, not part of the two-command run itself), the E2E
+suite — portal start, five flows, client + server V8 coverage capture — is
+exactly two commands:
+
+```bash
+docker compose -f docker-compose.test.yml up -d --build   # + wait for health (see below)
+pnpm --filter @carat-room/e2e test:e2e
+```
+
+`test:e2e` runs Playwright's `globalSetup` (Task 5), which **starts** the
+already-built `user-portal` on the host (port 3000, production build via
+`next start` — see "Coverage mode" below; `globalSetup` does not run `next
+build` itself), runs all specs under `tests/e2e/specs/`, then stops the
+portal via a graceful IPC-based shutdown so both server- and client-side V8
+coverage are flushed. To turn the raw V8 dumps into the lcov report
+SonarCloud reads, run one more command afterwards:
+
+```bash
+PORTAL=user-portal pnpm --filter @carat-room/e2e coverage:report
+```
+
+This writes `tests/e2e/coverage/user-portal/lcov.info`. This third command is
+listed in `sonar.javascript.lcov.reportPaths` and CI's own pipeline (Task 12),
+but is not part of the "two-command" run the plan and CLAUDE.md refer to —
+that phrase is specifically the boot + `test:e2e` pair above.
 
 ## Boot the backend stack
 
@@ -120,6 +152,33 @@ string, `lot-detail-client.tsx`'s Stripe card step in Flow 2 self-skips, and
 the CI job still passes — it is not required for the suite to succeed, only
 for that one card-entry step to actually exercise Stripe Elements.
 
+### Full-credentials secrets (added during Task 12 follow-up — see `.superpowers/sdd/progress.md`'s Task 12 entry for the full bug chain)
+
+Getting CI to actually exercise the Stripe card-authorisation step and the
+identity-document upload (rather than self-skip) required six repo secrets
+in total. `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are
+real Stripe **test-mode** keys; the four `R2_*` secrets are real Cloudflare
+R2 test-bucket credentials (`user-auth`'s identity-document upload step in
+`register-to-bid.spec.ts` needs a working R2 bucket to store the uploaded
+file against):
+
+| Secret | Used by |
+|---|---|
+| `STRIPE_SECRET_KEY` | `payment-service` (already required by `integration-tests.yml`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | host-launched `user-portal` build + runtime (Task 7/8 card steps) |
+| `R2_ACCOUNT_ID` | `user-auth` (identity-document upload, Task 7) |
+| `R2_ACCESS_KEY_ID` | `user-auth` |
+| `R2_SECRET_ACCESS_KEY` | `user-auth` |
+| `R2_BUCKET_NAME` | `user-auth` — **note:** `catalogue` reads the equivalent bucket name from a differently-named env var (`R2_BUCKET`), a pre-existing cross-service naming inconsistency in production code that is out of this plan's scope; the test config only accommodates it, matching each service's real var name |
+
+Without all six secrets present, `register-to-bid.spec.ts` (identity-document
++ card authorisation) and `browse-and-bid.spec.ts` (card authorisation before
+bidding) each self-skip their credential-gated steps via a `hasStripeKey`-style
+guard and still pass — this is the expected, intentional local-run mode
+without secrets. With all six present (as in CI run `29496584658`, the last
+fully green run on this branch/PR), both specs run their real card-entry and
+document-upload steps against live Stripe test-mode and R2 test-bucket APIs.
+
 ## Fixes required to get the stack booting (Task 2)
 
 The backend service Dockerfiles (`catalogue`, `user-auth`, `auction-engine`,
@@ -227,7 +286,18 @@ CATALOGUE_SERVICE_URL=http://localhost:3002
 AUCTION_ENGINE_URL=http://localhost:3003
 PAYMENT_SERVICE_URL=http://localhost:3004
 SHIPPING_SERVICE_URL=http://localhost:3006
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<optional — see "Full-credentials secrets" above; empty string self-skips card steps>
 ```
+
+None of these need to be exported by hand for a local run — `global-setup.ts`
+sets the five `*_SERVICE_URL` vars itself (Task 5) and forwards whatever
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is present in the shell (or an empty
+string) into the host-launched portal's environment. Export
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (and, for the Docker-side Stripe/R2 calls,
+`STRIPE_SECRET_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` before `docker compose ... up`) only
+if you want the card-authorisation and identity-upload steps to actually run
+instead of self-skip.
 
 `build-lcov.mjs` (generalised in Task 11 to merge coverage per portal) reads:
 
@@ -256,14 +326,136 @@ relative to the current drive root (e.g. `E:\tmp\...`), not the Git-Bash
 
 ### Two-command local run
 
+See "Two-command local run" near the top of this file for the exact commands
+and required env vars/secrets. Task 4 validated the full chain (build portal
+→ start on host with `NODE_V8_COVERAGE` → run one Playwright spec against it
+with `page.coverage` → stop via the IPC-based graceful shutdown → `node
+scripts/build-lcov.mjs`) using a throwaway shell driver; Task 6 wired
+`startPortal`/`stop()` into Playwright's `globalSetup`/`globalTeardown` so
+`pnpm test:e2e` alone drives the whole thing, and Task 14 verified the full
+CI-equivalent local pipeline end-to-end (see "Local pipeline verification
+(Task 14)" below).
+
+## Local pipeline verification (Task 14)
+
+The full CI-equivalent pipeline was run once locally, on Windows, matching
+`.github/workflows/ci.yml`'s step order:
+
 ```bash
-docker compose -f docker-compose.test.yml up -d --build   # then wait-for-health (see above)
-pnpm --filter @carat-room/e2e test:e2e                     # after starting the portal on the host — wired in Task 6's globalSetup
+pnpm install --frozen-lockfile && pnpm turbo build && pnpm lint && pnpm turbo test
+docker compose -f docker-compose.test.yml up -d --build   # + health wait, one restart of
+                                                            # auction-engine needed — the
+                                                            # documented intermittent race
+export USER_SERVICE_URL=http://localhost:3001 CATALOGUE_SERVICE_URL=http://localhost:3002 \
+       AUCTION_ENGINE_URL=http://localhost:3003 PAYMENT_SERVICE_URL=http://localhost:3004 \
+       SHIPPING_SERVICE_URL=http://localhost:3006
+pnpm --filter user-portal build   # NOT `pnpm turbo build --filter=user-portal` — see the
+                                    # AUCTION_ENGINE_URL pitfall documented above; the plain
+                                    # `pnpm turbo build` run moments earlier bakes in the
+                                    # Docker-only fallback and must be corrected before test:e2e
+pnpm --filter @carat-room/e2e exec playwright install chromium
+pnpm --filter @carat-room/e2e test:e2e
+PORTAL=user-portal pnpm --filter @carat-room/e2e coverage:report
+docker compose -f docker-compose.test.yml down -v
 ```
 
-Task 4 validated the full chain (build portal → start on host with
-`NODE_V8_COVERAGE` → run one Playwright spec against it with `page.coverage`
-→ stop via the IPC-based graceful shutdown → `node scripts/build-lcov.mjs`)
-using a throwaway shell driver; Task 6 is responsible for wiring
-`startPortal`/`stop()` into Playwright's `globalSetup`/`globalTeardown` so
-`pnpm test:e2e` alone drives the whole thing.
+**Results:**
+
+- `pnpm install --frozen-lockfile`, `pnpm turbo build`, `pnpm lint` — all
+  green.
+- `pnpm turbo test` — green (20/20 packages), but only after starting a
+  throwaway Postgres container on host port 5432 with
+  `POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres POSTGRES_DB=users_test`
+  (matching `ci.yml`'s `postgres` service container). Without it,
+  `user-auth`'s two `PostgresUserRepository`/`PostgresTokenRepository`
+  integration tests fail with `ECONNREFUSED ::1:5432` — this is the
+  pre-existing Phase-4 debt already recorded in
+  `docs/superpowers/SESSION-SUMMARY.md` ("2 `PostgresUserRepository`
+  integration tests need a live Postgres on :5432"), not a regression from
+  this plan. `docker-compose.test.yml`'s Postgres runs on host port 5433, not
+  5432, so it does not substitute for this.
+- Backend stack boot — green after one `docker compose ... restart
+  auction-engine` (the documented intermittent startup race: `auction-engine`
+  connected to RabbitMQ before the broker had fully finished its own startup,
+  logged `Error: connect ECONNREFUSED <ip>:5672`, and sat in
+  `health: starting` until restarted). All 9 containers (6 services +
+  Postgres + Redis + RabbitMQ) reported `healthy` after the restart, and the
+  `/health` smoke-check on ports 3001–3006 returned 200 with the expected
+  service names.
+- `pnpm --filter @carat-room/e2e test:e2e` — green: **5 passed, 2 skipped, 0
+  failed**. The two skips are `browse-and-bid.spec.ts` and
+  `register-to-bid.spec.ts`'s Stripe-card/identity-document steps, which
+  self-skip via their `hasStripeKey` guard (Task 12 fix) because this shell
+  had none of the six full-credentials secrets set (see "Full-credentials
+  secrets" above) — this is the expected, documented local-run mode without
+  secrets. All five other flows (auth, both fulfilment specs, invoice
+  checkout, the coverage spike) passed against the real stack.
+- `PORTAL=user-portal pnpm --filter @carat-room/e2e coverage:report` —
+  green: `[user-portal] mapped src files: 67` (matches Task 11's report),
+  producing `tests/e2e/coverage/user-portal/lcov.info` (189 `SF:` entries).
+- `docker compose -f docker-compose.test.yml down -v` — all containers and
+  volumes removed.
+
+**Mode:** this was the no-secrets local run (Stripe/R2 credentials not
+present in this shell). The full-credentials run — all five flows
+unconditionally exercising every step including real Stripe card
+authorisation and R2 identity-document upload — was already proven green in
+CI run
+[`29496584658`](https://github.com/sithwin/bidding-room/actions/runs/29496584658)
+(Task 12's follow-up work); re-proving it locally was not required for this
+task and was skipped since the real secrets were not available in this
+shell.
+
+## Quality Gate verification (Task 14)
+
+CI run `29496584658` (commit `c1cb608`, the most recent CI run on this
+branch/PR — draft PR #17, `test/coverage-gap-e2e-v2` → `main`) is fully
+green end to end: build, the "Rebuild user-portal with real service URLs"
+step, lint, 164 unit tests, all 7 E2E specs run for real (including a
+genuine completed Stripe card authorisation and a real recorded bid), lcov
+coverage generation, and the SonarCloud Scan step. The scan's log line is
+unambiguous:
+
+```
+QUALITY GATE STATUS: PASSED - View details on https://sonarcloud.io/dashboard?id=sithwin_bidding-room&pullRequest=17
+EXECUTION SUCCESS
+```
+
+Because the step runs with `-Dsonar.qualitygate.wait=true`, a failing gate
+would have exited non-zero and failed the job — it did not.
+
+Querying the SonarCloud public API directly for PR 17's `project_status`
+confirms the same result and gives the per-condition detail (5 of the 6
+`Sonar way` conditions were evaluated and are all `OK`; `new_coverage` was
+not evaluated for **this PR-diff's** gate because `new_lines_to_cover` is
+`0` for the diff between this branch and `main` — nearly all
+coverage-relevant production-code changes surfaced during this plan's
+execution were already extracted into separate fix PRs (#11–#16) and merged
+straight to `main` along the way, per `.superpowers/sdd/progress.md`, so
+this branch's remaining diff against `main` is now almost entirely
+test/config/doc files that Sonar correctly does not count as lines needing
+coverage).
+
+**Important nuance, reported plainly per the Global Constraints — do not
+paper over this:** `main`'s *own* rolling quality gate (the actual target
+named in this plan's goal: "raise new-code coverage from 44.4% to ≥ 80% on
+`main`") is **currently `ERROR`**, not green:
+
+```
+new_coverage: 62.7% (threshold: ≥ 80%) — FAILING
+new_lines_to_cover: 709, new_uncovered_lines: 282 (30-day new-code period)
+```
+
+This is expected, not a defect in this plan's work: `main`'s 30-day
+new-code period already includes the six fix PRs (#11–#16) merged during
+this plan's execution, but **not yet** this branch's own contribution — the
+Playwright E2E lcov report (`tests/e2e/coverage/user-portal/lcov.info`,
+registered in `sonar.javascript.lcov.reportPaths` by Task 11) that measures
+real coverage against many of those same 282 currently-uncovered lines.
+`main` will not reflect that coverage until PR #17 itself merges — which,
+per the plan's own stated workflow and this task's brief, happens **after**
+Task 14 and a whole-branch review, not as part of this task. This task's
+scope (per the brief's explicit adjustment) was to confirm this branch/PR's
+own SonarCloud analysis gate passes cleanly before that merge — confirmed
+above — not to merge to `main` or independently verify `main`'s post-merge
+number.

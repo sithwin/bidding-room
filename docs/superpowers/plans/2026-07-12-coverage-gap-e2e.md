@@ -44,7 +44,7 @@ Reclassify `.test.tsx` files as tests and exclude composition roots + Next confi
 - Consumes: nothing.
 - Produces: an updated `sonar.javascript.lcov.reportPaths` line that Task 11 will further extend with the two E2E lcov paths. Later tasks must *append* to this line, not replace it.
 
-- [ ] **Step 1: Edit `sonar-project.properties`**
+- [x] **Step 1: Edit `sonar-project.properties`**
 
 Change the `sonar.test.inclusions` line and add a new `sonar.coverage.exclusions` line. Final file:
 
@@ -59,7 +59,7 @@ sonar.coverage.exclusions=apps/*/src/main.ts,**/next.config.mjs
 sonar.javascript.lcov.reportPaths=apps/*/coverage/lcov.info,packages/*/coverage/lcov.info
 ```
 
-- [ ] **Step 2: Verify the properties parse and the globs are well-formed**
+- [x] **Step 2: Verify the properties parse and the globs are well-formed**
 
 Run: `grep -E '^sonar\.(test\.inclusions|coverage\.exclusions)=' sonar-project.properties`
 Expected output (both lines present):
@@ -68,12 +68,12 @@ sonar.test.inclusions=**/*.test.ts,**/*.test.tsx
 sonar.coverage.exclusions=apps/*/src/main.ts,**/next.config.mjs
 ```
 
-- [ ] **Step 3: Confirm the exclusion targets exist so the globs are not dead**
+- [x] **Step 3: Confirm the exclusion targets exist so the globs are not dead**
 
 Run: `ls apps/*/src/main.ts apps/user-portal/next.config.mjs apps/admin-portal/next.config.mjs`
 Expected: every path listed, no "No such file" error. (Confirms `sonar.coverage.exclusions` matches real files.)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add sonar-project.properties
@@ -94,12 +94,12 @@ The whole E2E design depends on `docker compose -f docker-compose.test.yml up -d
 - Consumes: `docker-compose.test.yml` (unchanged), the health-wait loop from `.github/workflows/integration-tests.yml`.
 - Produces: a proven-good boot command sequence, reused verbatim by Task 12's CI steps.
 
-- [ ] **Step 1: Build all packages first (E2E later reuses these `.next` and `dist` outputs)**
+- [x] **Step 1: Build all packages first (E2E later reuses these `.next` and `dist` outputs)**
 
 Run: `pnpm install --frozen-lockfile && pnpm turbo build`
 Expected: PASS. If a service's `tsc --build` fails with `MODULE_NOT_FOUND`, capture the exact module and failing project — that is the blocker to fix in Step 3.
 
-- [ ] **Step 2: Boot the backend stack**
+- [x] **Step 2: Boot the backend stack**
 
 Run:
 ```bash
@@ -115,12 +115,12 @@ timeout 180 bash -c '
 ```
 Expected: command exits 0; `docker compose -f docker-compose.test.yml ps` shows all of `user-auth catalogue auction-engine payment notification shipping postgres redis rabbitmq` as `healthy`.
 
-- [ ] **Step 3: If any service is unhealthy or failed to build, diagnose and fix the boot blocker only**
+- [x] **Step 3: If any service is unhealthy or failed to build, diagnose and fix the boot blocker only**
 
 Run: `docker compose -f docker-compose.test.yml logs <service> --no-color | tail -40`
 Fix the minimal build/wiring issue (e.g. a missing workspace dependency in the Dockerfile build stage). Re-run Step 1–2 until green. Record each fix in the commit body. **Do not** change service runtime behaviour.
 
-- [ ] **Step 4: Smoke-check every service HTTP health endpoint from the host**
+- [x] **Step 4: Smoke-check every service HTTP health endpoint from the host**
 
 Run:
 ```bash
@@ -129,16 +129,16 @@ for p in 3001 3002 3003 3004 3005 3006; do
 ```
 Expected: a success response from each port (no connection-refused, no non-2xx).
 
-- [ ] **Step 5: Record the working commands in `tests/e2e/README.md`**
+- [x] **Step 5: Record the working commands in `tests/e2e/README.md`**
 
 Create `tests/e2e/README.md` with a "Boot the backend stack" section containing the exact Step 1–2 commands that worked.
 
-- [ ] **Step 6: Tear down**
+- [x] **Step 6: Tear down**
 
 Run: `docker compose -f docker-compose.test.yml down -v`
 Expected: all containers and volumes removed.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/e2e/README.md docker-compose.test.yml apps
@@ -166,7 +166,7 @@ Create the `@carat-room/e2e` package, wire it into the workspace globs, add Play
   - `playwright.config.ts` exporting a config with `testDir: './specs'`, `projects: [{ name: 'chromium' }]`, `retries: process.env.CI ? 1 : 0`, `fullyParallel: false`, and a `baseURL` env indirection.
   - Both portals build with `productionBrowserSourceMaps: true`.
 
-- [ ] **Step 1: Add `tests/*` to the workspace globs**
+- [x] **Step 1: Add `tests/*` to the workspace globs**
 
 Edit `pnpm-workspace.yaml`, extend the `packages` list:
 
@@ -178,7 +178,7 @@ packages:
 ```
 (Leave `hoistPattern`, `allowBuilds`, `onlyBuiltDependencies`, `packageExtensions` unchanged.)
 
-- [ ] **Step 2: Create `tests/e2e/package.json`**
+- [x] **Step 2: Create `tests/e2e/package.json`**
 
 ```json
 {
@@ -199,7 +199,7 @@ packages:
 ```
 (No `test` script — deliberate, per Global Constraints. `pg` is for the SQL-only seeding step in Task 5. `coverage:report` is created in Task 11.)
 
-- [ ] **Step 3: Create `tests/e2e/tsconfig.json`**
+- [x] **Step 3: Create `tests/e2e/tsconfig.json`**
 
 ```json
 {
@@ -214,7 +214,7 @@ packages:
 }
 ```
 
-- [ ] **Step 4: Create `tests/e2e/playwright.config.ts`**
+- [x] **Step 4: Create `tests/e2e/playwright.config.ts`**
 
 ```typescript
 import { defineConfig } from '@playwright/test';
@@ -239,7 +239,7 @@ export default defineConfig({
 ```
 `fullyParallel: false` + `workers: 1` keeps V8 client-coverage collection deterministic and avoids cross-spec seed interference (the spec relies on per-spec unique identifiers, not isolated stacks per spec).
 
-- [ ] **Step 5: Enable production source maps on the user portal**
+- [x] **Step 5: Enable production source maps on the user portal**
 
 Edit `apps/user-portal/next.config.mjs` — add one line inside `nextConfig` (top level, alongside `env`):
 
@@ -250,7 +250,7 @@ const nextConfig = {
 ```
 (Leave everything else in the file unchanged.)
 
-- [ ] **Step 6: Enable production source maps on the admin portal**
+- [x] **Step 6: Enable production source maps on the admin portal**
 
 Edit `apps/admin-portal/next.config.mjs` the same way:
 
@@ -260,22 +260,22 @@ const nextConfig = {
   env: {
 ```
 
-- [ ] **Step 7: Install and register Chromium**
+- [x] **Step 7: Install and register Chromium**
 
 Run: `pnpm install && pnpm --filter @carat-room/e2e exec playwright install --with-deps chromium`
 Expected: dependencies resolve; Chromium downloads.
 
-- [ ] **Step 8: Verify Playwright sees the (empty) config and the `test` script is absent**
+- [x] **Step 8: Verify Playwright sees the (empty) config and the `test` script is absent**
 
 Run: `pnpm --filter @carat-room/e2e exec playwright test --list; node -e "const s=require('./tests/e2e/package.json').scripts; if (s.test) { throw new Error('e2e must not have a test script'); } console.log('ok: no test script');"`
 Expected: `playwright test --list` reports 0 tests (no specs yet) without a config error, then `ok: no test script`.
 
-- [ ] **Step 9: Verify both portals still build with source maps on**
+- [x] **Step 9: Verify both portals still build with source maps on**
 
 Run: `pnpm turbo build --filter=user-portal --filter=admin-portal`
 Expected: PASS; `apps/user-portal/.next` and `apps/admin-portal/.next` contain `.js.map` files (`find apps/user-portal/.next -name '*.js.map' | head` is non-empty).
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add pnpm-workspace.yaml tests/e2e apps/user-portal/next.config.mjs apps/admin-portal/next.config.mjs pnpm-lock.yaml
@@ -302,7 +302,7 @@ git commit -m "test(e2e): scaffold @carat-room/e2e package, Playwright, portal s
   - `collectClientCoverage(page: Page, outDir: string): { start(): Promise<void>; flush(): Promise<void> }` — wraps `page.coverage.startJSCoverage` / `stopJSCoverage`, writing raw V8 JSON into `outDir`.
   - `build-lcov.mjs` reads a V8 coverage dir + source root and writes `lcov.info` via `monocart-coverage-reports`.
 
-- [ ] **Step 1: Write the portal launcher `tests/e2e/support/portal.ts`**
+- [x] **Step 1: Write the portal launcher `tests/e2e/support/portal.ts`**
 
 ```typescript
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -358,7 +358,7 @@ export async function startPortal(opts: StartPortalOptions): Promise<PortalHandl
 ```
 Note: `Date.now()` is fine in test support code (this repo runs it under Playwright, not the workflow engine). `stop()` uses `SIGTERM` only — never `SIGKILL` — so the `NODE_V8_COVERAGE` dump is flushed.
 
-- [ ] **Step 2: Write the client-coverage helper `tests/e2e/support/coverage.ts`**
+- [x] **Step 2: Write the client-coverage helper `tests/e2e/support/coverage.ts`**
 
 ```typescript
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -384,7 +384,7 @@ export function collectClientCoverage(page: Page, outDir: string) {
 }
 ```
 
-- [ ] **Step 3: Write the spike spec `tests/e2e/specs/spike.smoke.spec.ts`**
+- [x] **Step 3: Write the spike spec `tests/e2e/specs/spike.smoke.spec.ts`**
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -406,7 +406,7 @@ test('spike: home page renders and an API route responds', async ({ page }) => {
 });
 ```
 
-- [ ] **Step 4: Write the lcov builder `tests/e2e/scripts/build-lcov.mjs`**
+- [x] **Step 4: Write the lcov builder `tests/e2e/scripts/build-lcov.mjs`**
 
 ```javascript
 import { CoverageReport } from 'monocart-coverage-reports';
@@ -435,7 +435,7 @@ if (!results.files || results.files.length === 0) {
 }
 ```
 
-- [ ] **Step 5: Run the spike end-to-end against the production build**
+- [x] **Step 5: Run the spike end-to-end against the production build**
 
 Run:
 ```bash
@@ -448,25 +448,25 @@ node -e "import('./tests/e2e/support/portal.js')" 2>/dev/null || true
 ```
 Then, from a small throwaway runner (or inline in the spec's `globalSetup`, wired properly in Task 6), start the portal with `NODE_V8_COVERAGE=$SERVER_COVERAGE_DIR` on port 3000 with env `USER_SERVICE_URL=http://localhost:3001 CATALOGUE_SERVICE_URL=http://localhost:3002 AUCTION_ENGINE_URL=http://localhost:3003 PAYMENT_SERVICE_URL=http://localhost:3004 SHIPPING_SERVICE_URL=http://localhost:3006`, run `pnpm --filter @carat-room/e2e test:e2e`, then `SIGTERM` the portal.
 
-- [ ] **Step 6: Convert to lcov and inspect fidelity**
+- [x] **Step 6: Convert to lcov and inspect fidelity**
 
 Run: `SOURCE_ROOT=apps/user-portal LCOV_OUT_DIR=./tests/e2e/coverage/spike node tests/e2e/scripts/build-lcov.mjs`
 Expected: exit 0, "files: N" with N ≥ 1.
 
-- [ ] **Step 7: Assert the lcov references real `src` paths, not bundle paths**
+- [x] **Step 7: Assert the lcov references real `src` paths, not bundle paths**
 
 Run: `grep -E '^SF:' tests/e2e/coverage/spike/lcov.info | grep -E 'apps/user-portal/src/app/api/catalogue/auctions/route\.ts|apps/user-portal/src/app/page\.tsx' | head`
 Expected: at least one `SF:` line pointing at a real `src/**/*.ts(x)` file (proves source-map mapping works). If empty, the production-build mapping failed → go to Step 8.
 
-- [ ] **Step 8: Fallback decision (only if Step 7 is empty)**
+- [x] **Step 8: Fallback decision (only if Step 7 is empty)**
 
 If production-build server mapping is unreliable, switch the portal launcher to dev mode: change the `startPortal` spawn args from `exec next start -p` to `exec next dev -p` and drop the `pnpm turbo build` prerequisite for the portal. Dev-mode source maps are exact. Re-run Steps 5–7. Record in `tests/e2e/README.md` under "Coverage mode" which mode was chosen and why. Every later task uses whichever mode passed here.
 
-- [ ] **Step 9: Record the working pipeline in `tests/e2e/README.md`**
+- [x] **Step 9: Record the working pipeline in `tests/e2e/README.md`**
 
 Document: coverage mode (prod build vs `next dev`), the env vars for host portals, and the two-command local run (compose up, then `test:e2e`).
 
-- [ ] **Step 10: Tear down and commit**
+- [x] **Step 10: Tear down and commit**
 
 ```bash
 docker compose -f docker-compose.test.yml down -v
@@ -496,7 +496,7 @@ Give every spec a way to seed its own data through the services' public APIs, an
   - `seedAuction(adminToken: string, lotId: string, overrides?: Partial<AuctionSeed>): Promise<{ auctionId: string }>`.
   - `uniqueSuffix(): string` — collision-free per-spec identifier (uses a module counter + pid, **not** `Math.random`/`Date.now` at import time).
 
-- [ ] **Step 1: Write `tests/e2e/support/env.ts`**
+- [x] **Step 1: Write `tests/e2e/support/env.ts`**
 
 ```typescript
 export const SERVICE_URLS = {
@@ -521,7 +521,7 @@ export function uniqueSuffix(): string {
 }
 ```
 
-- [ ] **Step 2: Read the real request/response shapes before writing `seed.ts`**
+- [x] **Step 2: Read the real request/response shapes before writing `seed.ts`**
 
 Run:
 ```bash
@@ -531,7 +531,7 @@ sed -n '123,160p' apps/auction-engine/src/presentation/auction-router.ts
 ```
 Read: the exact JSON body each endpoint expects, the success envelope (`{ data }`), and how email-verification + phone-OTP tokens are surfaced in `NODE_ENV=test` (returned in the response, or must be read from DB). Match `seed.ts` to what you find — **do not** assume field names.
 
-- [ ] **Step 3: Write `tests/e2e/support/seed.ts`**
+- [x] **Step 3: Write `tests/e2e/support/seed.ts`**
 
 Use the shapes confirmed in Step 2. Skeleton to fill in (replace the `/* from Step 2 */` markers with verified field names/token retrieval):
 
@@ -631,7 +631,7 @@ async function promoteToAdmin(userId: string): Promise<void> {
 ```
 If any token cannot be retrieved in test mode without a service change, **stop and report it as a product-testability gap** — do not add a service code path (Global Constraints).
 
-- [ ] **Step 4: Write the portal lifecycle `tests/e2e/global-setup.ts`**
+- [x] **Step 4: Write the portal lifecycle `tests/e2e/global-setup.ts`**
 
 Playwright runs `globalSetup` once before all specs; the returned function runs once after (this is where `SIGTERM` fires and server coverage flushes).
 
@@ -669,11 +669,11 @@ export default async function globalSetup(_config: FullConfig) {
 }
 ```
 
-- [ ] **Step 5: Register `globalSetup` in `tests/e2e/playwright.config.ts`**
+- [x] **Step 5: Register `globalSetup` in `tests/e2e/playwright.config.ts`**
 
 Add to the config object: `globalSetup: './global-setup.ts',`.
 
-- [ ] **Step 6: Verify seeding compiles and one seed round-trips against the live stack**
+- [x] **Step 6: Verify seeding compiles and one seed round-trips against the live stack**
 
 Run:
 ```bash
@@ -683,7 +683,7 @@ node --experimental-strip-types -e "import('./tests/e2e/support/seed.ts').then(a
 ```
 Expected: `tsc --noEmit` passes; the script prints a seeded lot id (proves register → verify → promote → create-lot works against real services).
 
-- [ ] **Step 7: Tear down and commit**
+- [x] **Step 7: Tear down and commit**
 
 ```bash
 docker compose -f docker-compose.test.yml down -v
@@ -705,7 +705,7 @@ Register → verify email → login → session refresh. Covers `login-client.ts
 - Produces: `export const test` (extended Playwright test that starts client coverage in a `page` fixture and flushes it on teardown into `CLIENT_COVERAGE_DIR`) and `export { expect }`. Flows 2–5 import both from `../support/fixtures`.
 - Consumes: `collectClientCoverage` (Task 4), `registerAndVerifyUser` (Task 5).
 
-- [ ] **Step 1: Write the coverage fixture `tests/e2e/support/fixtures.ts`**
+- [x] **Step 1: Write the coverage fixture `tests/e2e/support/fixtures.ts`**
 
 ```typescript
 import { test as base, expect } from '@playwright/test';
@@ -729,7 +729,7 @@ export const test = base.extend<{ coveredPage: void }>({
 export { expect };
 ```
 
-- [ ] **Step 2: Write the failing auth spec `tests/e2e/specs/auth.spec.ts`**
+- [x] **Step 2: Write the failing auth spec `tests/e2e/specs/auth.spec.ts`**
 
 ```typescript
 import { test, expect } from '../support/fixtures';
@@ -750,12 +750,12 @@ test('register, verify email, log in and refresh the session', async ({ page }) 
 });
 ```
 
-- [ ] **Step 3: Run against the live stack, confirm it exercises the real flow**
+- [x] **Step 3: Run against the live stack, confirm it exercises the real flow**
 
 Run: `pnpm --filter @carat-room/e2e test:e2e specs/auth.spec.ts` (stack up + portal via globalSetup).
 Expected: PASS. If the login selectors do not match, open `apps/user-portal/src/**/login-client.tsx` and align selectors to the real labels/roles — **do not** loosen the assertion to make a broken flow pass (that is the bug class this suite exists to catch).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/e2e/support/fixtures.ts tests/e2e/specs/auth.spec.ts
@@ -774,12 +774,12 @@ Identity-document upload → card authorisation with a Stripe test key. Covers t
 **Interfaces:**
 - Consumes: `test`/`expect` (Task 6), `registerAndVerifyUser`, `verifyPhone` (Task 5).
 
-- [ ] **Step 1: Confirm the wizard route and step markup**
+- [x] **Step 1: Confirm the wizard route and step markup**
 
 Run: `grep -rEn "register-to-bid|identity-document|stripe|CardElement|PaymentElement" apps/user-portal/src --include='*.tsx' | head`
 Read the wizard's route path and the DOM hooks (step headings, file input, submit button) so the spec targets real elements.
 
-- [ ] **Step 2: Write the failing spec `tests/e2e/specs/register-to-bid.spec.ts`**
+- [x] **Step 2: Write the failing spec `tests/e2e/specs/register-to-bid.spec.ts`**
 
 ```typescript
 import { test, expect } from '../support/fixtures';
@@ -810,12 +810,12 @@ test('complete register-to-bid: identity document then card authorisation', asyn
 });
 ```
 
-- [ ] **Step 3: Run and align selectors to the real wizard**
+- [x] **Step 3: Run and align selectors to the real wizard**
 
 Run: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY pnpm --filter @carat-room/e2e test:e2e specs/register-to-bid.spec.ts`
 Expected: PASS (card step runs when the key is present, skips with a notice otherwise).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/e2e/specs/register-to-bid.spec.ts
@@ -834,12 +834,12 @@ Auctions list → lot detail → live SSE updates → place a bid. Covers `lot-d
 **Interfaces:**
 - Consumes: `test`/`expect`, `registerAndVerifyUser`, `verifyPhone`, `seedLot`, `seedAuction`.
 
-- [ ] **Step 1: Confirm the auctions/lot routes and the SSE hook**
+- [x] **Step 1: Confirm the auctions/lot routes and the SSE hook**
 
 Run: `grep -rEn "auctions/\[auctionId\]|lots/\[lotId\]|use-lot-sse|place.*bid|EventSource" apps/user-portal/src --include='*.tsx' | head`
 Note the lot-detail URL shape and the bid-submit control.
 
-- [ ] **Step 2: Write the failing spec `tests/e2e/specs/browse-and-bid.spec.ts`**
+- [x] **Step 2: Write the failing spec `tests/e2e/specs/browse-and-bid.spec.ts`**
 
 ```typescript
 import { test, expect } from '../support/fixtures';
@@ -873,12 +873,12 @@ test('browse to a lot, receive SSE updates and place a bid', async ({ page }) =>
 });
 ```
 
-- [ ] **Step 3: Run and align to the real lot-detail UI**
+- [x] **Step 3: Run and align to the real lot-detail UI**
 
 Run: `pnpm --filter @carat-room/e2e test:e2e specs/browse-and-bid.spec.ts`
 Expected: PASS, including the SSE-driven "highest bidder" update. If the bid is rejected by a business rule (e.g. increment), fix the seed values in Step 2, not the assertion.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/e2e/specs/browse-and-bid.spec.ts
@@ -899,12 +899,12 @@ Won-lot invoice page → Stripe Checkout redirect, asserting the redirect URL wi
 - Consumes: seeding helpers; needs an invoice to exist. An invoice is created by the payment service reacting to `auction.closed`. Prefer driving a real auction close; if closing an auction on demand has no public trigger, seed a won lot via the fastest real path confirmed in Step 1.
 - Produces: `closeAuctionAndAwaitInvoice(adminToken: string, lotId: string, winnerUserId: string): Promise<{ invoiceId: string }>` in `seed.ts`.
 
-- [ ] **Step 1: Determine how an invoice comes to exist for a user**
+- [x] **Step 1: Determine how an invoice comes to exist for a user**
 
 Run: `grep -rEn "invoice|auction.closed|payment.invoice.created" apps/payment/src apps/auction-engine/src | grep -iE "created|close|consume|handler" | head`
 Establish the real chain: how to close an auction so `payment` issues an invoice, and the invoice-list endpoint the portal reads. Record the shortest real trigger.
 
-- [ ] **Step 2: Write the failing spec `tests/e2e/specs/invoice-checkout.spec.ts`**
+- [x] **Step 2: Write the failing spec `tests/e2e/specs/invoice-checkout.spec.ts`**
 
 ```typescript
 import { test, expect } from '../support/fixtures';
@@ -943,12 +943,12 @@ test('view a won-lot invoice and start Stripe checkout', async ({ page }) => {
 });
 ```
 
-- [ ] **Step 3: Run — do not complete payment, only assert the redirect starts**
+- [x] **Step 3: Run — do not complete payment, only assert the redirect starts**
 
 Run: `pnpm --filter @carat-room/e2e test:e2e specs/invoice-checkout.spec.ts`
 Expected: PASS. The Checkout redirect URL is asserted; payment is never completed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/e2e/specs/invoice-checkout.spec.ts tests/e2e/support/seed.ts
@@ -969,12 +969,12 @@ Choose shipping address, choose collection slot. Covers `account/fulfilments/[id
 - Consumes: seeding helpers; a fulfilment record follows a paid invoice / closed auction. Confirm the real trigger in Step 1.
 - Produces: `seedFulfilmentForUser(user: Awaited<ReturnType<typeof registerAndVerifyUser>>): Promise<{ fulfilmentId: string }>` in `seed.ts`.
 
-- [ ] **Step 1: Determine how a fulfilment record is created and listed**
+- [x] **Step 1: Determine how a fulfilment record is created and listed**
 
 Run: `grep -rEn "fulfilment|collection.slot|address|shipping.item" apps/shipping/src | grep -iE "created|consume|handler|route" | head`
 Record how a fulfilment id becomes available to the winning user and the collection-slot options endpoint.
 
-- [ ] **Step 2: Write the failing spec `tests/e2e/specs/fulfilment.spec.ts`**
+- [x] **Step 2: Write the failing spec `tests/e2e/specs/fulfilment.spec.ts`**
 
 ```typescript
 import { test, expect } from '../support/fixtures';
@@ -1005,12 +1005,12 @@ test('choose a shipping address then switch to a collection slot', async ({ page
 });
 ```
 
-- [ ] **Step 3: Run and align to the real fulfilment page**
+- [x] **Step 3: Run and align to the real fulfilment page**
 
 Run: `pnpm --filter @carat-room/e2e test:e2e specs/fulfilment.spec.ts`
 Expected: PASS for both the address and collection-slot branches.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/e2e/specs/fulfilment.spec.ts tests/e2e/support/seed.ts
@@ -1032,7 +1032,7 @@ Finalise the lcov builder to emit `tests/e2e/coverage/user-portal/lcov.info` (an
 - Consumes: server V8 dump dir `/tmp/e2e-cov/user-portal/server` and client dir `/tmp/e2e-cov/user-portal/client` (from Tasks 5 & 6).
 - Produces: `tests/e2e/coverage/user-portal/lcov.info` with `SF:` lines rooted at `apps/user-portal/src/**`.
 
-- [ ] **Step 1: Generalise `build-lcov.mjs` to take a portal name**
+- [x] **Step 1: Generalise `build-lcov.mjs` to take a portal name**
 
 ```javascript
 import { CoverageReport } from 'monocart-coverage-reports';
@@ -1061,7 +1061,7 @@ if (mapped.length === 0) {
 }
 ```
 
-- [ ] **Step 2: Run the full suite once and build the lcov**
+- [x] **Step 2: Run the full suite once and build the lcov**
 
 Run:
 ```bash
@@ -1073,12 +1073,12 @@ PORTAL=user-portal pnpm --filter @carat-room/e2e coverage:report
 ```
 Expected: suite passes; "[user-portal] mapped src files: N" with N covering the flow targets.
 
-- [ ] **Step 3: Confirm the invoice page (largest cluster) appears covered**
+- [x] **Step 3: Confirm the invoice page (largest cluster) appears covered**
 
 Run: `grep -E 'SF:.*account/invoices/\[id\]/page' tests/e2e/coverage/user-portal/lcov.info`
 Expected: an `SF:` line present, with non-zero `DA:` hits following it.
 
-- [ ] **Step 4: Append the E2E lcov paths to `sonar-project.properties`**
+- [x] **Step 4: Append the E2E lcov paths to `sonar-project.properties`**
 
 Edit the `sonar.javascript.lcov.reportPaths` line to:
 ```properties
@@ -1086,11 +1086,11 @@ sonar.javascript.lcov.reportPaths=apps/*/coverage/lcov.info,packages/*/coverage/
 ```
 (Keep the admin-portal path even if no admin flow exists yet — Sonar ignores a missing report path with a warning, and it is ready when an admin flow is added.)
 
-- [ ] **Step 5: Ensure generated coverage is not committed as a source**
+- [x] **Step 5: Ensure generated coverage is not committed as a source**
 
 Add `tests/e2e/coverage/` and `tests/e2e/test-results/` and `tests/e2e/playwright-report/` to `.gitignore` (create/append). Confirm: `git check-ignore tests/e2e/coverage/user-portal/lcov.info` prints the path.
 
-- [ ] **Step 6: Tear down and commit**
+- [x] **Step 6: Tear down and commit**
 
 ```bash
 docker compose -f docker-compose.test.yml down -v
@@ -1110,7 +1110,7 @@ Insert the E2E steps between `pnpm turbo test` and the SonarCloud scan, in the s
 **Interfaces:**
 - Consumes: the boot commands from Task 2, the `test:e2e` + `coverage:report` scripts, and the env vars from Task 5's `globalSetup`.
 
-- [ ] **Step 1: Add the E2E steps to the `ci` job**
+- [x] **Step 1: Add the E2E steps to the `ci` job**
 
 Insert after the `- run: pnpm turbo test` step and before the `SonarCloud Scan` step:
 
@@ -1169,21 +1169,21 @@ Insert after the `- run: pnpm turbo test` step and before the `SonarCloud Scan` 
 ```
 The portal itself is started by Playwright's `globalSetup` (Task 5) using the `.next` build from the earlier `pnpm turbo build` step — no separate portal step needed. The SonarCloud step is unchanged; it now finds the extra lcov via the Task 11 `reportPaths`.
 
-- [ ] **Step 2: Add `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as a repo secret (manual prerequisite)**
+- [x] **Step 2: Add `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as a repo secret (manual prerequisite)**
 
 Document in `tests/e2e/README.md` that this secret must exist (same pattern as `SONAR_TOKEN`, `STRIPE_SECRET_KEY`). Without it, Flow 2's card step self-skips — the job still passes.
 
-- [ ] **Step 3: Validate the workflow YAML**
+- [x] **Step 3: Validate the workflow YAML**
 
 Run: `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/ci.yml')); print('ci.yml valid')"`
 Expected: `ci.yml valid`.
 
-- [ ] **Step 4: Confirm step order — E2E before Sonar, after build/test**
+- [x] **Step 4: Confirm step order — E2E before Sonar, after build/test**
 
 Run: `grep -nE 'pnpm turbo build|pnpm turbo test|Run E2E suite|SonarCloud Scan' .github/workflows/ci.yml`
 Expected: line numbers ascend in the order build → test → E2E → Sonar.
 
-- [ ] **Step 5: Commit and push to trigger CI**
+- [x] **Step 5: Commit and push to trigger CI**
 
 ```bash
 git add .github/workflows/ci.yml tests/e2e/README.md
@@ -1191,7 +1191,7 @@ git commit -m "ci: run Playwright E2E suite with coverage before SonarCloud scan
 git push
 ```
 
-- [ ] **Step 6: Watch the CI run end-to-end**
+- [x] **Step 6: Watch the CI run end-to-end**
 
 Run: `gh run watch $(gh run list --branch $(git branch --show-current) --limit 1 --json databaseId -q '.[0].databaseId')`
 Expected: the `ci` job is green including the E2E step. If the E2E step fails, it fails the job before Sonar runs (exactly like a unit-test failure) — download the `e2e-report` artifact to diagnose.
@@ -1210,7 +1210,7 @@ Cover the files E2E through the portals cannot reach. Each extends an existing c
 - `apps/admin-portal/src/components/image-uploader.test.tsx` — error branches (7 lines)
 - `apps/admin-portal/src/app/admin/lots/[id]/page.test.tsx` — (3 lines) [Create if absent]
 
-- [ ] **Step 1: Read each target to find the exact uncovered branches**
+- [x] **Step 1: Read each target to find the exact uncovered branches**
 
 Run:
 ```bash
@@ -1219,7 +1219,7 @@ sed -n '55,80p' apps/catalogue/src/presentation/catalogue-router.ts
 ```
 Identify the specific untested export/branch in each (e.g. the error path in `image-uploader.tsx`, the fallback branch in `auction.ts`).
 
-- [ ] **Step 2: For each file — write the failing test, run it red, implement nothing (code exists), run green**
+- [x] **Step 2: For each file — write the failing test, run it red, implement nothing (code exists), run green**
 
 The code already exists; these are coverage tests, so the cycle is: write test → run → it should pass (or reveal a genuine bug). Example for `jwt.ts` (adapt to the real signature found in Step 1):
 
@@ -1235,7 +1235,7 @@ describe('decodeJwtPayload', () => {
 ```
 Repeat per file, targeting the specific uncovered branch. Follow Arrange/Act/Assert with blank-line separation and `should_..._when_...` naming.
 
-- [ ] **Step 3: Run each package's tests with coverage and confirm the target lines are hit**
+- [x] **Step 3: Run each package's tests with coverage and confirm the target lines are hit**
 
 Run (per package):
 ```bash
@@ -1246,7 +1246,7 @@ pnpm --filter admin-portal test
 ```
 Expected: all pass. Spot-check one lcov: `grep -A2 'jwt.ts' apps/user-portal/coverage/lcov.info` shows the previously-zero lines now hit.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/shared-types apps/catalogue apps/user-portal apps/admin-portal
@@ -1264,7 +1264,7 @@ Finish `tests/e2e/README.md` and confirm the gate is green.
 - Modify: `CLAUDE.md` (add the two E2E run commands under Key Commands)
 - Modify: `docs/superpowers/SESSION-SUMMARY.md` (mark the coverage-gap work status)
 
-- [ ] **Step 1: Document the two-command local run**
+- [x] **Step 1: Document the two-command local run**
 
 `tests/e2e/README.md` must state exactly:
 ```bash
@@ -1273,11 +1273,11 @@ pnpm --filter @carat-room/e2e test:e2e
 ```
 plus the coverage mode chosen in Task 4, the env vars, and the `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` secret note.
 
-- [ ] **Step 2: Add the commands to `CLAUDE.md` Key Commands**
+- [x] **Step 2: Add the commands to `CLAUDE.md` Key Commands**
 
 Append an "E2E (Playwright, coverage)" subsection mirroring the README two commands.
 
-- [ ] **Step 3: Verify the full local pipeline once, exactly as CI runs it**
+- [x] **Step 3: Verify the full local pipeline once, exactly as CI runs it**
 
 Run:
 ```bash
@@ -1290,11 +1290,11 @@ docker compose -f docker-compose.test.yml down -v
 ```
 Expected: every step green; `tests/e2e/coverage/user-portal/lcov.info` produced.
 
-- [ ] **Step 4: Confirm the SonarCloud Quality Gate on `main`**
+- [x] **Step 4: Confirm the SonarCloud Quality Gate on `main`**
 
 After the CI run on `main` completes, check the gate. Expected: all six conditions OK and `new_coverage ≥ 80%` (projected ~95% per the spec line budget). If still short, read the SonarCloud `measures/component_tree` breakdown for the remaining uncovered new lines and map each to the flow/unit test that should have hit it — do not add exclusions to mask genuinely untested code.
 
-- [ ] **Step 5: Mark the plan complete and commit the status update**
+- [x] **Step 5: Mark the plan complete and commit the status update**
 
 Update `docs/superpowers/SESSION-SUMMARY.md`, then:
 ```bash
