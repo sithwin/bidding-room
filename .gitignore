@@ -13,3 +13,11 @@ test-results/
 *.tsbuildinfo
 .superpowers/
 .worktrees/
+
+# E2E test artefacts (tests/e2e) — already caught by the generic coverage/
+# and test-results/ entries above, but listed explicitly per the coverage-gap
+# E2E plan (Task 11) so the intent is clear even if those generic entries
+# are ever narrowed.
+tests/e2e/coverage/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
