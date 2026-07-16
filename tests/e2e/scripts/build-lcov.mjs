@@ -40,8 +40,10 @@ const entryRoot = `apps/${portal}`;
 // torn down - which it always has been by the time this script runs, since `pnpm test:e2e`'s
 // Playwright globalTeardown stops the portal at the end of that separate, earlier step. Read these
 // external maps straight from the .next build output on disk instead, sidestepping the ordering
-// dependency entirely; fall back to the default (HTTP) resolver for anything else (e.g. inline
-// sourcemaps, which the default resolver already handles as a rejected/no-op request here).
+// dependency entirely. Inline sourcemaps never reach this resolver at all (monocart resolves those
+// earlier, from the source's own inline data-URI comment); the fallback below only covers non-
+// `/_next/` external maps and genuine read failures (e.g. a missing/corrupt .map on disk), for
+// which the default (HTTP) resolver is the same behaviour this script had before this fix.
 const nextBuildDir = join('..', '..', 'apps', portal, '.next');
 const sourceMapResolver = async (url, defaultSourceMapResolver) => {
   const markerIndex = url.indexOf(NEXT_STATIC_MARKER);
