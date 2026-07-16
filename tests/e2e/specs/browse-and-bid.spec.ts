@@ -124,7 +124,7 @@ test('browse to a lot, receive SSE updates and place a bid', async ({ page }) =>
   await page.locator('input[type="email"]').fill(bidder.email);
   await page.locator('input[type="password"]').fill(bidder.password);
   await page.locator('form button[type="submit"]').click();
-  await expect(page).toHaveURL(new RegExp(lotPath.replace(/[/[\]]/g, '\\$&')));
+  await expect(page).toHaveURL(new RegExp(lotPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
   // --- Lot-detail page renders (page.tsx + lot-detail-client.tsx initial render, SSE hook mounts) ---
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

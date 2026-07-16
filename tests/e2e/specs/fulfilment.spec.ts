@@ -57,7 +57,7 @@ test('choose a shipping address for a fulfilment', async ({ page }) => {
   await page.locator('input[type="email"]').fill(user.email);
   await page.locator('input[type="password"]').fill(user.password);
   await page.locator('form button[type="submit"]').click();
-  await expect(page).toHaveURL(new RegExp(fulfilmentPath.replace(/[/[\]]/g, '\\$&')));
+  await expect(page).toHaveURL(new RegExp(fulfilmentPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
   // "Ship to me" is the default-selected option, so the address form is already visible.
   await expect(page.getByRole('heading', { name: 'Delivery Options' })).toBeVisible();
@@ -90,7 +90,7 @@ test('book a collection slot for a fulfilment', async ({ page }) => {
   await page.locator('input[type="email"]').fill(user.email);
   await page.locator('input[type="password"]').fill(user.password);
   await page.locator('form button[type="submit"]').click();
-  await expect(page).toHaveURL(new RegExp(fulfilmentPath.replace(/[/[\]]/g, '\\$&')));
+  await expect(page).toHaveURL(new RegExp(fulfilmentPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
   await page.getByRole('button', { name: 'Collect in person' }).click();
 

@@ -85,7 +85,7 @@ test('view a won-lot invoice and start Stripe checkout', async ({ page }) => {
   await page.locator('input[type="email"]').fill(winner.email);
   await page.locator('input[type="password"]').fill(winner.password);
   await page.locator('form button[type="submit"]').click();
-  await expect(page).toHaveURL(new RegExp(`/account/invoices/${invoiceId}`.replace(/[/[\]]/g, '\\$&')));
+  await expect(page).toHaveURL(new RegExp(`/account/invoices/${invoiceId}`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
   // AccountShell's nav also contains an "Invoices & Payments" link, so a loose /invoice/i text locator
   // is ambiguous (Playwright strict mode) — target the page's own h1 specifically.
