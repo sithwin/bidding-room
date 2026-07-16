@@ -34,8 +34,73 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo build
+      - name: Rebuild user-portal with real service URLs
+        # pnpm turbo build (above) runs with no *_SERVICE_URL vars set, so
+        # Next.js's `env:` key in next.config.mjs bakes AUCTION_ENGINE_URL's
+        # Docker-only fallback (http://auction-engine:3003) and the other
+        # *_SERVICE_URL / NEXT_PUBLIC_* vars into the compiled .next bundle.
+        # Setting them later at `next start` has no effect. Rebuild the
+        # portal directly (not via `pnpm turbo build --filter=...`, which
+        # strips unallowlisted env vars under Turborepo strict mode) with
+        # the final CI-runtime URLs so they're inlined correctly.
+        run: pnpm --filter user-portal build
+        env:
+          USER_SERVICE_URL: http://localhost:3001
+          CATALOGUE_SERVICE_URL: http://localhost:3002
+          AUCTION_ENGINE_URL: http://localhost:3003
+          PAYMENT_SERVICE_URL: http://localhost:3004
+          SHIPPING_SERVICE_URL: http://localhost:3006
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
       - run: pnpm lint
       - run: pnpm turbo test
+      - name: Start test stack
+        run: docker compose -f docker-compose.test.yml up -d --build
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      - name: Wait for services to be healthy
+        run: |
+          timeout 180 bash -c '
+            while docker compose -f docker-compose.test.yml ps --format json |
+              jq -r "select(.Health != \"healthy\" and .Health != \"\") | .Service" | grep -q .; do
+              sleep 5
+            done'
+          sleep 10
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright Chromium
+        run: pnpm --filter @carat-room/e2e exec playwright install --with-deps chromium
+      - name: Run E2E suite with coverage
+        run: pnpm --filter @carat-room/e2e test:e2e
+        env:
+          USER_SERVICE_URL: http://localhost:3001
+          CATALOGUE_SERVICE_URL: http://localhost:3002
+          AUCTION_ENGINE_URL: http://localhost:3003
+          PAYMENT_SERVICE_URL: http://localhost:3004
+          SHIPPING_SERVICE_URL: http://localhost:3006
+          # NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not needed here: it's a
+          # NEXT_PUBLIC_* var, inlined at build time by the "Rebuild
+          # user-portal with real service URLs" step above; setting it here
+          # would have no effect on the already-compiled bundle `next start`
+          # serves.
+          SEED_USER_DB_URL: postgresql://carat:carat_test@localhost:5433/user_test
+      - name: Build E2E lcov
+        run: PORTAL=user-portal pnpm --filter @carat-room/e2e coverage:report
+      - name: Upload E2E artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            tests/e2e/playwright-report
+            tests/e2e/test-results
+          retention-days: 3
+      - name: Tear down test stack
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
       - name: SonarCloud Scan
         if: (success() || failure()) && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
         uses: SonarSource/sonarqube-scan-action@v6

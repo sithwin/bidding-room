@@ -102,6 +102,24 @@ port 3006: {"status":"ok","service":"shipping"}
 docker compose -f docker-compose.test.yml down -v
 ```
 
+## CI wiring (Task 12)
+
+The `ci` job in `.github/workflows/ci.yml` runs the full E2E suite (with
+coverage) between `pnpm turbo test` and the SonarCloud scan step, so a
+failing E2E spec fails the job before Sonar runs — the same pattern
+`integration-tests.yml` already uses for `STRIPE_SECRET_KEY` /
+`STRIPE_WEBHOOK_SECRET`.
+
+**Required repo secret:** `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` must be added
+under repo Settings -> Secrets and variables -> Actions, alongside the
+existing `SONAR_TOKEN`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET`
+secrets. It is passed to the `Run E2E suite with coverage` step and forwarded
+by `global-setup.ts` into the host-launched user-portal's environment. If the
+secret is absent, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` resolves to an empty
+string, `lot-detail-client.tsx`'s Stripe card step in Flow 2 self-skips, and
+the CI job still passes — it is not required for the suite to succeed, only
+for that one card-entry step to actually exercise Stripe Elements.
+
 ## Fixes required to get the stack booting (Task 2)
 
 The backend service Dockerfiles (`catalogue`, `user-auth`, `auction-engine`,
