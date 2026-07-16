@@ -60,6 +60,8 @@ const router = createAuctionRouter({
   scheduleAuctionHandler: mockScheduleAuction,
   sseBroadcaster: mockBroadcaster,
   jwtPublicKey: 'test-public-key',
+  defaultRateLimit: (c, next) => next(),
+  bidRateLimit: (c, next) => next(),
 });
 
 // authMiddleware(...) is invoked once per route at router-construction time (above), not
@@ -370,6 +372,47 @@ describe('POST /api/auctions', () => {
     const body = apiErrorSchema.parse(await res.json());
     expect(body.error.code).toBe('VALIDATION_ERROR');
     expect(mockScheduleAuction.execute).not.toHaveBeenCalled();
+  });
+});
+
+describe('bid rate limiter route scope', () => {
+  // Regression test for the fact that `app.use('/api/auctions/:lotId/bids', deps.bidRateLimit)`
+  // is registered between the GET and POST bid handlers in auction-router.ts. Hono only applies
+  // middleware to routes registered after it, so this pins that only POST (bid submission) is
+  // rate-limited, not GET (bid history) — even when the limiter itself would reject everything.
+  const alwaysOverLimit = (c: any) => c.json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } }, 429);
+
+  const routerWithBidLimiterAlwaysOverLimit = createAuctionRouter({
+    getActiveLots: mockGetActiveLots,
+    getLotStatus: mockGetLotStatus,
+    getBidHistory: mockGetBidHistory,
+    getDashboardStats: mockGetDashboardStats,
+    getAuctionResults: mockGetAuctionResults,
+    getUnsoldLots: mockGetUnsoldLots,
+    placeBidHandler: mockPlaceBid,
+    scheduleAuctionHandler: mockScheduleAuction,
+    sseBroadcaster: mockBroadcaster,
+    jwtPublicKey: 'test-public-key',
+    defaultRateLimit: (c, next) => next(),
+    bidRateLimit: alwaysOverLimit,
+  });
+
+  it('should_return200ForBidHistory_when_bidRateLimiterIsOverLimit', async () => {
+    vi.mocked(mockGetBidHistory.execute).mockResolvedValue({ bids: [], total: 0 });
+
+    const res = await routerWithBidLimiterAlwaysOverLimit.request('/api/auctions/lot-1/bids');
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should_return429ForBidSubmission_when_bidRateLimiterIsOverLimit', async () => {
+    const res = await routerWithBidLimiterAlwaysOverLimit.request('/api/auctions/lot-1/bids', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+      body: JSON.stringify({ amount: 300 }),
+    });
+
+    expect(res.status).toBe(429);
   });
 });
 

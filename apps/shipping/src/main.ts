@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import Redis from 'ioredis';
 import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db/db';
 import { PostgresFulfilmentRepository } from './infrastructure/db/postgres-fulfilment-repository';
@@ -13,6 +14,7 @@ import { GetFulfilmentUseCase } from './application/get-fulfilment.use-case';
 import { ListFulfilmentsUseCase } from './application/list-fulfilments.use-case';
 import { PaymentReceivedHandler } from './infrastructure/events/payment-received-handler';
 import { buildShippingRouter } from './presentation/shipping-router';
+import { buildShippingRateLimits } from './presentation/rate-limits';
 import { createAmqpConnection, EventSubscriber } from '@carat-room/shared-events';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
 import { PaymentReceivedPayload } from '@carat-room/shared-types';
@@ -54,9 +56,17 @@ async function main(): Promise<void> {
     'payment.received',
   );
 
+  const redis = new Redis({
+    host: process.env.REDIS_HOST ?? 'localhost',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+  });
+  const rateLimits = buildShippingRateLimits(redis);
+
   const app = new Hono<AppEnv>();
 
   app.get('/health', (c) => c.json({ status: 'ok', service: 'shipping' }));
+
+  app.use('*', rateLimits.default);
 
   app.use('/api/*', authMiddleware(jwtPublicKey));
   app.route('/api/shipping', buildShippingRouter({

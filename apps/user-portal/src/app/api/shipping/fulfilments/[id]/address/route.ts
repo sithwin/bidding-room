@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SHIPPING_SERVICE_URL } from '@/lib/service-config';
+import { SHIPPING_SERVICE_URL, forwardedForHeader } from '@/lib/service-config';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json();
   const res = await fetch(`${SHIPPING_SERVICE_URL}/api/shipping/fulfilments/${id}/choose-ship`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: auth },
+    headers: { 'Content-Type': 'application/json', Authorization: auth, ...forwardedForHeader(request) },
     body: JSON.stringify(body),
   });
   return NextResponse.json(await res.json(), { status: res.status });

@@ -17,3 +17,19 @@ export const REFRESH_COOKIE = 'carat_refresh';
  * as gap G5 in the Phase 2 plan) — this constant is portal copy, not data.
  */
 export const DISPLAY_CURRENCY = 'AUD';
+
+/**
+ * Every downstream service rate-limits per client IP (extractClientIp reads
+ * `x-forwarded-for`). This portal is itself a server-side proxy in front of
+ * those services, so without forwarding the header on, every real visitor's
+ * request collapses into a single IP bucket — the portal's own. Nginx sets
+ * this header for us; pass it straight through unmodified.
+ *
+ * Accepts either a Route Handler's `Request` or a Server Component's
+ * `headers()` (from `next/headers`) directly.
+ */
+export function forwardedForHeader(source: Request | Headers): Record<string, string> {
+  const requestHeaders = 'headers' in source ? source.headers : source;
+  const forwardedFor = requestHeaders.get('x-forwarded-for');
+  return forwardedFor ? { 'X-Forwarded-For': forwardedFor } : {};
+}

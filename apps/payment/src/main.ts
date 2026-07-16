@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { Worker } from 'bullmq';
+import Redis from 'ioredis';
 import { createAmqpConnection, EventPublisher, EventSubscriber } from '@carat-room/shared-events';
 import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
@@ -25,6 +26,7 @@ import { GetRevenueReportUseCase } from './application/get-revenue-report-use-ca
 import { GetPendingInvoiceCountUseCase } from './application/get-pending-invoice-count-use-case';
 import { PostgresPaymentProfileRepository } from './infrastructure/postgres-payment-profile-repository';
 import { buildPaymentRouter } from './presentation/payment-router';
+import { buildPaymentRateLimits } from './presentation/rate-limits';
 
 const PORT = Number(process.env['PORT'] ?? 3004);
 const DATABASE_URL = process.env['DATABASE_URL']!;
@@ -46,6 +48,8 @@ async function main(): Promise<void> {
   const stripeAdapter = new StripeAdapter(STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET);
   const redis = { host: REDIS_HOST, port: REDIS_PORT };
   const expiryScheduler = new BullMQExpiryScheduler(redis);
+  const redisClient = new Redis(redis);
+  const rateLimits = buildPaymentRateLimits(redisClient);
 
   const amqp = await createAmqpConnection(RABBITMQ_URL);
   const eventPublisher = new EventPublisher(amqp);
@@ -91,6 +95,14 @@ async function main(): Promise<void> {
 
   const app = new Hono();
   app.get('/health', (c) => c.json({ status: 'ok', service: 'payment' }));
+  // Default tier only — Stripe webhook (POST /api/payments/webhooks/stripe)
+  // is deliberately excluded from every mount below (C19).
+  app.use('/api/payments/invoices', rateLimits.default);
+  app.use('/api/payments/invoices/*', rateLimits.default);
+  app.use('/api/payments/reports/*', rateLimits.default);
+  app.use('/api/payments/setup-intent', rateLimits.default);
+  app.use('/api/payments/setup-intent/*', rateLimits.default);
+  app.use('/api/payments/profile', rateLimits.default);
   app.route('/', buildPaymentRouter({
     getInvoice: getInvoiceUseCase,
     listInvoices: listInvoicesUseCase,

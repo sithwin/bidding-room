@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { AUCTION_ENGINE_URL } from '@/lib/service-config';
+import { AUCTION_ENGINE_URL, forwardedForHeader } from '@/lib/service-config';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { lotId } = await params;
   const upstream = await fetch(`${AUCTION_ENGINE_URL}/api/auctions/${lotId}/stream`, {
-    headers: { Accept: 'text/event-stream' },
+    headers: { Accept: 'text/event-stream', ...forwardedForHeader(request) },
     signal: request.signal,
   });
 

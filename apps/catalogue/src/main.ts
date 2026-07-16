@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import Redis from 'ioredis';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
 import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
@@ -28,6 +29,7 @@ import { PostgresAuctionRepository } from './infrastructure/postgres-auction-rep
 import { PostgresFacetRepository } from './infrastructure/postgres-facet-repository';
 import { CategoryHasLotsError, CategoryNotFoundError, CategorySlugConflictError, LotNotFoundError } from './domain/errors';
 import { LotCondition } from './domain/lot';
+import { buildCatalogueRateLimits } from './presentation/rate-limits';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
@@ -67,9 +69,17 @@ const useCases = {
   deleteCategory: new DeleteCategoryUseCase(categoryRepository),
 };
 
+const redis = new Redis({
+  host: process.env.REDIS_HOST ?? 'localhost',
+  port: Number(process.env.REDIS_PORT ?? 6379),
+});
+const rateLimits = buildCatalogueRateLimits(redis);
+
 const app = new Hono<AppEnv>();
 
 app.get('/health', c => c.json({ status: 'ok', service: 'catalogue' }));
+
+app.use('*', rateLimits.default);
 
 app.use('/api/lots/:id/images/*', authMiddleware(jwtPublicKey));
 app.post('/api/lots', authMiddleware(jwtPublicKey, { adminOnly: true }), async c => {

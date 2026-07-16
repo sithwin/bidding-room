@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
+import Redis from 'ioredis';
 import { createPostgresClient } from './infrastructure/db/postgres-client.js';
 import { PostgresNotificationRepository } from './infrastructure/db/postgres-notification-repository.js';
 import { LogNotificationUseCase } from './application/log-notification.use-case.js';
@@ -7,6 +8,7 @@ import { ResendEmailSender } from './infrastructure/email/resend-email-sender.js
 import { TwilioSmsSender } from './infrastructure/sms/twilio-sms-sender.js';
 import { startNotificationSubscribers } from './infrastructure/subscribers/notification-subscribers.js';
 import { healthRouter } from './presentation/health-router.js';
+import { buildNotificationRateLimits } from './presentation/rate-limits.js';
 
 const PORT = Number(process.env['PORT'] ?? 3005);
 const DATABASE_URL = process.env['DATABASE_URL'] ?? '';
@@ -55,7 +57,14 @@ async function main(): Promise<void> {
     appBaseUrl: APP_BASE_URL,
   });
 
+  const redis = new Redis({
+    host: process.env['REDIS_HOST'] ?? 'localhost',
+    port: Number(process.env['REDIS_PORT'] ?? 6379),
+  });
+  const rateLimits = buildNotificationRateLimits(redis);
+
   const app = new Hono();
+  app.use('*', rateLimits.default);
   app.route('/', healthRouter);
 
   serve({ fetch: app.fetch, port: PORT }, () => {

@@ -14,10 +14,12 @@
     "@carat-room/db-migrate": "workspace:*",
     "@carat-room/shared-auth": "workspace:*",
     "@carat-room/shared-events": "workspace:*",
+    "@carat-room/shared-rate-limit": "workspace:*",
     "@carat-room/shared-types": "workspace:*",
     "@hono/node-server": "^1.12.0",
     "bcrypt": "^5.1.1",
     "hono": "^4.4.0",
+    "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "postgres": "^3.4.4",
     "uuid": "^10.0.0"

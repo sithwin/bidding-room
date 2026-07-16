@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { ADMIN_TOKEN_COOKIE } from '@/lib/auth-cookie';
+import { forwardedForHeader } from '@/lib/forwarded-ip';
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
@@ -24,6 +25,7 @@ async function proxyToAdminService(req: NextRequest, context: RouteContext): Pro
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
+      ...forwardedForHeader(req.headers),
     },
     body,
   });
