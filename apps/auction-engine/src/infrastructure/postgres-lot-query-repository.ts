@@ -5,6 +5,8 @@ import {
   LotQueryRepository,
   LotStatusRow,
   UnsoldLotRow,
+  UserBidRow,
+  UserStats,
 } from '../application/lot-query-repository';
 import { Db } from './db';
 
@@ -130,6 +132,96 @@ export class PostgresLotQueryRepository implements LotQueryRepository {
       SELECT DISTINCT user_id FROM bids WHERE lot_id = ${lotId}
     `;
     return rows.map(r => r['user_id'] as string);
+  }
+
+  async findBidsByUser(
+    userId: string,
+    limit: number,
+    offset: number,
+  ): Promise<{ bids: UserBidRow[]; total: number }> {
+    // One row per lot the user has bid on: their own highest bid on that lot,
+    // plus the lot's current state. "isWinning" is derived from the leading
+    // bid on the lot (highest amount, most recent on ties) belonging to this user —
+    // lot_status only records winner_user_id once a lot has closed.
+    const [rows, countRows] = await Promise.all([
+      this.db`
+        WITH my_bids AS (
+          SELECT lot_id, MAX(amount) AS your_bid, MAX(placed_at) AS your_last_bid_at
+          FROM bids
+          WHERE user_id = ${userId}
+          GROUP BY lot_id
+        ),
+        leading_bids AS (
+          SELECT DISTINCT ON (lot_id) lot_id, user_id AS leading_user_id
+          FROM bids
+          ORDER BY lot_id, amount DESC, placed_at DESC
+        )
+        SELECT
+          mb.lot_id,
+          mb.your_bid,
+          mb.your_last_bid_at,
+          ls.current_highest_bid,
+          ls.status,
+          ls.end_at,
+          (lb.leading_user_id = ${userId}) AS is_winning
+        FROM my_bids mb
+        JOIN lot_status ls ON ls.lot_id = mb.lot_id
+        LEFT JOIN leading_bids lb ON lb.lot_id = mb.lot_id
+        ORDER BY mb.your_last_bid_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `,
+      this.db`
+        SELECT COUNT(DISTINCT lot_id)::int AS total FROM bids WHERE user_id = ${userId}
+      `,
+    ]);
+    return {
+      bids: rows.map(r => ({
+        lotId: r['lot_id'] as string,
+        amount: Number(r['your_bid']),
+        placedAt: r['your_last_bid_at'] as Date,
+        isWinning: r['is_winning'] === true,
+        currentHighestBid: r['current_highest_bid'] != null ? Number(r['current_highest_bid']) : null,
+        status: r['status'] as string,
+        endAt: r['end_at'] as Date,
+      })),
+      total: countRows[0]['total'] as number,
+    };
+  }
+
+  async getUserStats(userId: string): Promise<UserStats> {
+    const [totalBidsRows, activeBidsRows, leadingBidsRows, lotsWonRows] = await Promise.all([
+      this.db`
+        SELECT COUNT(*)::int AS count FROM bids WHERE user_id = ${userId}
+      `,
+      this.db`
+        SELECT COUNT(DISTINCT b.lot_id)::int AS count
+        FROM bids b
+        JOIN lot_status ls ON ls.lot_id = b.lot_id
+        WHERE b.user_id = ${userId} AND ls.status = ANY(${ACTIVE_STATUSES})
+      `,
+      this.db`
+        WITH leading_bids AS (
+          SELECT DISTINCT ON (lot_id) lot_id, user_id AS leading_user_id
+          FROM bids
+          ORDER BY lot_id, amount DESC, placed_at DESC
+        )
+        SELECT COUNT(*)::int AS count
+        FROM leading_bids lb
+        JOIN lot_status ls ON ls.lot_id = lb.lot_id
+        WHERE lb.leading_user_id = ${userId} AND ls.status = ANY(${ACTIVE_STATUSES})
+      `,
+      this.db`
+        SELECT COUNT(*)::int AS count
+        FROM lot_status
+        WHERE winner_user_id = ${userId} AND status = 'SOLD'
+      `,
+    ]);
+    return {
+      totalBids: totalBidsRows[0]['count'] as number,
+      activeBids: activeBidsRows[0]['count'] as number,
+      leadingBids: leadingBidsRows[0]['count'] as number,
+      lotsWon: lotsWonRows[0]['count'] as number,
+    };
   }
 }
 

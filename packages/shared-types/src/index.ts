@@ -57,8 +57,9 @@ export {
   lotStatusListResponseSchema, auctionBidSchema, bidListResponseSchema, placeBidRequestSchema,
   placeBidResponseSchema, scheduleAuctionRequestSchema, scheduleAuctionResponseSchema,
   dashboardStatsResponseSchema, auctionsListQuery, bidHistoryQuery,
+  accountBidSchema, accountBidsResponseSchema, accountStatsResponseSchema, accountBidsQuery,
 } from './api/auction-engine.js';
-export type { AuctionLotStatus, AuctionBid } from './api/auction-engine.js';
+export type { AuctionLotStatus, AuctionBid, AccountBid } from './api/auction-engine.js';
 export {
   invoiceStatusSchema, invoiceSchema, invoiceResponseSchema, invoiceListResponseSchema,
   checkoutRequestSchema, checkoutResponseSchema, extendInvoiceRequestSchema,

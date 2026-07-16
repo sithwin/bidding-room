@@ -18,6 +18,8 @@ import { CancelAuctionCommandHandler } from './application/cancel-auction-handle
 import { CloseAuctionCommandHandler } from './application/close-auction-handler';
 import { GetLotStatusHandler } from './application/get-lot-status-handler';
 import { GetBidHistoryHandler } from './application/get-bid-history-handler';
+import { GetAccountBidsHandler } from './application/get-account-bids-handler';
+import { GetAccountStatsHandler } from './application/get-account-stats-handler';
 import { GetActiveLotsHandler } from './application/get-active-lots-handler';
 import { GetDashboardStatsHandler } from './application/get-dashboard-stats-handler';
 import { GetAuctionResultsHandler } from './application/get-auction-results-handler';
@@ -66,6 +68,8 @@ async function main(): Promise<void> {
   // Query handlers
   const getLotStatusHandler = new GetLotStatusHandler(queryRepository);
   const getBidHistoryHandler = new GetBidHistoryHandler(queryRepository);
+  const getAccountBidsHandler = new GetAccountBidsHandler(queryRepository);
+  const getAccountStatsHandler = new GetAccountStatsHandler(queryRepository);
   const getActiveLotsHandler = new GetActiveLotsHandler(queryRepository);
   const getDashboardStatsHandler = new GetDashboardStatsHandler(queryRepository);
   const getAuctionResultsHandler = new GetAuctionResultsHandler(queryRepository);
@@ -89,6 +93,8 @@ async function main(): Promise<void> {
     getActiveLots: getActiveLotsHandler,
     getLotStatus: getLotStatusHandler,
     getBidHistory: getBidHistoryHandler,
+    getAccountBids: getAccountBidsHandler,
+    getAccountStats: getAccountStatsHandler,
     getDashboardStats: getDashboardStatsHandler,
     getAuctionResults: getAuctionResultsHandler,
     getUnsoldLots: getUnsoldLotsHandler,

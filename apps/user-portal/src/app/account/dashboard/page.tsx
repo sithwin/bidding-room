@@ -1,5 +1,4 @@
 'use client';
-import Image from 'next/image';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
@@ -7,25 +6,26 @@ import { AccountShell } from '@/components/layout/account-shell';
 import { BidStatusBadge } from '@/components/primitives/bid-status-badge';
 import { CountdownTimer } from '@/components/primitives/countdown-timer';
 import { useAuth } from '@/lib/auth-context';
+import { parseAccountBids, parseAccountStats, deriveBidBadgeStatus } from '@/lib/auction';
 
 const fetcher = (url: string, token: string) =>
   fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
 
-type Stats = { activeBids: number; leading: number; watching: number; wonThisYear: number };
-type Bid = { lotId: string; auctionId: string; title: string; imageUrl: string; yourBid: number; currentBid: number; status: 'leading' | 'outbid'; endAt: string };
-
 export default function DashboardPage() {
   const { accessToken, user } = useAuth();
-  const { data: stats } = useSWR<Stats>(
+  const { data: statsData } = useSWR<unknown>(
     accessToken ? ['/api/account/stats', accessToken] : null,
     ([url, tok]: [string, string]) => fetcher(url, tok),
     { refreshInterval: 5000 },
   );
-  const { data: bidsData } = useSWR<{ bids: Bid[] }>(
-    accessToken ? ['/api/account/bids?limit=5', accessToken] : null,
+  const { data: bidsData } = useSWR<unknown>(
+    accessToken ? ['/api/account/bids?pageSize=5', accessToken] : null,
     ([url, tok]: [string, string]) => fetcher(url, tok),
     { refreshInterval: 5000 },
   );
+  // undefined = still loading — do not run it through the schema (it would log a spurious contract error)
+  const stats = statsData === undefined ? null : parseAccountStats(statsData);
+  const bids = bidsData === undefined ? null : parseAccountBids(bidsData);
 
   return (
     <>
@@ -36,17 +36,17 @@ export default function DashboardPage() {
         </h1>
         <p className='font-sans text-sm text-mut mb-8'>
           {stats
-            ? `You are leading on ${stats.leading} lot${stats.leading !== 1 ? 's' : ''}${stats.activeBids > 0 ? `. ${stats.activeBids} bid${stats.activeBids !== 1 ? 's' : ''} active.` : '.'}`
+            ? `You are leading on ${stats.leadingBids} lot${stats.leadingBids !== 1 ? 's' : ''}${stats.activeBids > 0 ? `. ${stats.activeBids} bid${stats.activeBids !== 1 ? 's' : ''} active.` : '.'}`
             : 'Here\'s your bidding overview.'}
         </p>
 
-        {/* Stat cards */}
-        <div className='grid grid-cols-2 md:grid-cols-4 gap-4 mb-10'>
+        {/* Stat cards — 'Watching' is omitted: it's catalogue's watchlist count and
+            auction-engine's /api/account/stats has no data source for it. */}
+        <div className='grid grid-cols-3 gap-4 mb-10'>
           {[
             { label: 'Active Bids', value: stats?.activeBids ?? '—' },
-            { label: 'Leading', value: stats?.leading ?? '—' },
-            { label: 'Watching', value: stats?.watching ?? '—' },
-            { label: 'Won This Year', value: stats?.wonThisYear ?? '—', dark: true },
+            { label: 'Leading', value: stats?.leadingBids ?? '—' },
+            { label: 'Won This Year', value: stats?.lotsWon ?? '—', dark: true },
           ].map(({ label, value, dark }) => (
             <div key={label} className={`p-5 border ${dark ? 'bg-ink text-paper border-ink' : 'bg-paper border-[var(--line)]'}`}>
               <p className={`font-sans text-xs uppercase tracking-widest mb-2 ${dark ? 'text-mut' : 'text-mut'}`}>{label}</p>
@@ -61,22 +61,22 @@ export default function DashboardPage() {
             <h2 className='font-sans text-sm font-semibold uppercase tracking-widest text-mut'>Active Bids</h2>
             <Link href='/account/bids' className='font-sans text-xs text-gold hover:text-ink'>View all →</Link>
           </div>
-          {bidsData?.bids.length === 0 && <p className='font-sans text-sm text-mut'>No active bids.</p>}
+          {/* Covers both "no bids yet" and a drifted/unparseable response — never leave the
+              section silently blank when there is nothing safe to render. */}
+          {!bids?.length && <p className='font-sans text-sm text-mut'>No active bids.</p>}
           <div className='flex flex-col divide-y divide-[var(--line)]'>
-            {bidsData?.bids.map(bid => (
+            {bids?.map(bid => (
               <div key={bid.lotId} className='py-4 flex items-center gap-4'>
-                {/* Thumbnail 46px */}
+                {/* Thumbnail — auction-engine has no lot image data; always show the placeholder */}
                 <div className='relative w-[46px] h-[46px] shrink-0 border border-[var(--line)] overflow-hidden'>
-                  {bid.imageUrl
-                    ? <Image src={bid.imageUrl} alt={bid.title} fill className='object-cover' />
-                    : <div className='w-full h-full bg-cream' />}
+                  <div className='w-full h-full bg-cream' />
                 </div>
                 <div className='flex-1 min-w-0'>
-                  <Link href={`/auctions/${bid.auctionId}/lots/${bid.lotId}`}
-                    className='font-sans text-sm font-medium text-ink hover:underline truncate block'>{bid.title}</Link>
-                  <p className='font-sans text-xs text-mut mt-0.5'>Your bid: {bid.yourBid.toLocaleString()}</p>
+                  {/* No lot title or auctionId available from this endpoint — show the lot id as plain text */}
+                  <span className='font-sans text-sm font-medium text-ink truncate block'>Lot {bid.lotId}</span>
+                  <p className='font-sans text-xs text-mut mt-0.5'>Your bid: {bid.amount.toLocaleString()}</p>
                 </div>
-                <BidStatusBadge status={bid.status} />
+                <BidStatusBadge status={deriveBidBadgeStatus(bid)} />
                 <CountdownTimer endAt={bid.endAt} />
               </div>
             ))}
