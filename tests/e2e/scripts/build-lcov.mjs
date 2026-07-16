@@ -3,6 +3,8 @@ import { join } from 'node:path';
 import { readdir, readFile } from 'node:fs/promises';
 import { CoverageReport } from 'monocart-coverage-reports';
 
+const NEXT_STATIC_MARKER = '/_next/';
+
 // PORTAL selects which portal's coverage to merge. Only 'user-portal' has an
 // E2E flow today (see tests/e2e/README.md) — 'admin-portal' is supported so
 // this script keeps working unmodified once an admin flow is added.
@@ -30,6 +32,32 @@ const sourceRoot = `apps/${portal}/src`;
 // which used SOURCE_ROOT=apps/user-portal — no '/src' — for this same reason).
 const entryRoot = `apps/${portal}`;
 
+// Browser-served chunks (URLs like http://localhost:3000/_next/static/chunks/xxx.js) reference
+// their sourcemap via an *external* `//# sourceMappingURL=xxx.js.map` comment - Next's
+// `productionBrowserSourceMaps: true` does not inline them. monocart's default resolver fetches
+// that comment's URL over live HTTP, which silently fails (logged at debug level only, coverage
+// for that chunk is then dropped entirely) once the portal server that served it has already been
+// torn down - which it always has been by the time this script runs, since `pnpm test:e2e`'s
+// Playwright globalTeardown stops the portal at the end of that separate, earlier step. Read these
+// external maps straight from the .next build output on disk instead, sidestepping the ordering
+// dependency entirely. Inline sourcemaps never reach this resolver at all (monocart resolves those
+// earlier, from the source's own inline data-URI comment); the fallback below only covers non-
+// `/_next/` external maps and genuine read failures (e.g. a missing/corrupt .map on disk), for
+// which the default (HTTP) resolver is the same behaviour this script had before this fix.
+const nextBuildDir = join('..', '..', 'apps', portal, '.next');
+const sourceMapResolver = async (url, defaultSourceMapResolver) => {
+  const markerIndex = url.indexOf(NEXT_STATIC_MARKER);
+  if (markerIndex !== -1) {
+    const relPath = url.slice(markerIndex + NEXT_STATIC_MARKER.length);
+    try {
+      return JSON.parse(await readFile(join(nextBuildDir, relPath), 'utf8'));
+    } catch {
+      // Fall through to the default resolver as a safety net (e.g. genuinely missing map).
+    }
+  }
+  return defaultSourceMapResolver(url);
+};
+
 const report = new CoverageReport({
   name: `E2E Coverage (${portal})`,
   outputDir: outDir,
@@ -37,6 +65,7 @@ const report = new CoverageReport({
   sourceFilter: (path) => path.includes(`${sourceRoot}/`) && !path.includes('/node_modules/'),
   sourcePath: (filePath) => filePath,
   entryFilter: (entry) => entry.url.includes(entryRoot) || entry.url.includes('/_next/'),
+  sourceMapResolver,
 });
 
 // Server-side V8 coverage (from NODE_V8_COVERAGE, dumped by Node itself) can
