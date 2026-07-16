@@ -90,6 +90,26 @@ pnpm run test:integration
 docker compose -f docker-compose.test.yml down -v
 ```
 
+### E2E (Playwright, coverage)
+
+Two-command local run (full detail, env vars and required secrets in
+`tests/e2e/README.md`):
+
+```bash
+# 1. Boot the backend stack and wait for health
+docker compose -f docker-compose.test.yml up -d --build
+
+# 2. Build/start user-portal on the host, run all Playwright specs, collect
+#    server + client V8 coverage
+pnpm --filter @carat-room/e2e test:e2e
+```
+
+Then merge the V8 coverage into an lcov report for SonarCloud:
+
+```bash
+PORTAL=user-portal pnpm --filter @carat-room/e2e coverage:report
+```
+
 ---
 
 ## Service Ports

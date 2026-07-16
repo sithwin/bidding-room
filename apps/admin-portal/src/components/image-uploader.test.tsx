@@ -104,6 +104,36 @@ describe('ImageUploader', () => {
     expect(confirmImage).toHaveBeenNthCalledWith(2, 'lot-1', 'lots/lot-1/b', false);
   });
 
+  it('should_notCallReorderImages_when_draggedImageDroppedOnContainerWithoutTargetTile', async () => {
+    const { container } = render(
+      <ImageUploader
+        lotId='lot-1'
+        initialImages={[
+          { id: 'img-1', url: 'https://a.jpg', thumbnailUrl: 'https://a_thumb.jpg', displayOrder: 0, isPrimary: true },
+        ]}
+      />,
+    );
+    const tile = screen.getByAltText(/lot image/i).parentElement as HTMLElement;
+    const grid = container.querySelector('.grid') as HTMLElement;
+
+    fireEvent.dragStart(tile, { dataTransfer: { files: [] } });
+    fireEvent.drop(grid, { dataTransfer: { files: [] } });
+
+    await waitFor(() => expect(reorderImages).not.toHaveBeenCalled());
+  });
+
+  it('should_uploadFile_when_fileDroppedDirectlyOnContainer', async () => {
+    vi.mocked(getUploadUrl).mockResolvedValue({ uploadUrl: 'https://r2.example.com/put', imageKey: 'lots/lot-1/a' });
+    vi.mocked(confirmImage).mockResolvedValue({ id: 'img-1', url: 'https://a.jpg', thumbnailUrl: 'https://a_thumb.jpg', displayOrder: 0, isPrimary: true });
+    const { container } = render(<ImageUploader lotId='lot-1' initialImages={[]} />);
+    const grid = container.querySelector('.grid') as HTMLElement;
+    const file = new File(['contents'], 'ring.jpg', { type: 'image/jpeg' });
+
+    fireEvent.drop(grid, { dataTransfer: { files: [file] } });
+
+    await waitFor(() => expect(confirmImage).toHaveBeenCalledWith('lot-1', 'lots/lot-1/a', true));
+  });
+
   it('should_callReorderImagesWithNewOrder_when_imageDraggedAndDropped', async () => {
     vi.mocked(reorderImages).mockResolvedValue(undefined);
     render(

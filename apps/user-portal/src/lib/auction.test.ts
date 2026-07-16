@@ -27,4 +27,13 @@ describe('parsePlacedBid', () => {
   it('parses a 201 body', () => {
     expect(parsePlacedBid({ data: { bidId: 'b1', amount: 160, lotId: 'lot-1' } })?.bidId).toBe('b1');
   });
+
+  it('should_returnNullAndLog_when_bodyFailsContractValidation', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(parsePlacedBid({ data: { bidId: 'b1' } })).toBeNull();
+
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
 });
