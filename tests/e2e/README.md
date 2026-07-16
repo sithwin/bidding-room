@@ -21,6 +21,39 @@ pnpm turbo build
 
 # 2. Build and start the backend stack
 docker compose -f docker-compose.test.yml up -d --build
+```
+
+**Known intermittent flake:** on first boot, one or more services (commonly
+`auction-engine`, `user-auth`, `notification`, `payment`, `shipping`) can
+exit(1) or report `unhealthy` because they raced Postgres/RabbitMQ's own
+startup. A retry recovers it every time observed so far:
+
+```bash
+docker compose -f docker-compose.test.yml restart auction-engine  # or whichever service is unhealthy
+docker compose -f docker-compose.test.yml up -d                   # no --build needed, just restarts exited containers
+```
+
+**Important — building the portal with the right service URLs:** the user-portal's
+`apps/user-portal/src/lib/service-config.ts` exports each backend URL as
+`process.env.X ?? 'fallback'`. Next 16's Turbopack constant-folds these at
+*build* time, and `AUCTION_ENGINE_URL`'s fallback is the Docker-only hostname
+`http://auction-engine:3003` (the other four fallbacks already default to
+`localhost`, so this only bites `AUCTION_ENGINE_URL`). If the portal is built
+before these vars are set, every auction-engine call fails with
+`ENOTFOUND auction-engine` at runtime even though the backend stack is healthy.
+
+Also: **`pnpm turbo build --filter=user-portal` does not forward arbitrary env
+vars** — `turbo.json` has no `env` allowlist for the `build` task, so Turborepo's
+default strict env mode silently strips vars like `AUCTION_ENGINE_URL` even if
+they're exported in the shell. Build the portal directly through pnpm instead:
+
+```bash
+export USER_SERVICE_URL=http://localhost:3001 \
+       CATALOGUE_SERVICE_URL=http://localhost:3002 \
+       AUCTION_ENGINE_URL=http://localhost:3003 \
+       PAYMENT_SERVICE_URL=http://localhost:3004 \
+       SHIPPING_SERVICE_URL=http://localhost:3006
+pnpm --filter user-portal build   # NOT `pnpm turbo build --filter=user-portal`
 
 # 3. Wait for every service to report healthy (same loop used in
 #    .github/workflows/integration-tests.yml). Requires `jq`; if `jq` is not

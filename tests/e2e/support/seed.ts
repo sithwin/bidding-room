@@ -127,6 +127,31 @@ export async function verifyPhone(accessToken: string, phone = '+447700900000'):
   await postJson(`${SERVICE_URLS.userAuth}/api/users/phone/verify`, { code: otp }, accessToken);
 }
 
+/**
+ * Promotes an already phone-verified user straight to `APPROVED_BIDDER` via
+ * the real admin endpoint `PATCH /api/users/:id/approve`
+ * (apps/user-auth/src/presentation/admin-users-router.ts) — the domain's
+ * `approve()` (apps/user-auth/src/domain/user.ts) accepts any status other
+ * than `SUSPENDED`/`APPROVED_BIDDER`, so this legitimately skips the
+ * identity-document/PENDING_REVIEW step without any DB hack, matching how an
+ * admin would fast-track a trusted bidder. Task 8 (browse-and-bid spec):
+ * the auction-engine bid endpoint
+ * (apps/auction-engine/src/presentation/auction-router.ts:156) requires
+ * `verificationStatus === 'APPROVED_BIDDER'` in the JWT, so this is needed
+ * before any bid can be placed — see task-8-report.md for why bidding is
+ * still blocked even after this step (no working Stripe test credentials in
+ * this environment for the card-on-file check in `lot-detail-client.tsx`).
+ */
+export async function approveBidder(adminToken: string, userId: string): Promise<void> {
+  const res = await fetch(`${SERVICE_URLS.userAuth}/api/users/${userId}/approve`, {
+    method: 'PATCH',
+    headers: { authorization: `Bearer ${adminToken}` },
+  });
+  if (!res.ok) {
+    throw new Error(`PATCH /api/users/${userId}/approve failed: ${res.status} ${await res.text()}`);
+  }
+}
+
 export async function seedLot(
   adminToken: string,
   overrides: Partial<LotSeed> = {},
