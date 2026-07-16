@@ -89,6 +89,14 @@ test('browse to a lot, receive SSE updates and place a bid', async ({ page }) =>
   await cardFrame.locator('input[name="cardnumber"]').fill('4242424242424242');
   await cardFrame.locator('input[name="exp-date"]').fill('12/34');
   await cardFrame.locator('input[name="cvc"]').fill('123');
+  // Stripe's combined CardElement collects a postal code too — only surfaced once real Stripe
+  // credentials made this iframe actually render for the first time in this plan (register-to-bid.spec.ts's
+  // card step has always self-skipped before reaching this point); omitting it blocks submission with
+  // "Your postal code is incomplete." Stripe's default postal-code validation (no country/locale
+  // configured on the Element) expects a 5-digit US-style ZIP, not the AU postcode format used
+  // elsewhere in this spec's seed data — a 4-digit value stays flagged "incomplete" even though it's a
+  // real Australian postcode.
+  await cardFrame.locator('input[name="postal"]').fill('90210');
   await page.getByRole('button', { name: 'Authorise Card' }).click();
 
   // Real post-card state is "Under review" — adding a card does not auto-approve a bidder, only the

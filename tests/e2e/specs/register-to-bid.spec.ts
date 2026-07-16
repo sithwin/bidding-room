@@ -68,6 +68,12 @@ test('complete register-to-bid: phone verification, identity document, then card
   await cardFrame.locator('input[name="cardnumber"]').fill('4242424242424242');
   await cardFrame.locator('input[name="exp-date"]').fill('12/34');
   await cardFrame.locator('input[name="cvc"]').fill('123');
+  // Stripe's combined CardElement also collects a postal code (default validation expects a
+  // 5-digit US-style ZIP, not the AU postcode format used elsewhere in this spec's seed data) —
+  // omitting it blocks submission with "Your postal code is incomplete." Only surfaced once real
+  // Stripe credentials made this iframe actually render for the first time (this step previously
+  // always self-skipped via hasStripeKey above).
+  await cardFrame.locator('input[name="postal"]').fill('90210');
   await page.getByRole('button', { name: 'Authorise Card' }).click();
 
   // Adding a card does not auto-approve a bidder (only a separate admin action does — see header

@@ -97,6 +97,14 @@ services:
       JWT_PRIVATE_KEY: *jwt-private-key
       JWT_PUBLIC_KEY: *jwt-public-key
       NODE_ENV: test
+      # apps/user-auth/src/main.ts reads R2_BUCKET_NAME (not R2_BUCKET, which is what catalogue's
+      # main.ts reads for the same underlying setting) - this service's block previously had no R2_*
+      # vars at all, so identity-document uploads always failed validation before making any network
+      # call ("No value provided for input HTTP label: Bucket").
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-test-account}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-test-key}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-test-secret}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-test-bucket}
     ports:
       - '3001:3001'
     depends_on:
