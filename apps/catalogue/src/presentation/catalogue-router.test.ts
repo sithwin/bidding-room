@@ -8,7 +8,7 @@ import { JwtPayload } from '@carat-room/shared-auth';
 import { buildCatalogueRouter } from './catalogue-router';
 import { Lot, LotCondition } from '../domain/lot';
 import { Category } from '../domain/category';
-import { LotImageNotFoundError, ImageOrderMismatchError } from '../domain/errors';
+import { LotNotFoundError, LotImageNotFoundError, ImageOrderMismatchError } from '../domain/errors';
 
 const jwtMiddleware = (userId = 'admin-1', role = 'ADMIN') =>
   vi.fn(async (c: any, next: any) => {
@@ -146,6 +146,125 @@ describe('GET /api/categories', () => {
     expect(res.status).toBe(200);
     const body = categoryListResponseSchema.parse(await res.json());
     expect(body.data[0].slug).toBe('rings');
+  });
+});
+
+describe('POST /api/lots/:id/images/upload-url', () => {
+  it('should_return201WithUploadUrl_when_contentTypeProvided', async () => {
+    const useCases = buildUseCases({
+      requestImageUpload: { execute: vi.fn().mockResolvedValue({ uploadUrl: 'https://r2.example.com/put', imageKey: 'lots/lot-1/a' }) },
+    });
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType: 'image/jpeg' }),
+    });
+
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.data.uploadUrl).toBe('https://r2.example.com/put');
+    expect(useCases.requestImageUpload.execute).toHaveBeenCalledWith('lot-1', 'image/jpeg');
+  });
+
+  it('should_return403_when_notAdmin', async () => {
+    const app = new Hono();
+    app.use('*', jwtMiddleware('user-1', 'BUYER'));
+    app.route('/', buildCatalogueRouter(buildUseCases()));
+
+    const res = await app.request('/api/lots/lot-1/images/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentType: 'image/jpeg' }),
+    });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('should_return400_when_contentTypeMissing', async () => {
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(buildUseCases()));
+
+    const res = await app.request('/api/lots/lot-1/images/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/lots/:id/images/confirm', () => {
+  it('should_return200WithCreatedImage_when_imageKeyProvided', async () => {
+    const useCases = buildUseCases({
+      confirmImageUpload: { execute: vi.fn().mockResolvedValue({
+        id: 'img-1', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true,
+      }) },
+    });
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageKey: 'lots/lot-1/a', isPrimary: true }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data).toEqual({ id: 'img-1', url: 'https://a', thumbnailUrl: 'https://a_thumb', displayOrder: 0, isPrimary: true });
+    expect(useCases.confirmImageUpload.execute).toHaveBeenCalledWith('lot-1', 'lots/lot-1/a', true);
+  });
+
+  it('should_return403_when_notAdmin', async () => {
+    const app = new Hono();
+    app.use('*', jwtMiddleware('user-1', 'BUYER'));
+    app.route('/', buildCatalogueRouter(buildUseCases()));
+
+    const res = await app.request('/api/lots/lot-1/images/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageKey: 'lots/lot-1/a' }),
+    });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('should_return400_when_imageKeyMissing', async () => {
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(buildUseCases()));
+
+    const res = await app.request('/api/lots/lot-1/images/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('should_return404_when_lotDoesNotExist', async () => {
+    const useCases = buildUseCases({
+      confirmImageUpload: { execute: vi.fn().mockRejectedValue(new LotNotFoundError('lot-1')) },
+    });
+    const app = new Hono();
+    app.use('*', jwtMiddleware());
+    app.route('/', buildCatalogueRouter(useCases));
+
+    const res = await app.request('/api/lots/lot-1/images/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageKey: 'lots/lot-1/a' }),
+    });
+
+    expect(res.status).toBe(404);
   });
 });
 
