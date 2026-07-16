@@ -54,7 +54,9 @@ export USER_SERVICE_URL=http://localhost:3001 \
        PAYMENT_SERVICE_URL=http://localhost:3004 \
        SHIPPING_SERVICE_URL=http://localhost:3006
 pnpm --filter user-portal build   # NOT `pnpm turbo build --filter=user-portal`
+```
 
+```bash
 # 3. Wait for every service to report healthy (same loop used in
 #    .github/workflows/integration-tests.yml). Requires `jq`; if `jq` is not
 #    installed, see the Node fallback below.
