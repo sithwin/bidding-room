@@ -19,7 +19,7 @@ export default function DashboardPage() {
     { refreshInterval: 5000 },
   );
   const { data: bidsData } = useSWR<unknown>(
-    accessToken ? ['/api/account/bids?limit=5', accessToken] : null,
+    accessToken ? ['/api/account/bids?pageSize=5', accessToken] : null,
     ([url, tok]: [string, string]) => fetcher(url, tok),
     { refreshInterval: 5000 },
   );

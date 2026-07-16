@@ -54,7 +54,7 @@ describe('DashboardPage', () => {
   it('renders stats and recent bids from real { data } envelopes without crashing', () => {
     mockSwrByKey({
       '/api/account/stats': { data: statsFixture },
-      '/api/account/bids?limit=5': { data: [bidFixture], meta: { page: 1, total: 1 } },
+      '/api/account/bids?pageSize=5': { data: [bidFixture], meta: { page: 1, total: 1 } },
     });
 
     render(<DashboardPage />);
@@ -71,7 +71,7 @@ describe('DashboardPage', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     mockSwrByKey({
       '/api/account/stats': { activeBids: 3, leading: 2, watching: 0, wonThisYear: 1 },
-      '/api/account/bids?limit=5': { bids: [bidFixture] },
+      '/api/account/bids?pageSize=5': { bids: [bidFixture] },
     });
 
     render(<DashboardPage />);
