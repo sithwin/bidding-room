@@ -5,6 +5,7 @@ vi.stubGlobal('fetch', mockFetch);
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(() => Promise.resolve({ get: vi.fn(() => ({ value: 'test-admin-jwt' })) })),
+  headers: vi.fn(() => Promise.resolve(new Headers())),
 }));
 
 import { adminApi, AdminApiError } from './admin-api';

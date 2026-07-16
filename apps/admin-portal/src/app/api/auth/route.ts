@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { decodeJwt } from 'jose';
 import { ADMIN_TOKEN_COOKIE, cookieMaxAgeFrom } from '@/lib/auth-cookie';
+import { forwardedForHeader } from '@/lib/forwarded-ip';
 
 export async function POST(req: Request): Promise<NextResponse> {
   const { email, password } = await req.json() as { email: string; password: string };
@@ -9,7 +10,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const userServiceUrl = process.env.USER_SERVICE_URL ?? 'http://localhost:3001';
   const res = await fetch(`${userServiceUrl}/api/users/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...forwardedForHeader(req.headers) },
     body: JSON.stringify({ email, password }),
   });
 

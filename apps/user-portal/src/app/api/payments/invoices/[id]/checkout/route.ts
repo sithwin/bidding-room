@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PAYMENT_SERVICE_URL } from '@/lib/service-config';
+import { PAYMENT_SERVICE_URL, forwardedForHeader } from '@/lib/service-config';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -9,6 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     headers: {
       Authorization: auth,
       'content-type': 'application/json',
+      ...forwardedForHeader(request),
     },
     body: JSON.stringify(await request.json()),
   });

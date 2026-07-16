@@ -1,15 +1,15 @@
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { parseAccessToken } from '@/lib/user-auth';
-import { REFRESH_COOKIE, USER_SERVICE_URL } from '@/lib/service-config';
+import { REFRESH_COOKIE, USER_SERVICE_URL, forwardedForHeader } from '@/lib/service-config';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const refreshToken = (await cookies()).get(REFRESH_COOKIE)?.value;
   if (!refreshToken) return NextResponse.json({ error: 'No refresh token' }, { status: 401 });
 
   const res = await fetch(`${USER_SERVICE_URL}/api/users/refresh`, {
     method: 'POST',
-    headers: { cookie: `${REFRESH_COOKIE}=${refreshToken}` },
+    headers: { cookie: `${REFRESH_COOKIE}=${refreshToken}`, ...forwardedForHeader(request) },
     cache: 'no-store',
   });
   if (!res.ok) return NextResponse.json({ error: 'Refresh failed' }, { status: 401 });
@@ -23,13 +23,13 @@ export async function GET() {
   return response;
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
   if (refreshToken) {
     await fetch(`${USER_SERVICE_URL}/api/users/logout`, {
       method: 'POST',
-      headers: { cookie: `${REFRESH_COOKIE}=${refreshToken}` },
+      headers: { cookie: `${REFRESH_COOKIE}=${refreshToken}`, ...forwardedForHeader(request) },
     });
   }
   const res = NextResponse.json({ ok: true });

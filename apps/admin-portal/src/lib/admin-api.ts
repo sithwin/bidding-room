@@ -1,5 +1,6 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { ADMIN_TOKEN_COOKIE } from './auth-cookie';
+import { forwardedForHeader } from './forwarded-ip';
 
 export class AdminApiError extends Error {
   constructor(readonly status: number, readonly body: unknown) {
@@ -16,6 +17,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
+      ...forwardedForHeader(await headers()),
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
     cache: 'no-store',
