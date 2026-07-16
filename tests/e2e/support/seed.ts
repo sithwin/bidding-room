@@ -188,6 +188,99 @@ export async function seedAuction(
   return { auctionId: body.data.lotId };
 }
 
+/**
+ * Waits for a lot's auction to close (via its own BullMQ `close-auction`
+ * timer job — auction-engine has no public "close now" trigger, confirmed by
+ * reading apps/auction-engine/src/presentation/auction-router.ts in full) and
+ * for the `payment` service to react to the resulting `auction.closed` event
+ * by issuing an invoice (apps/payment/src/infrastructure/auction-closed-consumer.ts,
+ * which only fires when `reserveMet && winnerUserId && highestAmount != null`
+ * — see apps/auction-engine/src/domain/auction-aggregate.ts's `close()`,
+ * where `reserveMet` is `highestBidAmount >= reservePrice`, so callers must
+ * seed the auction with a `reservePrice` the winning bid actually clears,
+ * e.g. the default `0`).
+ *
+ * Callers are responsible for scheduling the auction with a short `endAt`
+ * (via `seedAuction`'s `overrides`) and placing the winning bid *before* that
+ * `endAt`, through a direct call to auction-engine's real
+ * `POST /api/auctions/:lotId/bids` (which only requires `APPROVED_BIDDER`,
+ * not a Stripe-verified card — that gate lives solely in the portal's
+ * `lot-detail-client.tsx`, confirmed by reading the router directly). This
+ * helper only *waits*; it polls the admin-only `GET /api/payments/invoices`
+ * list endpoint (apps/payment/src/presentation/payment-router.ts — there is
+ * no "get invoice by lotId" endpoint) until an invoice for `lotId` and
+ * `winnerUserId` appears.
+ */
+export async function closeAuctionAndAwaitInvoice(
+  adminToken: string,
+  lotId: string,
+  winnerUserId: string,
+  timeoutMs = 30_000,
+): Promise<{ invoiceId: string }> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await fetch(`${SERVICE_URLS.payment}/api/payments/invoices`, {
+      headers: { authorization: `Bearer ${adminToken}` },
+    });
+    if (!res.ok) {
+      throw new Error(`GET /api/payments/invoices failed: ${res.status} ${await res.text()}`);
+    }
+    const body = (await res.json()) as { data: Array<{ id: string; lotId: string; winnerUserId: string }> };
+    const match = body.data.find((inv) => inv.lotId === lotId && inv.winnerUserId === winnerUserId);
+    if (match) {
+      return { invoiceId: match.id };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(
+    `Seed: no invoice appeared for lot ${lotId} / winner ${winnerUserId} within ${timeoutMs}ms — ` +
+      'the auction may not have closed yet, reserve may not have been met, or the winning bid was never placed',
+  );
+}
+
+/**
+ * Places a bid directly against auction-engine's real bid API
+ * (`POST /api/auctions/:lotId/bids`), bypassing the portal UI entirely. This
+ * is the only real way to seed a winning bid in this environment: the
+ * portal's `lot-detail-client.tsx` hard-gates bidding on a Stripe-verified
+ * card, and this test environment has no working Stripe test credentials
+ * (see browse-and-bid.spec.ts's header comment / task-8-report.md). The
+ * auction-engine endpoint itself has no such gate — it only requires
+ * `verificationStatus === 'APPROVED_BIDDER'` (auction-router.ts:186), which
+ * `approveBidder` above already provides via a real API.
+ */
+export async function placeBidDirect(
+  bidderToken: string,
+  lotId: string,
+  amount: number,
+): Promise<void> {
+  const url = `${SERVICE_URLS.auction}/api/auctions/${lotId}/bids`;
+  // A freshly `seedAuction`-scheduled lot's `start-auction` BullMQ job (delay
+  // 0, but still processed asynchronously by the worker) may not have
+  // transitioned the lot from SCHEDULED to LIVE yet when the caller races to
+  // place a bid immediately after scheduling — the bid endpoint legitimately
+  // 409s (`AUCTION_NOT_ACTIVE`) until it has. Retry briefly rather than
+  // widening the auction's `startAt`/`endAt` window, which would just move
+  // the race instead of removing it.
+  const maxAttempts = 10;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${bidderToken}` },
+      body: JSON.stringify({ amount }),
+    });
+    if (res.ok) {
+      return;
+    }
+    const text = await res.text();
+    const isRetryable = res.status === 409 && text.includes('AUCTION_NOT_ACTIVE');
+    if (!isRetryable || attempt === maxAttempts) {
+      throw new Error(`POST ${url} failed: ${res.status} ${text}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+}
+
 async function promoteToAdmin(userId: string): Promise<void> {
   const client = new Client({ connectionString: SEED_DB_URL });
   await client.connect();
