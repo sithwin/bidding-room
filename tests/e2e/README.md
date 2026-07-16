@@ -211,21 +211,30 @@ PAYMENT_SERVICE_URL=http://localhost:3004
 SHIPPING_SERVICE_URL=http://localhost:3006
 ```
 
-`build-lcov.mjs` reads:
+`build-lcov.mjs` (generalised in Task 11 to merge coverage per portal) reads:
 
 ```
-SERVER_COVERAGE_DIR   # default /tmp/e2e-server-cov
-CLIENT_COVERAGE_DIR   # default /tmp/e2e-client-cov
-LCOV_OUT_DIR           # default ./coverage/spike
-SOURCE_ROOT            # default ../../apps/user-portal
+PORTAL                 # default user-portal — selects which portal's coverage to merge
+SERVER_COVERAGE_DIR    # default {os.tmpdir()}/e2e-cov/<portal>/server
+CLIENT_COVERAGE_DIR    # default {os.tmpdir()}/e2e-cov/<portal>/client
+LCOV_OUT_DIR            # default ./coverage/<portal>
 ```
 
-On a Windows host, prefer explicit Windows-style absolute paths (e.g. a
-`%TEMP%`-rooted directory) for these — `/tmp/...`-style paths are resolved
-inconsistently depending on whether the interpreting process is a
-Git-Bash-launched shell command or a native `node.exe` child process spawned
-via `child_process`; a native `node.exe` treats a leading `/` as relative to
-the current drive root (e.g. `E:\tmp\...`), not the Git-Bash `/tmp` mount.
+`SOURCE_ROOT` is no longer an env var — the script derives it as
+`apps/<portal>/src` from `PORTAL` directly, so it can't drift from
+`sourceFilter`'s own root.
+
+The `os.tmpdir()`-based defaults already avoid the Windows path pitfall
+below by construction (they match whatever `global-setup.ts`/`fixtures.ts`
+resolve `os.tmpdir()` to on the running host), so overriding
+`SERVER_COVERAGE_DIR`/`CLIENT_COVERAGE_DIR` should rarely be necessary. If
+you do override them on a Windows host, prefer explicit Windows-style
+absolute paths (e.g. a `%TEMP%`-rooted directory) — `/tmp/...`-style paths
+are resolved inconsistently depending on whether the interpreting process is
+a Git-Bash-launched shell command or a native `node.exe` child process
+spawned via `child_process`; a native `node.exe` treats a leading `/` as
+relative to the current drive root (e.g. `E:\tmp\...`), not the Git-Bash
+`/tmp` mount.
 
 ### Two-command local run
 
