@@ -32,5 +32,3 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 CREATE INDEX IF NOT EXISTS idx_users_email               ON users(email);
 CREATE INDEX IF NOT EXISTS idx_verification_tokens_user  ON verification_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user       ON refresh_tokens(user_id);
-
-ALTER TABLE users ADD COLUMN IF NOT EXISTS identity_document_key TEXT;

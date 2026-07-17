@@ -106,7 +106,10 @@ export function buildAdminUsersRouter(useCases: UseCases, jwtPublicKey: string):
       return c.json({ data: { id: result.id } }, 201);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+      if (message === 'Email already registered') {
+        return c.json({ error: { code: 'CONFLICT', message } }, 409);
+      }
+      return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
     }
   });
 
@@ -122,7 +125,10 @@ export function buildAdminUsersRouter(useCases: UseCases, jwtPublicKey: string):
       if (message === 'User not found') {
         return c.json({ error: { code: 'NOT_FOUND', message } }, 404);
       }
-      return c.json({ error: { code: 'CONFLICT', message } }, 409);
+      if (message === 'Email already registered') {
+        return c.json({ error: { code: 'CONFLICT', message } }, 409);
+      }
+      return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Unexpected error' } }, 500);
     }
   });
 

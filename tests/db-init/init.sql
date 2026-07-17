@@ -14,15 +14,16 @@ CREATE DATABASE admin_test;
 \c user_test
 
 CREATE TABLE users (
-  id              UUID PRIMARY KEY,
-  email           TEXT UNIQUE NOT NULL,
-  password_hash   TEXT NOT NULL,
-  phone           TEXT,
-  status          TEXT NOT NULL DEFAULT 'REGISTERED',
-  role            TEXT NOT NULL DEFAULT 'BUYER',
-  country         TEXT,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id                     UUID PRIMARY KEY,
+  email                  TEXT UNIQUE NOT NULL,
+  password_hash          TEXT NOT NULL,
+  phone                  TEXT,
+  status                 TEXT NOT NULL DEFAULT 'REGISTERED',
+  role                   TEXT NOT NULL DEFAULT 'BUYER',
+  country                TEXT,
+  identity_document_key  TEXT,
+  created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE verification_tokens (
