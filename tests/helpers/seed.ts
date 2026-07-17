@@ -34,7 +34,7 @@ export async function seedAdminUser(): Promise<{
 
   const { status, body } = await api(PORTS.user).post<{
     data: { accessToken: string };
-  }>('/api/users/login', { email, password });
+  }>('/api/users/login', { email, password, turnstileToken: 'integration-test-token' });
 
   if (status !== 200) {
     throw new Error(`Admin login failed (${status}): ${JSON.stringify(body)}`);

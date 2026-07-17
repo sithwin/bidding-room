@@ -45,7 +45,7 @@ describe('Flow 3 — Reserve not met', () => {
 
     const loginRes = await api(USER_PORT).post<{ data: { accessToken: string } }>(
       '/api/users/login',
-      { email: buyer.email, password: buyer.password },
+      { email: buyer.email, password: buyer.password, turnstileToken: 'integration-test-token' },
     );
     expect(loginRes.status).toBe(200);
     buyerToken = loginRes.body.data.accessToken;
