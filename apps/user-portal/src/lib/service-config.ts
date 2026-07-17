@@ -12,6 +12,12 @@ export const ADMIN_SERVICE_URL = process.env.ADMIN_SERVICE_URL ?? 'http://localh
 /** Name of the refresh-token cookie — owned by user-auth (set on login/refresh). */
 export const REFRESH_COOKIE = 'carat_refresh';
 
+export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID ?? '';
+export const GOOGLE_REDIRECT_URI = process.env.GOOGLE_OAUTH_REDIRECT_URI ?? 'http://localhost:3000/api/auth/google/callback';
+
+/** Short-lived cookie holding the OAuth `state`/PKCE `code_verifier`/`returnUrl` between the redirect to Google and its callback. */
+export const GOOGLE_OAUTH_STATE_COOKIE = 'carat_google_oauth_state';
+
 /**
  * Display-only currency label. No service owns a lot's currency today (flagged
  * as gap G5 in the Phase 2 plan) — this constant is portal copy, not data.
