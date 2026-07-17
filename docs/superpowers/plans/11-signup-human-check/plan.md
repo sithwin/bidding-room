@@ -84,7 +84,7 @@ Covers: C12, C13, C14, C15, C26
 - Consumes: nothing (leaf task).
 - Produces: `interface HumanVerifier { verify(token: string, remoteIp?: string): Promise<boolean> }` (application port) and `class TurnstileVerifier implements HumanVerifier` with `constructor(secretKey: string)`. Tasks 2 and 3 import both by these exact names.
 
-- [ ] **Step 1: Create the port**
+- [x] **Step 1: Create the port**
 
 ```typescript
 // apps/user-auth/src/application/human-verifier.ts
@@ -93,7 +93,7 @@ export interface HumanVerifier {
 }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```typescript
 // apps/user-auth/src/infrastructure/turnstile/turnstile-verifier.test.ts
@@ -175,12 +175,12 @@ describe('TurnstileVerifier', () => {
 });
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `pnpm vitest run apps/user-auth/src/infrastructure/turnstile/turnstile-verifier.test.ts` (from repo root; if the workspace runs tests per package, `cd apps/user-auth && pnpm vitest run src/infrastructure/turnstile/turnstile-verifier.test.ts`)
 Expected: FAIL — `Cannot find module './turnstile-verifier'`
 
-- [ ] **Step 4: Implement TurnstileVerifier**
+- [x] **Step 4: Implement TurnstileVerifier**
 
 ```typescript
 // apps/user-auth/src/infrastructure/turnstile/turnstile-verifier.ts
@@ -223,12 +223,12 @@ export class TurnstileVerifier implements HumanVerifier {
 
 Note: a `success: false` JSON reply returns `false` from inside the `try` — only transport/parse failures reach the `catch` (C14 vs C15).
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: same command as Step 3.
 Expected: 5 tests PASS.
 
-- [ ] **Step 6: Lint and commit**
+- [x] **Step 6: Lint and commit**
 
 ```bash
 pnpm lint
@@ -252,7 +252,7 @@ Covers: C16, C17, C18, C19, C25
 - Consumes: `HumanVerifier` from `../application/human-verifier` (Task 1).
 - Produces: `buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier): Hono<AppEnv>` — Task 3's `main.ts` passes the verifier as the new second argument. Also `requireHumanVerification(verifier: HumanVerifier)` returning a Hono middleware.
 
-- [ ] **Step 1: Write the failing middleware tests**
+- [x] **Step 1: Write the failing middleware tests**
 
 ```typescript
 // apps/user-auth/src/presentation/human-verification-middleware.test.ts
@@ -331,12 +331,12 @@ describe('requireHumanVerification', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pnpm vitest run apps/user-auth/src/presentation/human-verification-middleware.test.ts`
 Expected: FAIL — `Cannot find module './human-verification-middleware'`
 
-- [ ] **Step 3: Implement the middleware**
+- [x] **Step 3: Implement the middleware**
 
 ```typescript
 // apps/user-auth/src/presentation/human-verification-middleware.ts
@@ -367,12 +367,12 @@ export const requireHumanVerification = (verifier: HumanVerifier) =>
 
 Hono caches the parsed JSON body, so the route handler's own `c.req.json()` call still works after the middleware reads it.
 
-- [ ] **Step 4: Run middleware tests to verify they pass**
+- [x] **Step 4: Run middleware tests to verify they pass**
 
 Run: `pnpm vitest run apps/user-auth/src/presentation/human-verification-middleware.test.ts`
 Expected: 5 tests PASS.
 
-- [ ] **Step 5: Wire the middleware into the router**
+- [x] **Step 5: Wire the middleware into the router**
 
 In `apps/user-auth/src/presentation/user-router.ts`:
 
@@ -393,7 +393,7 @@ export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier
 
 Change `router.post('/register', async (c) => {` to `router.post('/register', humanCheck, async (c) => {` (line 44) and `router.post('/login', async (c) => {` to `router.post('/login', humanCheck, async (c) => {` (line 89). No other route changes — C16. The handlers already destructure only `{ email, password, country }` / `{ email, password }`, so `turnstileToken` never reaches the use-case DTOs — C19.
 
-- [ ] **Step 6: Update the existing router tests**
+- [x] **Step 6: Update the existing router tests**
 
 In `apps/user-auth/src/presentation/user-router.test.ts`:
 
@@ -459,12 +459,12 @@ describe('human verification on register and login', () => {
 
 Admin routes live in `admin-users-router.ts`, which this task does not touch — run its test file to confirm it is unaffected (C25).
 
-- [ ] **Step 7: Run the full user-auth test suite**
+- [x] **Step 7: Run the full user-auth test suite**
 
 Run: `pnpm turbo test --filter=user-auth`
 Expected: all tests PASS, including `admin-users-router.test.ts` untouched and green. Note `main.ts` will not compile against the new signature until Task 3 — if the build fails on `main.ts`, proceed to Task 3 Step 1 before committing, then commit both together with this task's message.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/user-auth/src/presentation/
@@ -486,7 +486,7 @@ Covers: C20, C21, C22, C23, C24
 - Consumes: `TurnstileVerifier` from `./infrastructure/turnstile/turnstile-verifier` (Task 1); `buildUserRouter(useCases, humanVerifier)` (Task 2).
 - Produces: env contract `TURNSTILE_SECRET_KEY` (user-auth, required) and `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (user-portal) that Task 4 and deployment rely on.
 
-- [ ] **Step 1: Wire the verifier in main.ts**
+- [x] **Step 1: Wire the verifier in main.ts**
 
 In `apps/user-auth/src/main.ts`, add the import:
 
@@ -522,12 +522,12 @@ app.route('/api/users', buildUserRouter({
 }, humanVerifier));
 ```
 
-- [ ] **Step 2: Verify the service builds**
+- [x] **Step 2: Verify the service builds**
 
 Run: `pnpm turbo build --filter=user-auth`
 Expected: build succeeds (this also clears the Task 2 note about `main.ts`).
 
-- [ ] **Step 3: Add env vars to docker-compose.yml**
+- [x] **Step 3: Add env vars to docker-compose.yml**
 
 In the `user-service` environment block (after `R2_BUCKET_NAME`):
 
@@ -543,7 +543,7 @@ In the `user-portal` environment block (after `ADMIN_SERVICE_URL`):
 
 Note for the deploy `.env`: real keys come from the Cloudflare dashboard. `NEXT_PUBLIC_*` vars are inlined at Next.js build time — the production image build must also receive it (add as a build arg in the portal's CI build when deploying; flag this in the PR description rather than changing CI in this plan).
 
-- [ ] **Step 4: Add env vars to docker-compose.test.yml**
+- [x] **Step 4: Add env vars to docker-compose.test.yml**
 
 In the `user-auth` environment block (after `NODE_ENV: test`), the always-pass test secret:
 
@@ -553,12 +553,12 @@ In the `user-auth` environment block (after `NODE_ENV: test`), the always-pass t
 
 Run `grep -n 'user-portal' docker-compose.test.yml` — if a user-portal service exists there, add `NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA` to its environment block; if not, skip (integration tests hit user-auth directly).
 
-- [ ] **Step 5: Boot check**
+- [x] **Step 5: Boot check**
 
 Run: `docker compose -f docker-compose.test.yml up -d --build user-auth && sleep 5 && curl -s http://localhost:3001/health`
 Expected: `{"status":"ok","service":"user-auth"}`. Then `docker compose -f docker-compose.test.yml down`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/user-auth/src/main.ts docker-compose.yml docker-compose.test.yml
@@ -580,13 +580,13 @@ Covers: C1–C10, C27
 - Consumes: backend contract from Task 2 — `turnstileToken` field in POST bodies; error codes `CAPTCHA_REQUIRED` / `CAPTCHA_FAILED` in `{ error: { code, message } }`.
 - Produces: nothing consumed by later tasks.
 
-- [ ] **Step 1: Install the widget library**
+- [x] **Step 1: Install the widget library**
 
 ```bash
 pnpm add @marsidev/react-turnstile --filter user-portal
 ```
 
-- [ ] **Step 2: Write the failing component tests**
+- [x] **Step 2: Write the failing component tests**
 
 The component reads `NEXT_PUBLIC_TURNSTILE_SITE_KEY`; the widget library is mocked so tests control token issuance. Follow the mocking conventions used in `apps/user-portal/src/lib/auth-context.test.tsx`.
 
@@ -676,12 +676,12 @@ describe('LoginClient human verification', () => {
 
 If `getByLabelText` fails because the existing markup does not associate labels with inputs (`<label>` lacks `htmlFor`), fix the markup by adding `htmlFor`/`id` pairs — accessibility fix consistent with the Boy Scout Rule — rather than weakening the test to placeholder queries.
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `pnpm vitest run apps/user-portal/src/app/account/login/login-client.test.tsx`
 Expected: FAIL — no Turnstile in component, submit not disabled, token not sent.
 
-- [ ] **Step 4: Implement the widget in login-client.tsx**
+- [x] **Step 4: Implement the widget in login-client.tsx**
 
 Changes to `apps/user-portal/src/app/account/login/login-client.tsx`:
 
@@ -780,7 +780,7 @@ disabled={loginForm.formState.isSubmitting || !turnstileToken}
 disabled={registerForm.formState.isSubmitting || !turnstileToken}
 ```
 
-- [ ] **Step 5: Add the site key for local dev**
+- [x] **Step 5: Add the site key for local dev**
 
 Append to `apps/user-portal/.env.local` (create the file if absent — it is gitignored):
 
@@ -790,7 +790,7 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 
 If the repo has an `apps/user-portal/.env.example`, add the same line there so the variable is documented in git.
 
-- [ ] **Step 6: Run the frontend tests**
+- [x] **Step 6: Run the frontend tests**
 
 Run: `pnpm vitest run apps/user-portal/src/app/account/login/login-client.test.tsx`
 Expected: 3 tests PASS.
@@ -798,7 +798,7 @@ Expected: 3 tests PASS.
 Run: `pnpm turbo test --filter=user-portal`
 Expected: full portal suite PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/user-portal/src/app/account/login/ apps/user-portal/package.json pnpm-lock.yaml
@@ -821,7 +821,7 @@ Covers: C28, C29
 - Consumes: user-auth running under `docker-compose.test.yml` with the always-pass `TURNSTILE_SECRET_KEY` (Task 3) — the test secret accepts ANY non-empty `turnstileToken`, but a MISSING token is still rejected by the middleware before the verifier runs.
 - Produces: nothing (final task).
 
-- [ ] **Step 1: Add tokens to existing integration register/login calls**
+- [x] **Step 1: Add tokens to existing integration register/login calls**
 
 Every direct POST to `/api/users/register` or `/api/users/login` must add `turnstileToken: 'integration-test-token'` to its body. Exact edits:
 
@@ -866,7 +866,7 @@ Then sweep for stragglers — this must return only the lines edited above:
 grep -rn "users/register\|users/login" tests/
 ```
 
-- [ ] **Step 2: Add the missing-token integration test**
+- [x] **Step 2: Add the missing-token integration test**
 
 In `tests/integration/flow-1-buyer-onboarding.test.ts`, add a new `it` block inside the existing describe (after the main flow test):
 
@@ -884,7 +884,7 @@ it('rejects registration with 400 CAPTCHA_REQUIRED when no turnstile token is se
 });
 ```
 
-- [ ] **Step 3: Run the integration suite**
+- [x] **Step 3: Run the integration suite**
 
 ```bash
 pnpm turbo build
@@ -895,7 +895,7 @@ docker compose -f docker-compose.test.yml down -v
 
 Expected: all flows PASS including the new CAPTCHA_REQUIRED test.
 
-- [ ] **Step 4: Drive the real form in the browser (C28)**
+- [x] **Step 4: Drive the real form in the browser (C28)**
 
 With local infra up (`docker compose up -d`) and the services running (`pnpm turbo dev`), and `NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA` in `apps/user-portal/.env.local` and `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` exported for user-auth:
 
@@ -906,7 +906,7 @@ With local infra up (`docker compose up -d`) and the services running (`pnpm tur
 
 This step is a hard gate: do not mark the plan complete on unit tests alone.
 
-- [ ] **Step 5: Commit and mark the plan complete**
+- [x] **Step 5: Commit and mark the plan complete**
 
 ```bash
 git add tests/
