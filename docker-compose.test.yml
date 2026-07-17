@@ -80,8 +80,17 @@ services:
     ports:
       - '5673:5672'
       - '15673:15672'
+    # `rabbitmq-diagnostics ping` only confirms the Erlang node/distribution
+    # port is up - it reports healthy before the AMQP listener (5672) is
+    # actually accepting client connections, so dependent services can still
+    # race it (ECONNREFUSED) even after `depends_on: condition: service_healthy`
+    # (reproduced locally: user-auth/notification/payment/shipping/auction-engine
+    # all exited(1) with ECONNREFUSED on 5672 on first boot, every time,
+    # recovering only after a manual restart - and this is very likely why
+    # CI's Integration Tests job has been failing consistently). `check_port_connectivity`
+    # verifies the broker's configured ports, including AMQP, are actually open.
     healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
       interval: 10s
       timeout: 10s
       retries: 10
@@ -113,9 +122,13 @@ services:
       # this single container's IP and legitimately creates many distinct
       # throwaway accounts per run, so the production ceiling was rejecting
       # real (non-abusive) test traffic with 429s partway through a suite
-      # run. Raised here only; production's docker-compose.yml leaves this
-      # unset and gets the strict default.
-      USER_AUTH_STRICT_RATE_LIMIT_MAX: '1000'
+      # run. Defaults to the strict production value here - ci.yml's E2E job
+      # raises it via env for its own `docker compose up` invocation only;
+      # integration-tests.yml deliberately does NOT, since
+      # flow-4-rate-limiting.test.ts asserts the strict limit actually trips
+      # at its production value (raising it here unconditionally silently
+      # broke that test - it never saw a 429 because the ceiling was 1000).
+      USER_AUTH_STRICT_RATE_LIMIT_MAX: ${USER_AUTH_STRICT_RATE_LIMIT_MAX:-10}
     ports:
       - '3001:3001'
     depends_on:
@@ -147,9 +160,9 @@ services:
       R2_SECRET_ACCESS_KEY: test-secret
       R2_PUBLIC_BASE_URL: http://localhost:9000
       NODE_ENV: test
-      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
-      # production-appropriate ceiling for the E2E suite's shared IP.
-      CATALOGUE_DEFAULT_RATE_LIMIT_MAX: '1000'
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: defaults to
+      # the production ceiling; ci.yml's E2E job raises it via env.
+      CATALOGUE_DEFAULT_RATE_LIMIT_MAX: ${CATALOGUE_DEFAULT_RATE_LIMIT_MAX:-100}
     ports:
       - '3002:3002'
     depends_on:
@@ -175,10 +188,10 @@ services:
       RABBITMQ_URL: amqp://carat:carat_test@rabbitmq:5672
       JWT_PUBLIC_KEY: *jwt-public-key
       NODE_ENV: test
-      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
-      # production-appropriate ceiling for the E2E suite's shared IP.
-      AUCTION_ENGINE_BID_RATE_LIMIT_MAX: '1000'
-      AUCTION_ENGINE_DEFAULT_RATE_LIMIT_MAX: '1000'
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: defaults to
+      # the production ceiling; ci.yml's E2E job raises it via env.
+      AUCTION_ENGINE_BID_RATE_LIMIT_MAX: ${AUCTION_ENGINE_BID_RATE_LIMIT_MAX:-30}
+      AUCTION_ENGINE_DEFAULT_RATE_LIMIT_MAX: ${AUCTION_ENGINE_DEFAULT_RATE_LIMIT_MAX:-100}
     ports:
       - '3003:3003'
     depends_on:
@@ -209,9 +222,9 @@ services:
       FRONTEND_URL: http://localhost:3000
       JWT_PUBLIC_KEY: *jwt-public-key
       NODE_ENV: test
-      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
-      # production-appropriate ceiling for the E2E suite's shared IP.
-      PAYMENT_DEFAULT_RATE_LIMIT_MAX: '1000'
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: defaults to
+      # the production ceiling; ci.yml's E2E job raises it via env.
+      PAYMENT_DEFAULT_RATE_LIMIT_MAX: ${PAYMENT_DEFAULT_RATE_LIMIT_MAX:-100}
     ports:
       - '3004:3004'
     depends_on:
@@ -237,9 +250,9 @@ services:
       REDIS_PORT: '6379'
       JWT_PUBLIC_KEY: *jwt-public-key
       NODE_ENV: test
-      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
-      # production-appropriate ceiling for the E2E suite's shared IP.
-      SHIPPING_DEFAULT_RATE_LIMIT_MAX: '1000'
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: defaults to
+      # the production ceiling; ci.yml's E2E job raises it via env.
+      SHIPPING_DEFAULT_RATE_LIMIT_MAX: ${SHIPPING_DEFAULT_RATE_LIMIT_MAX:-100}
     ports:
       - '3006:3006'
     depends_on:
@@ -275,9 +288,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: '6379'
       NODE_ENV: test
-      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
-      # production-appropriate ceiling for the E2E suite's shared IP.
-      NOTIFICATION_DEFAULT_RATE_LIMIT_MAX: '1000'
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: defaults to
+      # the production ceiling; ci.yml's E2E job raises it via env.
+      NOTIFICATION_DEFAULT_RATE_LIMIT_MAX: ${NOTIFICATION_DEFAULT_RATE_LIMIT_MAX:-100}
     ports:
       - '3005:3005'
     depends_on:

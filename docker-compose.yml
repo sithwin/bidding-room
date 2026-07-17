@@ -39,8 +39,14 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    # `rabbitmq-diagnostics ping` only confirms the Erlang node/distribution
+    # port is up - it reports healthy before the AMQP listener (5672) is
+    # actually accepting client connections, so dependent services can still
+    # race it (ECONNREFUSED) even after `depends_on: condition: service_healthy`.
+    # `check_port_connectivity` verifies the broker's configured ports,
+    # including AMQP, are actually open.
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 10s
       timeout: 5s
       retries: 5
