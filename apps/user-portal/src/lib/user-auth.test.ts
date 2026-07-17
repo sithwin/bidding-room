@@ -9,7 +9,7 @@ const accessTokenFixture = {
 
 const meFixture = {
   data: {
-    id: 'user-1', email: 'a@b.com', phone: null, status: 'PHONE_VERIFIED', role: 'BUYER', country: null,
+    id: 'user-1', email: 'a@b.com', phone: null, status: 'PHONE_VERIFIED', role: 'BUYER', country: null, hasPassword: false,
   },
 } satisfies z.infer<typeof meResponseSchema>;
 

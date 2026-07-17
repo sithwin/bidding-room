@@ -10,7 +10,13 @@ export function OAuthCompleteClient() {
   const returnUrl = searchParams.get('returnUrl') ?? '/account/dashboard';
 
   useEffect(() => {
-    refreshAccessToken().then(() => router.replace(returnUrl));
+    refreshAccessToken()
+      .then((didHydrate) => {
+        router.replace(didHydrate ? returnUrl : '/account/login?googleError=failed');
+      })
+      .catch(() => {
+        router.replace('/account/login?googleError=failed');
+      });
   }, [refreshAccessToken, router, returnUrl]);
 
   return (

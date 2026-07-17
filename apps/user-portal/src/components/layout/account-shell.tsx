@@ -11,6 +11,7 @@ const NAV = [
   { href: '/account/won',       label: 'Won Lots' },
   { href: '/account/invoices',  label: 'Invoices & Payments' },
   { href: '/account/profile',   label: 'Profile & Paddle' },
+  { href: '/account/settings',  label: 'Settings' },
 ];
 
 export function AccountShell({ children, collectorSince }: { children: ReactNode; collectorSince?: string }) {
