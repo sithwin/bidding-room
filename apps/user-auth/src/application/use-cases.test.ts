@@ -15,6 +15,7 @@ import { EventPublisher } from '@carat-room/shared-events';
 const makeUserRepo = (): UserRepository => ({
   findById: vi.fn(),
   findByEmail: vi.fn(),
+  findByGoogleId: vi.fn(),
   findAll: vi.fn(),
   save: vi.fn(),
 });

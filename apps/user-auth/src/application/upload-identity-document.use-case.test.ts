@@ -16,6 +16,8 @@ function makeUser(status: UserStatus): User {
     id: 'user-1',
     email: 'a@b.com',
     passwordHash: 'hash',
+    googleId: null,
+    authProvider: 'PASSWORD',
     phone: '+61400000000',
     status,
     role: UserRole.BUYER,

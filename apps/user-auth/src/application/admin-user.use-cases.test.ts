@@ -10,6 +10,7 @@ import { EventPublisher } from '@carat-room/shared-events';
 const makeUserRepo = (): UserRepository => ({
   findById: vi.fn().mockResolvedValue(null),
   findByEmail: vi.fn().mockResolvedValue(null),
+  findByGoogleId: vi.fn().mockResolvedValue(null),
   findAll: vi.fn().mockResolvedValue([]),
   save: vi.fn().mockResolvedValue(undefined),
 });
