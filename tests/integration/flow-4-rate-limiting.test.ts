@@ -52,7 +52,7 @@ describe('Flow 4 — Rate limiting', () => {
         'Content-Type': 'application/json',
         'X-Forwarded-For': '198.51.100.99',
       },
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({ ...credentials, turnstileToken: 'integration-test-token' }),
     });
 
     // ── Assert ───────────────────────────────────────────────────────────────

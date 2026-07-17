@@ -19,6 +19,7 @@ import { GetMeUseCase } from './application/get-me.use-case';
 import { UpdateMeUseCase } from './application/update-me.use-case';
 import { UploadIdentityDocumentUseCase } from './application/upload-identity-document.use-case';
 import { R2UploadClient } from './infrastructure/r2/r2-upload-client';
+import { TurnstileVerifier } from './infrastructure/turnstile/turnstile-verifier';
 import { ListUsersUseCase } from './application/list-users.use-case';
 import { SuspendUserUseCase } from './application/suspend-user.use-case';
 import { ReinstateUserUseCase } from './application/reinstate-user.use-case';
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
   const amqpUrl = process.env.RABBITMQ_URL;
   const jwtPrivateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
+  const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
   const port = Number(process.env.PORT ?? 3001);
   const redisHost = process.env.REDIS_HOST ?? 'localhost';
   const redisPort = Number(process.env.REDIS_PORT ?? 6379);
@@ -48,9 +50,9 @@ async function main(): Promise<void> {
   const R2_SECRET_ACCESS_KEY = process.env['R2_SECRET_ACCESS_KEY']!;
   const R2_BUCKET_NAME       = process.env['R2_BUCKET_NAME']!;
 
-  if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey) {
+  if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey || !turnstileSecretKey) {
     throw new Error(
-      'Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY',
+      'Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TURNSTILE_SECRET_KEY',
     );
   }
 
@@ -92,6 +94,8 @@ async function main(): Promise<void> {
     bucketName: R2_BUCKET_NAME,
   });
 
+  const humanVerifier = new TurnstileVerifier(turnstileSecretKey);
+
   app.route('/api/users', buildUserRouter({
     register:                new RegisterUseCase(userRepo, tokenRepo, passwordService, publisher),
     verifyEmail:             new VerifyEmailUseCase(userRepo, tokenRepo),
@@ -103,7 +107,7 @@ async function main(): Promise<void> {
     getMe:                   new GetMeUseCase(userRepo),
     updateMe:                new UpdateMeUseCase(userRepo),
     uploadIdentityDocument:  new UploadIdentityDocumentUseCase(userRepo, r2),
-  }));
+  }, humanVerifier));
 
   // Admin routes mounted after the public router so specific paths like /me match first
   app.route('/api/users', buildAdminUsersRouter({

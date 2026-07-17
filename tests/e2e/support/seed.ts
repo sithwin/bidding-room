@@ -60,7 +60,11 @@ export async function registerAndVerifyUser(
   // mount path is `/api/users/*` (apps/user-auth/src/main.ts:
   // `app.route('/api/users', buildUserRouter(...))`), not root as the
   // original skeleton assumed.
-  await postJson(`${SERVICE_URLS.userAuth}/api/users/register`, { email, password });
+  // /register and /login are gated by Turnstile human verification
+  // (apps/user-auth/src/presentation/human-verification-middleware.ts); the
+  // docker-compose.test.yml TURNSTILE_SECRET_KEY is Cloudflare's always-pass
+  // test secret, so any non-empty token clears it.
+  await postJson(`${SERVICE_URLS.userAuth}/api/users/register`, { email, password, turnstileToken: 'e2e-test-token' });
 
   const userId = await findUserIdByEmail(email);
 
@@ -72,7 +76,7 @@ export async function registerAndVerifyUser(
     await promoteToAdmin(userId);
   }
 
-  const loginRes = await postJson(`${SERVICE_URLS.userAuth}/api/users/login`, { email, password });
+  const loginRes = await postJson(`${SERVICE_URLS.userAuth}/api/users/login`, { email, password, turnstileToken: 'e2e-test-token' });
   const refreshCookie = loginRes.headers.get('set-cookie') ?? '';
   const loginBody = (await loginRes.json()) as { data: { accessToken: string } };
   const accessToken = loginBody.data.accessToken;
@@ -414,6 +418,7 @@ export async function seedFulfilmentForUser(
   const loginRes = await postJson(`${SERVICE_URLS.userAuth}/api/users/login`, {
     email: user.email,
     password: user.password,
+    turnstileToken: 'e2e-test-token',
   });
   const loginBody = (await loginRes.json()) as { data: { accessToken: string } };
   const bidderToken = loginBody.data.accessToken;

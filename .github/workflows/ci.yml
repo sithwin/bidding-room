@@ -51,6 +51,11 @@ jobs:
           PAYMENT_SERVICE_URL: http://localhost:3004
           SHIPPING_SERVICE_URL: http://localhost:3006
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          # Cloudflare's official always-pass Turnstile test site key (see CLAUDE.md /
+          # docs/superpowers/plans/11-signup-human-check/plan.md) — not a secret, safe to
+          # hardcode. Must be inlined at build time or the widget on auth.spec.ts's real
+          # register/login forms never issues a token and the submit button stays disabled.
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
       - run: pnpm lint
       - run: pnpm turbo test
       - name: Start test stack

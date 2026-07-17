@@ -73,6 +73,7 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:3004
       SHIPPING_SERVICE_URL: http://shipping-service:3006
       ADMIN_SERVICE_URL: http://admin-service:3007
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
     ports:
       - "3000:3000"
 
@@ -94,6 +95,7 @@ services:
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
     depends_on:
       postgres:
         condition: service_healthy

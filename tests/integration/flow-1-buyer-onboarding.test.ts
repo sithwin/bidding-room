@@ -32,7 +32,7 @@ describe('Flow 1 — Buyer onboarding', () => {
     // ── Act: register ──────────────────────────────────────────────────────────
     const registerRes = await api(USER_PORT).post<{ data: { message: string } }>(
       '/api/users/register',
-      { email, password },
+      { email, password, turnstileToken: 'integration-test-token' },
     );
 
     expect(registerRes.status).toBe(201);
@@ -88,7 +88,7 @@ describe('Flow 1 — Buyer onboarding', () => {
     // ── Act: login (email verified) to get access token ───────────────────────
     const loginRes = await api(USER_PORT).post<{ data: { accessToken: string } }>(
       '/api/users/login',
-      { email, password },
+      { email, password, turnstileToken: 'integration-test-token' },
     );
     expect(loginRes.status).toBe(200);
     const accessToken = loginRes.body.data.accessToken;
@@ -143,5 +143,17 @@ describe('Flow 1 — Buyer onboarding', () => {
       [userId],
     );
     expect(final[0].status).toBe('PHONE_VERIFIED');
+  });
+
+  it('rejects registration with 400 CAPTCHA_REQUIRED when no turnstile token is sent', async () => {
+    const email = `buyer-no-captcha-${Date.now()}@test.carat-room.internal`;
+
+    const res = await api(USER_PORT).post<{ error: { code: string; message: string } }>(
+      '/api/users/register',
+      { email, password: 'BuyerPass1!' },
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('CAPTCHA_REQUIRED');
   });
 });

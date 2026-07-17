@@ -10,6 +10,8 @@ import { VerifyPhoneOtpUseCase } from '../application/verify-phone-otp.use-case'
 import { GetMeUseCase } from '../application/get-me.use-case';
 import { UpdateMeUseCase } from '../application/update-me.use-case';
 import { UploadIdentityDocumentUseCase } from '../application/upload-identity-document.use-case';
+import { HumanVerifier } from '../application/human-verifier';
+import { requireHumanVerification } from './human-verification-middleware';
 import { JwtPayload } from '@carat-room/shared-auth';
 
 interface UseCases {
@@ -29,8 +31,9 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 const REFRESH_COOKIE = 'carat_refresh';
 
-export function buildUserRouter(useCases: UseCases): Hono<AppEnv> {
+export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier): Hono<AppEnv> {
   const router = new Hono<AppEnv>();
+  const humanCheck = requireHumanVerification(humanVerifier);
 
   router.get('/:id/email', async (c) => {
     try {
@@ -41,7 +44,7 @@ export function buildUserRouter(useCases: UseCases): Hono<AppEnv> {
     }
   });
 
-  router.post('/register', async (c) => {
+  router.post('/register', humanCheck, async (c) => {
     const body = await c.req.json();
     const { email, password, country } = body;
     if (!email || !password) {
@@ -86,7 +89,7 @@ export function buildUserRouter(useCases: UseCases): Hono<AppEnv> {
     }
   });
 
-  router.post('/login', async (c) => {
+  router.post('/login', humanCheck, async (c) => {
     const body = await c.req.json();
     const { email, password } = body;
     if (!email || !password) {

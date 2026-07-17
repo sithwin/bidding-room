@@ -116,6 +116,7 @@ services:
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-test-key}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-test-secret}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-test-bucket}
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
       # The 'strict' tier (login/register/verify-email/phone OTP) is keyed
       # off one shared per-IP counter at 10 req/min in production - correct
       # for a real end user, but the whole Playwright E2E suite runs from
