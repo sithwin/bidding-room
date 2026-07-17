@@ -28,6 +28,10 @@ export class LoginUseCase {
     const user = await this.userRepo.findByEmail(dto.email);
     if (!user) throw new Error('Invalid credentials');
 
+    if (!user.passwordHash) {
+      throw new Error('Password not set');
+    }
+
     const valid = await this.passwordService.verify(dto.password, user.passwordHash);
     if (!valid) throw new Error('Invalid credentials');
 
