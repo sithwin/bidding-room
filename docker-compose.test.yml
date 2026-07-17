@@ -107,6 +107,15 @@ services:
       R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-test-key}
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-test-secret}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-test-bucket}
+      # The 'strict' tier (login/register/verify-email/phone OTP) is keyed
+      # off one shared per-IP counter at 10 req/min in production - correct
+      # for a real end user, but the whole Playwright E2E suite runs from
+      # this single container's IP and legitimately creates many distinct
+      # throwaway accounts per run, so the production ceiling was rejecting
+      # real (non-abusive) test traffic with 429s partway through a suite
+      # run. Raised here only; production's docker-compose.yml leaves this
+      # unset and gets the strict default.
+      USER_AUTH_STRICT_RATE_LIMIT_MAX: '1000'
     ports:
       - '3001:3001'
     depends_on:
