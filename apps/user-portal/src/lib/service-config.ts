@@ -26,10 +26,18 @@ export const DISPLAY_CURRENCY = 'AUD';
  * this header for us; pass it straight through unmodified.
  *
  * Accepts either a Route Handler's `Request` or a Server Component's
- * `headers()` (from `next/headers`) directly.
+ * `headers()` (from `next/headers`) directly. The two can't be told apart by
+ * `'headers' in source`: `next/headers`' `headers()` returns a `HeadersAdapter`
+ * (a real `Headers` subclass, so it already has its own `.get`), but Next
+ * also stores its internal raw-header proxy on a `this.headers` property of
+ * that same instance — so `'headers' in source` is true for it too, and picks
+ * the internal proxy (no `.get` method) instead of the adapter itself. That
+ * crashed every Server Component call site (e.g. the lot-detail page) with
+ * "TypeError: ...get is not a function" on every render. Checking for a
+ * callable `.get` first is a reliable discriminator for both cases.
  */
 export function forwardedForHeader(source: Request | Headers): Record<string, string> {
-  const requestHeaders = 'headers' in source ? source.headers : source;
+  const requestHeaders = typeof (source as Headers).get === 'function' ? (source as Headers) : (source as Request).headers;
   const forwardedFor = requestHeaders.get('x-forwarded-for');
   return forwardedFor ? { 'X-Forwarded-For': forwardedFor } : {};
 }
