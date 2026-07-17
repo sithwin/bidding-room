@@ -4,6 +4,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { CoverageReport } from 'monocart-coverage-reports';
 
 const NEXT_STATIC_MARKER = '/_next/';
+const RSC_PROXY_SUFFIX = '/__nextjs-internal-proxy.mjs';
 
 // PORTAL selects which portal's coverage to merge. Only 'user-portal' has an
 // E2E flow today (see tests/e2e/README.md) — 'admin-portal' is supported so
@@ -31,6 +32,44 @@ const sourceRoot = `apps/${portal}/src`;
 // against tests/e2e/coverage/spike/lcov.info from the Task 4 coverage spike,
 // which used SOURCE_ROOT=apps/user-portal — no '/src' — for this same reason).
 const entryRoot = `apps/${portal}`;
+const repoAnchor = `apps/${portal}/`;
+
+// Turbopack never emits a sourcemap `sources` entry that is already a clean,
+// repo-relative path. Client bundles use a `turbopack:///[project]/<absolute
+// build path>/apps/<portal>/src/...` scheme URL; server bundles use a
+// deeply-relative `../../../../<absolute build path>/apps/<portal>/src/...`
+// string that monocart resolves against `process.cwd()` (this script's own
+// cwd, tests/e2e/) rather than the sourcemap file's directory, landing on a
+// garbled absolute path. Both retain the *original build machine's* absolute
+// path as a prefix (which varies with, e.g., a git worktree's directory
+// name), so client and server coverage for the same file end up filed under
+// two different, prefixed sourcePath strings — neither matching the clean
+// `apps/<portal>/src/...` path SonarCloud expects — and so neither one's
+// coverage is ever attributed to the real file (confirmed by inspecting raw
+// SF: lines in a locally generated lcov.info: the same page.tsx produced 2-3
+// distinct, all-wrong SF: paths, none of them the canonical one). Slicing
+// from the first occurrence of the repo-relative anchor discards whatever
+// build-machine-specific prefix preceded it and gives both sides the same
+// canonical key, so their coverage merges correctly.
+//
+// Next's RSC client-reference stub for a 'use client' page/route (a proxy
+// that just throws if the server ever tries to call it directly) is compiled
+// under a synthetic path that treats the real source file as a directory:
+// `.../page.tsx/__nextjs-internal-proxy.mjs`. That suffix is stripped too, so
+// this entry folds into the real file's coverage instead of appearing as its
+// own nonexistent "file".
+const sourcePath = (filePath) => {
+  const normalized = filePath.replace(/\\/g, '/');
+  const anchorIndex = normalized.indexOf(repoAnchor);
+  if (anchorIndex === -1) {
+    return filePath;
+  }
+  let clean = normalized.slice(anchorIndex);
+  if (clean.endsWith(RSC_PROXY_SUFFIX)) {
+    clean = clean.slice(0, -RSC_PROXY_SUFFIX.length);
+  }
+  return clean;
+};
 
 // Browser-served chunks (URLs like http://localhost:3000/_next/static/chunks/xxx.js) reference
 // their sourcemap via an *external* `//# sourceMappingURL=xxx.js.map` comment - Next's
@@ -63,7 +102,7 @@ const report = new CoverageReport({
   outputDir: outDir,
   reports: [['lcovonly', { file: 'lcov.info' }]],
   sourceFilter: (path) => path.includes(`${sourceRoot}/`) && !path.includes('/node_modules/'),
-  sourcePath: (filePath) => filePath,
+  sourcePath,
   entryFilter: (entry) => entry.url.includes(entryRoot) || entry.url.includes('/_next/'),
   sourceMapResolver,
 });
