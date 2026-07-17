@@ -46,8 +46,6 @@ jobs:
 
       - name: Run integration tests
         run: pnpm run test:integration
-        env:
-          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
 
       - name: Collect service logs on failure
         if: failure()

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { waitForHttp, waitFor } from '../helpers/wait';
 import { resetDb, getDb, closeAllPools } from '../helpers/db';
+import { resetRateLimitCounters, closeRedis } from '../helpers/redis';
 import { api } from '../helpers/api';
 
 const USER_PORT = 3001;
@@ -10,13 +11,19 @@ describe('Flow 1 — Buyer onboarding', () => {
     await waitForHttp(`http://localhost:${USER_PORT}/health`);
     await resetDb('user');
     await resetDb('notification');
+    // Redis (unlike Postgres) is one shared instance for the whole suite —
+    // earlier flow files' login/register calls accumulate against the same
+    // per-IP rate-limit counters. Without this, this flow's own request
+    // count can push an already-mostly-used window over the limit.
+    await resetRateLimitCounters();
   });
 
   afterAll(async () => {
     await closeAllPools();
+    await closeRedis();
   });
 
-  it('registers a new buyer, verifies email and phone, and reaches APPROVED_BIDDER status', async () => {
+  it('registers a new buyer, verifies email and phone, and reaches PHONE_VERIFIED status', async () => {
     // ── Arrange ────────────────────────────────────────────────────────────────
     const email = `buyer-flow1-${Date.now()}@test.carat-room.internal`;
     const password = 'BuyerPass1!';
@@ -117,20 +124,25 @@ describe('Flow 1 — Buyer onboarding', () => {
     );
     expect(verifyPhoneRes.status).toBe(200);
 
-    // ── Assert: user is now an APPROVED_BIDDER ────────────────────────────────
+    // ── Assert: user is now PHONE_VERIFIED ─────────────────────────────────────
+    // Reaching APPROVED_BIDDER additionally requires the identity-document +
+    // Stripe-card register-to-bid wizard and a separate admin approval action
+    // (see apps/user-auth/src/domain/user.ts's verifyPhone(), which sets
+    // PHONE_VERIFIED, not APPROVED_BIDDER) — out of scope for this flow,
+    // which only covers registration through phone verification.
     await waitFor(async () => {
       const r = await db.query<{ status: string }>(
         'SELECT status FROM users WHERE id = $1',
         [userId],
       );
-      return r.rows[0]?.status === 'APPROVED_BIDDER';
+      return r.rows[0]?.status === 'PHONE_VERIFIED';
     });
 
     const { rows: final } = await db.query<{ status: string }>(
       'SELECT status FROM users WHERE id = $1',
       [userId],
     );
-    expect(final[0].status).toBe('APPROVED_BIDDER');
+    expect(final[0].status).toBe('PHONE_VERIFIED');
   });
 
   it('rejects registration with 400 CAPTCHA_REQUIRED when no turnstile token is sent', async () => {

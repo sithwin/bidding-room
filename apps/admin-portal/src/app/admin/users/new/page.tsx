@@ -19,6 +19,15 @@ function FieldError({ messages }: { messages: string[] | undefined }) {
   return <p className='text-sm text-destructive'>{messages[0]}</p>;
 }
 
+interface ServerErrorBody {
+  error?: { message?: string };
+}
+
+function serverErrorMessage(error: unknown): string {
+  const message = (error as ServerErrorBody | undefined)?.error?.message;
+  return typeof message === 'string' ? message : 'Could not create the user. Please try again.';
+}
+
 export default function NewUserPage() {
   const router = useRouter();
   const [state, formAction] = useActionState(createUser, {});
@@ -33,7 +42,7 @@ export default function NewUserPage() {
       <form action={formAction} className='space-y-4'>
         {state.ok === false && !state.errors && (
           <p className='rounded border border-destructive p-2 text-sm text-destructive'>
-            Could not create the user — the email may already be registered.
+            {serverErrorMessage(state.error)}
           </p>
         )}
         <div className='space-y-1'>
