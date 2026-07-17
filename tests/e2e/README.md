@@ -287,6 +287,7 @@ AUCTION_ENGINE_URL=http://localhost:3003
 PAYMENT_SERVICE_URL=http://localhost:3004
 SHIPPING_SERVICE_URL=http://localhost:3006
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<optional — see "Full-credentials secrets" above; empty string self-skips card steps>
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=<required — see below>
 ```
 
 None of these need to be exported by hand for a local run — `global-setup.ts`
@@ -298,6 +299,19 @@ string) into the host-launched portal's environment. Export
 `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` before `docker compose ... up`) only
 if you want the card-authorisation and identity-upload steps to actually run
 instead of self-skip.
+
+**`NEXT_PUBLIC_TURNSTILE_SITE_KEY` is not optional like the Stripe key** —
+unlike the card step, `auth.spec.ts` drives the real Turnstile widget on the
+`/account/login` register/sign-in forms unconditionally (no self-skip guard).
+Without a valid site key the widget never issues a token, the submit button
+stays disabled (`login-client.tsx`'s `!turnstileToken` guard), and the spec
+times out. `apps/user-portal/.env.local` already carries Cloudflare's
+official always-pass test site key (`1x00000000000000000000AA`, matching the
+always-pass secret key baked into `docker-compose.test.yml`'s
+`TURNSTILE_SECRET_KEY`), which Next.js inlines automatically at
+`pnpm --filter user-portal build` time for local runs — no export needed. CI
+sets the same test key explicitly in `.github/workflows/ci.yml`'s portal
+rebuild step, since `.env.local` is gitignored and never reaches the runner.
 
 `build-lcov.mjs` (generalised in Task 11 to merge coverage per portal) reads:
 

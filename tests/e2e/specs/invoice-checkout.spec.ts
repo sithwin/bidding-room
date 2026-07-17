@@ -54,7 +54,7 @@ test('view a won-lot invoice and start Stripe checkout', async ({ page }) => {
   const winnerLoginRes = await fetch(`${SERVICE_URLS.userAuth}/api/users/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email: winner.email, password: winner.password }),
+    body: JSON.stringify({ email: winner.email, password: winner.password, turnstileToken: 'e2e-test-token' }),
   });
   const winnerLoginBody = (await winnerLoginRes.json()) as { data: { accessToken: string } };
   const winnerBidToken = winnerLoginBody.data.accessToken;
