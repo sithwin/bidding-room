@@ -74,6 +74,13 @@ services:
       SHIPPING_SERVICE_URL: http://shipping-service:3006
       ADMIN_SERVICE_URL: http://admin-service:3007
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      # apps/user-portal/src/lib/service-config.ts reads these to build Google's authorize URL.
+      # Client secret intentionally stays out of this container — only user-service needs it.
+      # Same GOOGLE_OAUTH_REDIRECT_URI value is also passed to user-service below (as
+      # GOOGLE_REDIRECT_URI) so the two services can never disagree on the callback URL Google
+      # was told about, which would otherwise fail as a redirect_uri_mismatch.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI}
     ports:
       - "3000:3000"
 
@@ -98,7 +105,11 @@ services:
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+      # Sourced from the same GOOGLE_OAUTH_REDIRECT_URI operator variable as user-portal above —
+      # user-portal reads it as GOOGLE_OAUTH_REDIRECT_URI, user-auth's main.ts reads it as
+      # GOOGLE_REDIRECT_URI; one operator-facing value keeps both in sync with what was registered
+      # as the callback URL in Google Cloud Console.
+      GOOGLE_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI}
     depends_on:
       postgres:
         condition: service_healthy
