@@ -59,7 +59,7 @@ Use cases (Tasks 4–5):
 - [C14] `LoginUseCase` rejects password login with a clear error when `passwordHash` is null
 
 Backend wiring (Task 6):
-- [C15] `POST /api/users/auth/google` — issues the same JWT/cookie shape as `/login`
+- [C15] `POST /api/users/auth/google` — issues the same JWT/cookie shape as `/login`; deliberately not gated by the merged Turnstile `humanCheck` middleware (Google's consent screen is itself the human check — see Task 6's note)
 - [C16] `POST /api/users/me/password` — authenticated, sets a password for a Google-only account
 - [C17] `main.ts` constructs `GoogleOAuthIdentityProvider` from `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI`, boot fails fast if unset
 - [C18] `docker-compose.yml` and `docker-compose.test.yml` updated with the new env vars
@@ -1302,15 +1302,17 @@ Add auth middleware for the new authenticated route, alongside the existing `/ap
 app.use('/api/users/me/password', authMiddleware(jwtPublicKey));
 ```
 
-Add both new use cases to the `buildUserRouter` call:
+Add both new use cases to the `buildUserRouter` call. **`main.ts` already passes a second `humanVerifier` argument** (added by the merged Turnstile feature, PR #26) — preserve it, do not drop it:
 
 ```typescript
 app.route('/api/users', buildUserRouter({
   // ...existing entries unchanged
   googleAuth: new GoogleAuthUseCase(userRepo, tokenRepo, tokenService, googleIdentityProvider),
   setPassword: new SetPasswordUseCase(userRepo, passwordService),
-}));
+}, humanVerifier));
 ```
+
+**Note on Turnstile interaction (post-merge check):** `/register` and `/login` are now gated by `requireHumanVerification(humanVerifier)` middleware (`apps/user-auth/src/presentation/human-verification-middleware.ts`), requiring a `turnstileToken` in the body. `POST /auth/google` and `POST /me/password` deliberately do **not** get this middleware: Google's own consent screen is itself a human-verification step for the former (stacking Turnstile on top would add back the friction this feature exists to remove), and the latter is already gated by `authMiddleware` (a bot cannot reach it without a valid session). Do not add `humanCheck` to either new route.
 
 - [ ] **Step 3: Add env vars to `docker-compose.yml`**
 
@@ -1359,13 +1361,13 @@ Covers: C26
 
 - [ ] **Step 1: Write the tests**
 
-This is a self-contained Hono-router test using `app.request()` directly (does not depend on any pre-existing router test file's internal fixtures):
+This is a self-contained Hono-router test using `app.request()` directly (does not depend on any pre-existing router test file's internal fixtures). Since the merged Turnstile feature (PR #26), `buildUserRouter` takes a second `humanVerifier: HumanVerifier` argument, and `/login` (unlike `/auth/google`) runs `requireHumanVerification` first — a fake verifier that always resolves `true` is passed here, and the `/login` test below must still include a `turnstileToken` in its body (the middleware rejects with `CAPTCHA_REQUIRED` before the verifier even runs if the field is missing or empty):
 
 ```typescript
 // apps/user-auth/src/presentation/user-router.google.test.ts
 import { describe, it, expect, vi } from 'vitest';
 import { buildUserRouter } from './user-router';
-import { UserStatus, UserRole } from '../domain/user';
+import { HumanVerifier } from '../application/human-verifier';
 
 function makeUseCases(overrides: Record<string, unknown> = {}) {
   return {
@@ -1385,9 +1387,11 @@ function makeUseCases(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const alwaysHumanVerifier: HumanVerifier = { verify: vi.fn().mockResolvedValue(true) };
+
 describe('POST /auth/google', () => {
   it('should_return400_when_codeMissing', async () => {
-    const router = buildUserRouter(makeUseCases() as never);
+    const router = buildUserRouter(makeUseCases() as never, alwaysHumanVerifier);
     const res = await router.request('/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1398,7 +1402,7 @@ describe('POST /auth/google', () => {
 
   it('should_setRefreshCookieAndReturnAccessToken_when_exchangeSucceeds', async () => {
     const googleAuth = { execute: vi.fn().mockResolvedValue({ accessToken: 'access-tok', refreshToken: 'refresh-tok' }) };
-    const router = buildUserRouter(makeUseCases({ googleAuth }) as never);
+    const router = buildUserRouter(makeUseCases({ googleAuth }) as never, alwaysHumanVerifier);
     const res = await router.request('/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1412,7 +1416,7 @@ describe('POST /auth/google', () => {
 
   it('should_return400WithEmailNotVerifiedCode_when_googleEmailUnverified', async () => {
     const googleAuth = { execute: vi.fn().mockRejectedValue(new Error('Google email not verified')) };
-    const router = buildUserRouter(makeUseCases({ googleAuth }) as never);
+    const router = buildUserRouter(makeUseCases({ googleAuth }) as never, alwaysHumanVerifier);
     const res = await router.request('/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1422,16 +1426,30 @@ describe('POST /auth/google', () => {
     const body = await res.json();
     expect(body.error.code).toBe('EMAIL_NOT_VERIFIED');
   });
+
+  it('should_notRequireTurnstileToken_unlikeLoginAndRegister', async () => {
+    // No turnstileToken in the body at all, and /auth/google still reaches the use case rather than
+    // short-circuiting with CAPTCHA_REQUIRED — confirms humanCheck middleware is not mounted on this route.
+    const googleAuth = { execute: vi.fn().mockResolvedValue({ accessToken: 'access-tok', refreshToken: 'refresh-tok' }) };
+    const router = buildUserRouter(makeUseCases({ googleAuth }) as never, alwaysHumanVerifier);
+    const res = await router.request('/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: 'auth-code', codeVerifier: 'verifier' }),
+    });
+    expect(res.status).toBe(200);
+    expect(googleAuth.execute).toHaveBeenCalledOnce();
+  });
 });
 
 describe('POST /login with a Google-only account', () => {
   it('should_return400WithPasswordNotSetCode_when_accountHasNoPassword', async () => {
     const login = { execute: vi.fn().mockRejectedValue(new Error('Password not set')) };
-    const router = buildUserRouter(makeUseCases({ login }) as never);
+    const router = buildUserRouter(makeUseCases({ login }) as never, alwaysHumanVerifier);
     const res = await router.request('/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'jane@example.com', password: 'anything' }),
+      body: JSON.stringify({ email: 'jane@example.com', password: 'anything', turnstileToken: 'test-token' }),
     });
     expect(res.status).toBe(400);
     const body = await res.json();
@@ -1440,12 +1458,12 @@ describe('POST /login with a Google-only account', () => {
 });
 ```
 
-Note: `POST /me/password` requires `c.get('jwtPayload')`, which is only populated by `authMiddleware` mounted in `main.ts` — not by `buildUserRouter` in isolation. It is covered instead by the E2E test in Task 11, which runs against the full running service. `UserStatus`/`UserRole` are imported for type-parity with the rest of the suite even though unused directly by these three tests; remove the import if the linter flags it as unused.
+Note: `POST /me/password` requires `c.get('jwtPayload')`, which is only populated by `authMiddleware` mounted in `main.ts` — not by `buildUserRouter` in isolation. It is covered instead by the E2E test in Task 11, which runs against the full running service.
 
 - [ ] **Step 2: Run the tests**
 
 Run: `pnpm --filter @carat-room/user-auth test -- user-router.google.test.ts`
-Expected: PASS — all 4 tests.
+Expected: PASS — all 5 tests.
 
 - [ ] **Step 3: Commit**
 
