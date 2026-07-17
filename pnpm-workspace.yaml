@@ -2,6 +2,16 @@ packages:
   - 'apps/*'
   - 'packages/*'
   - 'tests/e2e'
+overrides:
+  # Pin to versions published well outside pnpm's minimumReleaseAge
+  # supply-chain window. The unpinned resolutions (introduced by the
+  # rate-limiter plan) were published within hours of that merge, so
+  # `pnpm install --frozen-lockfile` fails CI's release-age policy check
+  # even though .npmrc sets minimum-release-age=0 (that setting is not
+  # taking effect in CI for reasons not yet root-caused; pinning these
+  # two transitive deps to already-aged versions sidesteps the question).
+  '@sinclair/typebox': '0.27.10'
+  express-rate-limit: '8.5.2'
 hoistPattern:
   - '*'
   - '!@types/react'
