@@ -386,6 +386,8 @@ describe('bid rate limiter route scope', () => {
     getActiveLots: mockGetActiveLots,
     getLotStatus: mockGetLotStatus,
     getBidHistory: mockGetBidHistory,
+    getAccountBids: mockGetAccountBids,
+    getAccountStats: mockGetAccountStats,
     getDashboardStats: mockGetDashboardStats,
     getAuctionResults: mockGetAuctionResults,
     getUnsoldLots: mockGetUnsoldLots,
