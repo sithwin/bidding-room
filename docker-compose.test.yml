@@ -120,6 +120,17 @@ services:
       GOOGLE_CLIENT_ID: test-google-client-id
       GOOGLE_CLIENT_SECRET: test-google-client-secret
       GOOGLE_REDIRECT_URI: http://localhost:3000/api/auth/google/callback
+      # Points user-auth's server-to-server token exchange and JWKS fetch at the mock Google server
+      # tests/e2e/global-setup.ts starts on the host (see tests/e2e/support/mock-google-server.ts).
+      # `host.docker.internal` resolves to the host machine on Docker Desktop (Windows/Mac, used here).
+      # This is a fixed port (9099), not `${MOCK_GOOGLE_PORT}` interpolation: `docker compose up` (which
+      # reads this file) is a separate command/CI step that runs *before* `pnpm test:e2e` starts the
+      # mock server, so a port only known inside global-setup.ts could never reach compose's env
+      # substitution in time — see mock-google-server.ts's MOCK_GOOGLE_SERVER_PORT comment for detail.
+      # Both overrides are unset in the real docker-compose.yml (production), so main.ts falls through
+      # to the real Google endpoints there.
+      GOOGLE_TOKEN_ENDPOINT_OVERRIDE: http://host.docker.internal:9099/token
+      GOOGLE_JWKS_URL_OVERRIDE: http://host.docker.internal:9099/jwks
       # The 'strict' tier (login/register/verify-email/phone OTP) is keyed
       # off one shared per-IP counter at 10 req/min in production - correct
       # for a real end user, but the whole Playwright E2E suite runs from

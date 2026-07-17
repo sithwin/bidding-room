@@ -47,6 +47,12 @@ async function main(): Promise<void> {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+  // Both undefined in production, falling through to the real Google URLs (see
+  // createGoogleIdTokenVerifier/GoogleOAuthIdentityProvider's defaults) — only the E2E test stack
+  // sets these, pointing user-auth's server-to-server token exchange and JWKS fetch at the mock
+  // Google server started by tests/e2e/global-setup.ts (docker-compose.test.yml's user-auth block).
+  const googleTokenEndpointOverride = process.env.GOOGLE_TOKEN_ENDPOINT_OVERRIDE;
+  const googleJwksUrlOverride = process.env.GOOGLE_JWKS_URL_OVERRIDE;
   const port = Number(process.env.PORT ?? 3001);
   const redisHost = process.env.REDIS_HOST ?? 'localhost';
   const redisPort = Number(process.env.REDIS_PORT ?? 6379);
@@ -117,7 +123,8 @@ async function main(): Promise<void> {
     googleClientId,
     googleClientSecret,
     googleRedirectUri,
-    createGoogleIdTokenVerifier(googleClientId),
+    createGoogleIdTokenVerifier(googleClientId, googleJwksUrlOverride),
+    googleTokenEndpointOverride,
   );
 
   app.route('/api/users', buildUserRouter({

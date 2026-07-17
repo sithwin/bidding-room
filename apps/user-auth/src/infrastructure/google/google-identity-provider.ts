@@ -17,8 +17,8 @@ interface GoogleIdTokenClaims {
 
 export type IdTokenVerifier = (idToken: string) => Promise<GoogleIdTokenClaims>;
 
-export function createGoogleIdTokenVerifier(clientId: string): IdTokenVerifier {
-  const jwks = createRemoteJWKSet(new URL(GOOGLE_JWKS_URL));
+export function createGoogleIdTokenVerifier(clientId: string, jwksUrl: string = GOOGLE_JWKS_URL): IdTokenVerifier {
+  const jwks = createRemoteJWKSet(new URL(jwksUrl));
   return async (idToken: string) => {
     const { payload } = await jwtVerify(idToken, jwks, {
       issuer: GOOGLE_ISSUER,
@@ -34,10 +34,11 @@ export class GoogleOAuthIdentityProvider implements GoogleIdentityProvider {
     private readonly clientSecret: string,
     private readonly redirectUri: string,
     private readonly verifyIdToken: IdTokenVerifier,
+    private readonly tokenEndpoint: string = GOOGLE_TOKEN_ENDPOINT,
   ) {}
 
   async exchangeCodeForProfile(code: string, codeVerifier: string): Promise<GoogleProfile> {
-    const response = await fetch(GOOGLE_TOKEN_ENDPOINT, {
+    const response = await fetch(this.tokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
