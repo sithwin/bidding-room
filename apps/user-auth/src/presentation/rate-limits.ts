@@ -1,5 +1,5 @@
 import type { Redis } from 'ioredis';
-import { createRateLimiter } from '@carat-room/shared-rate-limit';
+import { createRateLimiter, maxRequestsFromEnv } from '@carat-room/shared-rate-limit';
 
 const ONE_MINUTE_MS = 60_000;
 
@@ -13,12 +13,6 @@ const ONE_MINUTE_MS = 60_000;
 // test traffic partway through a run. docker-compose.test.yml raises
 // USER_AUTH_STRICT_RATE_LIMIT_MAX for exactly this reason; production is
 // untouched by leaving the env var unset there.
-export function maxRequestsFromEnv(envVar: string, defaultValue: number): number {
-  const raw = process.env[envVar];
-  const parsed = raw === undefined ? Number.NaN : Number(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : defaultValue;
-}
-
 const STRICT_MAX_REQUESTS = maxRequestsFromEnv('USER_AUTH_STRICT_RATE_LIMIT_MAX', 10);
 const REFRESH_MAX_REQUESTS = maxRequestsFromEnv('USER_AUTH_REFRESH_RATE_LIMIT_MAX', 30);
 const DEFAULT_MAX_REQUESTS = maxRequestsFromEnv('USER_AUTH_DEFAULT_RATE_LIMIT_MAX', 100);

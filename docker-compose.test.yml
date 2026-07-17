@@ -147,6 +147,9 @@ services:
       R2_SECRET_ACCESS_KEY: test-secret
       R2_PUBLIC_BASE_URL: http://localhost:9000
       NODE_ENV: test
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
+      # production-appropriate ceiling for the E2E suite's shared IP.
+      CATALOGUE_DEFAULT_RATE_LIMIT_MAX: '1000'
     ports:
       - '3002:3002'
     depends_on:
@@ -172,6 +175,10 @@ services:
       RABBITMQ_URL: amqp://carat:carat_test@rabbitmq:5672
       JWT_PUBLIC_KEY: *jwt-public-key
       NODE_ENV: test
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
+      # production-appropriate ceiling for the E2E suite's shared IP.
+      AUCTION_ENGINE_BID_RATE_LIMIT_MAX: '1000'
+      AUCTION_ENGINE_DEFAULT_RATE_LIMIT_MAX: '1000'
     ports:
       - '3003:3003'
     depends_on:
@@ -202,6 +209,9 @@ services:
       FRONTEND_URL: http://localhost:3000
       JWT_PUBLIC_KEY: *jwt-public-key
       NODE_ENV: test
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
+      # production-appropriate ceiling for the E2E suite's shared IP.
+      PAYMENT_DEFAULT_RATE_LIMIT_MAX: '1000'
     ports:
       - '3004:3004'
     depends_on:
@@ -227,6 +237,9 @@ services:
       REDIS_PORT: '6379'
       JWT_PUBLIC_KEY: *jwt-public-key
       NODE_ENV: test
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
+      # production-appropriate ceiling for the E2E suite's shared IP.
+      SHIPPING_DEFAULT_RATE_LIMIT_MAX: '1000'
     ports:
       - '3006:3006'
     depends_on:
@@ -262,6 +275,9 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: '6379'
       NODE_ENV: test
+      # See user-auth's USER_AUTH_STRICT_RATE_LIMIT_MAX comment: raises the
+      # production-appropriate ceiling for the E2E suite's shared IP.
+      NOTIFICATION_DEFAULT_RATE_LIMIT_MAX: '1000'
     ports:
       - '3005:3005'
     depends_on:
