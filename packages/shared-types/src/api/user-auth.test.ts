@@ -18,9 +18,24 @@ describe('user-auth contract schemas', () => {
 
   it('parses GET /me with nullable phone and country', () => {
     const body = meResponseSchema.parse({
-      data: { id: 'u1', email: 'a@b.c', phone: null, status: 'EMAIL_VERIFIED', role: 'BUYER', country: null },
+      data: { id: 'u1', email: 'a@b.c', phone: null, status: 'EMAIL_VERIFIED', role: 'BUYER', country: null, hasPassword: true },
     });
     expect(body.data.phone).toBeNull();
+  });
+
+  it('should_includeHasPassword_when_parsingMeResponse', () => {
+    const body = meResponseSchema.parse({
+      data: {
+        id: 'u-1',
+        email: 'jane@example.com',
+        phone: null,
+        status: 'EMAIL_VERIFIED',
+        role: 'BUYER',
+        country: null,
+        hasPassword: false,
+      },
+    });
+    expect(body.data.hasPassword).toBe(false);
   });
 
   it('parses message envelopes', () => {

@@ -237,6 +237,7 @@ export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier
         status: p.status,
         role: p.role,
         country: p.country,
+        hasPassword: p.passwordHash !== null,
       },
     });
   });
