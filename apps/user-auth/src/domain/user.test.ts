@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { User, UserStatus, UserRole } from './user';
+import { User, UserStatus, UserRole, AuthProvider } from './user';
 
 const makeUser = () =>
   User.create({
@@ -127,5 +127,49 @@ describe('User', () => {
       expect(user.email).toBe('new@example.com');
       expect(user.updatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
     });
+  });
+
+  it('should_startAtEmailVerifiedWithNoPassword_when_createdFromGoogle', () => {
+    const user = User.createFromGoogle({
+      id: 'u-1',
+      email: 'jane@example.com',
+      googleId: 'google-sub-123',
+      role: UserRole.BUYER,
+    });
+
+    expect(user.passwordHash).toBeNull();
+    expect(user.googleId).toBe('google-sub-123');
+    expect(user.authProvider).toBe('GOOGLE');
+    expect(user.status).toBe(UserStatus.EMAIL_VERIFIED);
+  });
+
+  it('should_setAuthProviderToBoth_when_linkingGoogleToPasswordAccount', () => {
+    const user = User.create({ id: 'u-1', email: 'jane@example.com', passwordHash: 'h', role: UserRole.BUYER });
+
+    user.linkGoogleAccount('google-sub-123');
+
+    expect(user.googleId).toBe('google-sub-123');
+    expect(user.authProvider).toBe('BOTH');
+  });
+
+  it('should_throwError_when_linkingGoogleToAccountAlreadyLinked', () => {
+    const user = User.createFromGoogle({ id: 'u-1', email: 'jane@example.com', googleId: 'google-sub-123', role: UserRole.BUYER });
+
+    expect(() => user.linkGoogleAccount('google-sub-456')).toThrow('Google account already linked');
+  });
+
+  it('should_setAuthProviderToBoth_when_settingPasswordOnGoogleOnlyAccount', () => {
+    const user = User.createFromGoogle({ id: 'u-1', email: 'jane@example.com', googleId: 'google-sub-123', role: UserRole.BUYER });
+
+    user.setPassword('new-hash');
+
+    expect(user.passwordHash).toBe('new-hash');
+    expect(user.authProvider).toBe('BOTH');
+  });
+
+  it('should_throwError_when_settingPasswordOnAccountThatAlreadyHasOne', () => {
+    const user = User.create({ id: 'u-1', email: 'jane@example.com', passwordHash: 'h', role: UserRole.BUYER });
+
+    expect(() => user.setPassword('new-hash')).toThrow('Password already set');
   });
 });

@@ -12,10 +12,14 @@ export enum UserRole {
   ADMIN = 'ADMIN',
 }
 
+export type AuthProvider = 'PASSWORD' | 'GOOGLE' | 'BOTH';
+
 export interface UserProps {
   id: string;
   email: string;
-  passwordHash: string;
+  passwordHash: string | null;
+  googleId: string | null;
+  authProvider: AuthProvider;
   phone: string | null;
   status: UserStatus;
   role: UserRole;
@@ -43,8 +47,33 @@ export class User {
       id: params.id,
       email: params.email,
       passwordHash: params.passwordHash,
+      googleId: null,
+      authProvider: 'PASSWORD',
       phone: null,
       status: UserStatus.REGISTERED,
+      role: params.role,
+      country: params.country ?? null,
+      identityDocumentKey: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+
+  static createFromGoogle(params: {
+    id: string;
+    email: string;
+    googleId: string;
+    role: UserRole;
+    country?: string;
+  }): User {
+    return new User({
+      id: params.id,
+      email: params.email,
+      passwordHash: null,
+      googleId: params.googleId,
+      authProvider: 'GOOGLE',
+      phone: null,
+      status: UserStatus.EMAIL_VERIFIED,
       role: params.role,
       country: params.country ?? null,
       identityDocumentKey: null,
@@ -59,7 +88,9 @@ export class User {
 
   get id(): string { return this.props.id; }
   get email(): string { return this.props.email; }
-  get passwordHash(): string { return this.props.passwordHash; }
+  get passwordHash(): string | null { return this.props.passwordHash; }
+  get googleId(): string | null { return this.props.googleId; }
+  get authProvider(): AuthProvider { return this.props.authProvider; }
   get phone(): string | null { return this.props.phone; }
   get status(): UserStatus { return this.props.status; }
   get role(): UserRole { return this.props.role; }
@@ -114,6 +145,24 @@ export class User {
       throw new Error('Phone not set');
     }
     this.props.status = UserStatus.PHONE_VERIFIED;
+    this.props.updatedAt = new Date();
+  }
+
+  linkGoogleAccount(googleId: string): void {
+    if (this.props.googleId) {
+      throw new Error('Google account already linked');
+    }
+    this.props.googleId = googleId;
+    this.props.authProvider = this.props.authProvider === 'PASSWORD' ? 'BOTH' : this.props.authProvider;
+    this.props.updatedAt = new Date();
+  }
+
+  setPassword(passwordHash: string): void {
+    if (this.props.passwordHash) {
+      throw new Error('Password already set');
+    }
+    this.props.passwordHash = passwordHash;
+    this.props.authProvider = this.props.authProvider === 'GOOGLE' ? 'BOTH' : this.props.authProvider;
     this.props.updatedAt = new Date();
   }
 
