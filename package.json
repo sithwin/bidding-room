@@ -16,6 +16,7 @@
     "@typescript-eslint/parser": "^8.63.0",
     "concurrently": "^10.0.3",
     "eslint": "^10.6.0",
+    "ioredis": "^5.4.1",
     "pg": "^8.13.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0",

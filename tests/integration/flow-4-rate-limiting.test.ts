@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { waitForHttp } from '../helpers/wait';
 import { resetDb, closeAllPools } from '../helpers/db';
+import { resetRateLimitCounters, closeRedis } from '../helpers/redis';
 import { api } from '../helpers/api';
 
 const USER_PORT = 3001;
@@ -10,10 +11,16 @@ describe('Flow 4 — Rate limiting', () => {
   beforeAll(async () => {
     await waitForHttp(`http://localhost:${USER_PORT}/health`);
     await resetDb('user');
+    // Critical for this file specifically: it deliberately trips the strict
+    // limit, so it must start from a clean counter regardless of what
+    // earlier flow files' login/register calls already used up (Redis is
+    // shared across the whole suite, unlike Postgres's per-file resetDb).
+    await resetRateLimitCounters();
   });
 
   afterAll(async () => {
     await closeAllPools();
+    await closeRedis();
   });
 
   it('should_return429_when_loginIsHammeredPastTheStrictLimitFromOneIp', async () => {

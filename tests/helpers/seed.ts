@@ -96,13 +96,32 @@ export async function seedLot(
  * Schedules an auction for the given lotId via the Auction Engine API.
  * durationSeconds defaults to 30 so tests complete in reasonable time.
  * reservePrice defaults to 0 (no effective reserve) for most flows.
+ * autoExtendWindowMinutes/autoExtendDurationMinutes default to 0 (disabled)
+ * — the auction-aggregate's own default, and what tests/e2e/support/seed.ts's
+ * equivalent helper already uses. A non-zero window is production-scaled
+ * (minutes), but these test auctions last tens of *seconds*; any non-zero
+ * window is larger than the whole auction, so every bid counts as "near the
+ * end" and triggers a full extension — this previously defaulted to 1/1 and
+ * added a genuine ~60s stall to every flow that places a bid (auction stuck
+ * in CLOSING far longer than its `waitFor` timeout), which looked like
+ * infrastructure flakiness but was purely this test-fixture mismatch.
  */
 export async function seedAuction(
   lotId: string,
   adminToken: string,
-  opts: { reservePrice?: number; durationSeconds?: number } = {},
+  opts: {
+    reservePrice?: number;
+    durationSeconds?: number;
+    autoExtendWindowMinutes?: number;
+    autoExtendDurationMinutes?: number;
+  } = {},
 ): Promise<{ lotId: string }> {
-  const { reservePrice = 0, durationSeconds = 30 } = opts;
+  const {
+    reservePrice = 0,
+    durationSeconds = 30,
+    autoExtendWindowMinutes = 0,
+    autoExtendDurationMinutes = 0,
+  } = opts;
 
   const startAt = new Date(Date.now() + 2_000);
   const endAt = new Date(startAt.getTime() + durationSeconds * 1_000);
@@ -117,8 +136,8 @@ export async function seedAuction(
       endAt: endAt.toISOString(),
       reservePrice,
       minBidIncrement: 1,
-      autoExtendWindowMinutes: 1,
-      autoExtendDurationMinutes: 1,
+      autoExtendWindowMinutes,
+      autoExtendDurationMinutes,
     },
     adminToken,
   );

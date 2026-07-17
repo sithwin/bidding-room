@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { waitForHttp, waitFor } from '../helpers/wait';
 import { resetDb, getDb, closeAllPools } from '../helpers/db';
+import { resetRateLimitCounters, closeRedis } from '../helpers/redis';
 import { api } from '../helpers/api';
 import { seedAdminUser, seedBuyerUser, seedLot, seedAuction } from '../helpers/seed';
 
@@ -26,10 +27,14 @@ describe('Flow 3 — Reserve not met', () => {
       resetDb('auction'),
       resetDb('payment'),
     ]);
+    // See flow-1's comment: Redis rate-limit counters are shared across the
+    // whole suite, not reset per-file like Postgres.
+    await resetRateLimitCounters();
   });
 
   afterAll(async () => {
     await closeAllPools();
+    await closeRedis();
   });
 
   it('creates an admin and an approved buyer', async () => {
