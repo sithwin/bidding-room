@@ -92,7 +92,7 @@ export function LoginClient() {
             <>
               <div className='flex border-b border-[var(--line)] mb-8'>
                 {(['signin', 'register'] as const).map(t => (
-                  <button key={t} onClick={() => { setTab(t); setTurnstileToken(''); }}
+                  <button key={t} onClick={() => { setTab(t); resetTurnstile(); }}
                     className={`flex-1 pb-3 font-sans text-sm font-medium transition-colors ${tab === t ? 'border-b-2 border-ink text-ink' : 'text-mut hover:text-ink'}`}>
                     {t === 'signin' ? 'Sign In' : 'Create Account'}
                   </button>
