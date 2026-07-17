@@ -12,6 +12,8 @@ import { UpdateMeUseCase } from '../application/update-me.use-case';
 import { UploadIdentityDocumentUseCase } from '../application/upload-identity-document.use-case';
 import { HumanVerifier } from '../application/human-verifier';
 import { requireHumanVerification } from './human-verification-middleware';
+import { GoogleAuthUseCase } from '../application/google-auth.use-case';
+import { SetPasswordUseCase } from '../application/set-password.use-case';
 import { JwtPayload } from '@carat-room/shared-auth';
 
 interface UseCases {
@@ -25,6 +27,8 @@ interface UseCases {
   getMe: GetMeUseCase;
   updateMe: UpdateMeUseCase;
   uploadIdentityDocument: UploadIdentityDocumentUseCase;
+  googleAuth: GoogleAuthUseCase;
+  setPassword: SetPasswordUseCase;
 }
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
@@ -113,6 +117,12 @@ export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier
       if (message === 'Invalid credentials') {
         return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' } }, 401);
       }
+      if (message === 'Password not set') {
+        return c.json(
+          { error: { code: 'PASSWORD_NOT_SET', message: 'This account uses Google sign-in — no password is set.' } },
+          400,
+        );
+      }
       return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500);
     }
   });
@@ -137,6 +147,34 @@ export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier
         { error: { code: 'UNAUTHORIZED', message: 'Invalid or expired refresh token' } },
         401,
       );
+    }
+  });
+
+  router.post('/auth/google', async (c) => {
+    const body = await c.req.json();
+    const { code, codeVerifier } = body;
+    if (!code || !codeVerifier) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'code and codeVerifier are required' } },
+        400,
+      );
+    }
+    try {
+      const { accessToken, refreshToken } = await useCases.googleAuth.execute({ code, codeVerifier });
+      setCookie(c, REFRESH_COOKIE, refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+        maxAge: 30 * 24 * 60 * 60,
+        path: '/',
+      });
+      return c.json({ data: { accessToken } });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (message === 'Google email not verified') {
+        return c.json({ error: { code: 'EMAIL_NOT_VERIFIED', message } }, 400);
+      }
+      return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500);
     }
   });
 
@@ -208,6 +246,28 @@ export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier
     const body = await c.req.json();
     await useCases.updateMe.execute({ userId, country: body.country });
     return c.json({ data: { message: 'Profile updated.' } });
+  });
+
+  router.post('/me/password', async (c) => {
+    const { userId } = c.get('jwtPayload');
+    const body = await c.req.json();
+    const { password } = body;
+    if (!password || password.length < 8) {
+      return c.json(
+        { error: { code: 'VALIDATION_ERROR', message: 'password must be at least 8 characters' } },
+        400,
+      );
+    }
+    try {
+      await useCases.setPassword.execute({ userId, password });
+      return c.json({ data: { message: 'Password set.' } });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      if (message === 'Password already set') {
+        return c.json({ error: { code: 'CONFLICT', message } }, 409);
+      }
+      return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500);
+    }
   });
 
   router.post('/identity-document', async (c) => {

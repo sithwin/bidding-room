@@ -30,6 +30,8 @@ const makeUseCases = () => ({
   getMe:                  { execute: vi.fn() } as unknown as GetMeUseCase,
   updateMe:               { execute: vi.fn() } as unknown as any,
   uploadIdentityDocument: { execute: vi.fn() } as unknown as any,
+  googleAuth:             { execute: vi.fn() } as unknown as any,
+  setPassword:            { execute: vi.fn() } as unknown as any,
 });
 
 const jwtMiddleware = (userId = 'user-1') =>
