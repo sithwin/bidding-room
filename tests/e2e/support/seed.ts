@@ -470,6 +470,26 @@ async function promoteToAdmin(userId: string): Promise<void> {
   }
 }
 
+/**
+ * Sets a user's status directly via SQL — same precedent as `promoteToAdmin`
+ * above: there is no admin API to force a user into PENDING_REVIEW/SUSPENDED
+ * without a real R2-backed identity-document upload (unavailable in a
+ * no-secrets local run), so this seeds the state directly rather than
+ * fabricating a fake upload.
+ */
+export async function setUserStatus(
+  userId: string,
+  status: 'PENDING_REVIEW' | 'APPROVED_BIDDER' | 'SUSPENDED',
+): Promise<void> {
+  const client = new Client({ connectionString: SEED_DB_URL });
+  await client.connect();
+  try {
+    await client.query('UPDATE users SET status = $1 WHERE id = $2', [status, userId]);
+  } finally {
+    await client.end();
+  }
+}
+
 async function findUserIdByEmail(email: string): Promise<string> {
   const client = new Client({ connectionString: SEED_DB_URL });
   await client.connect();
