@@ -12,50 +12,56 @@ services:
       RABBITMQ_DEFAULT_PASS: devpassword123
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: " "
 
+  user-portal:
+    build: { context: ., dockerfile: apps/user-portal/Dockerfile }
+    pull_policy: never
+    volumes: [./apps/user-portal:/app/apps/user-portal]
+    command: corepack pnpm dev
+
   admin-portal:
     build: { context: ., dockerfile: apps/admin-portal/Dockerfile }
     pull_policy: never
     volumes: [./apps/admin-portal:/app/apps/admin-portal]
-    command: pnpm dev
+    command: corepack pnpm dev
 
   user-service:
     build: { context: ., dockerfile: apps/user-auth/Dockerfile }
     pull_policy: never
     volumes: [./apps/user-auth:/app/apps/user-auth]
-    command: pnpm dev
+    command: corepack pnpm dev
 
   catalogue-service:
     build: { context: ., dockerfile: apps/catalogue/Dockerfile }
     pull_policy: never
     volumes: [./apps/catalogue:/app/apps/catalogue]
-    command: pnpm dev
+    command: corepack pnpm dev
 
   auction-engine:
     build: { context: ., dockerfile: apps/auction-engine/Dockerfile }
     pull_policy: never
     volumes: [./apps/auction-engine:/app/apps/auction-engine]
-    command: pnpm dev
+    command: corepack pnpm dev
 
   payment-service:
     build: { context: ., dockerfile: apps/payment/Dockerfile }
     pull_policy: never
     volumes: [./apps/payment:/app/apps/payment]
-    command: pnpm dev
+    command: corepack pnpm dev
 
   notification-service:
     build: { context: ., dockerfile: apps/notification-service/Dockerfile }
     pull_policy: never
     volumes: [./apps/notification-service:/app/apps/notification-service]
-    command: pnpm dev
+    command: corepack pnpm dev
 
   shipping-service:
     build: { context: ., dockerfile: apps/shipping/Dockerfile }
     pull_policy: never
     volumes: [./apps/shipping:/app/apps/shipping]
-    command: pnpm dev
+    command: corepack pnpm dev
 
   admin-service:
     build: { context: ., dockerfile: apps/admin/Dockerfile }
     pull_policy: never
     volumes: [./apps/admin:/app/apps/admin]
-    command: pnpm dev
+    command: corepack pnpm dev
