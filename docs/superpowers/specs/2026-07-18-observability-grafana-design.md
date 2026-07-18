@@ -158,6 +158,62 @@ Added to `.env` / deploy environment (never committed):
 `SLACK_WEBHOOK_URL`, `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`,
 `ALERT_EMAIL_TO`, `GRAFANA_ADMIN_PASSWORD`.
 
+## Local dev and E2E test stack
+
+The observability stack is also available outside production, including
+Playwright E2E runs (`docker-compose.test.yml`), so service logs from a
+test run are inspectable in Grafana without any per-test wiring.
+
+### Shared, not duplicated, service definitions
+
+A new `docker-compose.observability.yml` defines the same 9 services as
+production (Loki, Promtail, Prometheus, cAdvisor, node-exporter,
+postgres-exporter, redis-exporter, Grafana) **minus Alertmanager** — see
+"No alerting" below. Both `docker-compose.override.yml` (auto-loaded by
+plain `docker compose up`) and `docker-compose.test.yml` add a top-level
+Compose `include:` pointing at this file, so:
+
+- `docker compose up` (local dev) starts the observability stack
+  automatically — no new flags.
+- `docker compose --env-file .env.test -f docker-compose.test.yml up -d
+  --build` (E2E, per the existing documented command) starts it too, no
+  change to that command.
+
+### Why this captures E2E/Playwright logs with no extra wiring
+
+Promtail discovers containers via the Docker socket (Docker service
+discovery), not via a specific compose project — every container
+`docker-compose.test.yml` spins up for a Playwright run (`user-service`,
+`catalogue-service`, etc.) is automatically picked up and labelled the
+same way production containers are. Prometheus scraping `/metrics` from
+those same containers requires only that the observability services join
+the default network created by `docker-compose.test.yml`'s `include:`,
+which Compose does automatically.
+
+### No alerting
+
+The dev/E2E Grafana instance mounts only
+`infra/grafana/provisioning/datasources/` and `dashboards/` — not an
+`alerting/` provisioning folder — so no alert rules are provisioned, and
+there is no Alertmanager service to route to Slack/email even if one
+existed. This avoids noisy notifications from local runs or CI test
+failures.
+
+### Persistence
+
+Distinct named volumes (`loki_dev_data`, `prometheus_dev_data`, separate
+from any production volume names) so log/metric data survives an ordinary
+`up`/`down` cycle, letting a previous run be inspected afterwards. Caveat:
+the existing E2E teardown command (`docker compose -f
+docker-compose.test.yml down -v`) removes named volumes, so these are
+still cleared on that explicit teardown — "persistent" here means
+surviving normal restarts, not that `-v` teardown.
+
+### Access
+
+No Nginx involved — Grafana's port (e.g. `3009`) is published directly for
+local access, since this never leaves the developer's/CI's own machine.
+
 ## Dashboards
 
 Provisioned as JSON under `infra/grafana/provisioning/dashboards/`:
@@ -173,8 +229,9 @@ Provisioned as JSON under `infra/grafana/provisioning/dashboards/`:
 
 ## Alert rules
 
-Grafana unified alerting, evaluated against Loki/Prometheus, routed through
-Alertmanager to both Slack and email:
+Production only — not provisioned in local dev or the E2E test stack (see
+"No alerting" above). Grafana unified alerting, evaluated against
+Loki/Prometheus, routed through Alertmanager to both Slack and email:
 
 | Alert | Condition |
 |---|---|
@@ -208,6 +265,14 @@ deploy:
    error rate" alert fires and both Slack and email notifications arrive.
 5. Confirm `/grafana/` is reachable from an allowlisted IP and returns
    403/blocked from a non-allowlisted IP.
+6. `docker compose up` locally — confirm the observability stack starts
+   automatically alongside Postgres/Redis/RabbitMQ, reachable at
+   `localhost:3009`.
+7. Run the E2E suite (`docker compose --env-file .env.test -f
+   docker-compose.test.yml up -d --build` then `pnpm --filter
+   @carat-room/e2e test:e2e`) — confirm logs from the test-stack services
+   appear in the local Grafana's Loki explorer during/after the run, and
+   that no Slack/email notification fires regardless of test outcome.
 
 ## Open questions / follow-ups (explicitly out of scope here)
 
