@@ -124,11 +124,20 @@ export function buildPaymentRouter(deps: RouterDeps): Hono<AppEnv> {
   router.post('/api/payments/invoices/:id/checkout', authMiddleware(deps.jwtPublicKey), async (c) => {
     const payload = c.get('jwtPayload') as JwtPayload;
     const body = await c.req.json<{ lotTitle: string }>();
-    const result = await deps.createCheckoutSession.execute({
-      invoiceId: c.req.param('id'),
-      requestingUserId: payload.userId,
-      lotTitle: body.lotTitle,
-    });
+    let result: { checkoutUrl: string } | null;
+    try {
+      result = await deps.createCheckoutSession.execute({
+        invoiceId: c.req.param('id'),
+        requestingUserId: payload.userId,
+        lotTitle: body.lotTitle,
+      });
+    } catch {
+      // Stripe API failure (e.g. an invalid/placeholder key in local dev) - never let this fall
+      // through to Hono's default onError, which returns plain text: user-portal's checkout
+      // route.ts calls res.json() unconditionally on our response, and a plain-text body throws
+      // there instead of surfacing this error.
+      return c.json({ error: { code: 'CHECKOUT_FAILED', message: 'Unable to start checkout' } }, 502);
+    }
     if (!result) {
       return c.json({ error: { code: 'NOT_FOUND', message: 'Invoice not found or not payable' } }, 404);
     }

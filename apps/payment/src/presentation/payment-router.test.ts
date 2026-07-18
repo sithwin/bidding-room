@@ -289,6 +289,20 @@ describe('POST /api/payments/invoices/:id/checkout', () => {
 
     expect(res.status).toBe(404);
   });
+
+  it('should_return502WithJsonError_when_createCheckoutSessionThrows', async () => {
+    vi.mocked(mockCreateCheckout.execute).mockRejectedValue(new Error('Stripe request failed'));
+
+    const res = await app.request('/api/payments/invoices/inv-1/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lotTitle: 'Gold Ring' }),
+    });
+
+    expect(res.status).toBe(502);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe('CHECKOUT_FAILED');
+  });
 });
 
 describe('POST /api/payments/setup-intent', () => {
