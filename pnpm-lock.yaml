@@ -296,6 +296,12 @@ importers:
       '@carat-room/shared-auth':
         specifier: workspace:*
         version: link:../../packages/shared-auth
+      '@carat-room/shared-logger':
+        specifier: workspace:*
+        version: link:../../packages/shared-logger
+      '@carat-room/shared-metrics':
+        specifier: workspace:*
+        version: link:../../packages/shared-metrics
       '@carat-room/shared-rate-limit':
         specifier: workspace:*
         version: link:../../packages/shared-rate-limit

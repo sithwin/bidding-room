@@ -14,6 +14,8 @@
     "@aws-sdk/s3-request-presigner": "^3.600.0",
     "@carat-room/db-migrate": "workspace:*",
     "@carat-room/shared-auth": "workspace:*",
+    "@carat-room/shared-logger": "workspace:*",
+    "@carat-room/shared-metrics": "workspace:*",
     "@carat-room/shared-rate-limit": "workspace:*",
     "@carat-room/shared-types": "workspace:*",
     "@hono/node-server": "^1.12.0",

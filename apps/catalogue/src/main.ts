@@ -3,6 +3,8 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import Redis from 'ioredis';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
+import { createLogger, requestContextMiddleware } from '@carat-room/shared-logger';
+import { createMetrics, httpMetricsMiddleware, metricsRoute } from '@carat-room/shared-metrics';
 import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
 import { PostgresLotRepository } from './infrastructure/postgres-lot-repository';
@@ -75,9 +77,16 @@ const redis = new Redis({
 });
 const rateLimits = buildCatalogueRateLimits(redis);
 
+const logger = createLogger({ service: 'catalogue', pretty: process.env.NODE_ENV !== 'production' });
+const metrics = createMetrics({ service: 'catalogue' });
+
 const app = new Hono<AppEnv>();
 
+app.use('*', requestContextMiddleware(logger));
+app.use('*', httpMetricsMiddleware(metrics));
+
 app.get('/health', c => c.json({ status: 'ok', service: 'catalogue' }));
+app.get('/metrics', metricsRoute(metrics));
 
 app.use('*', rateLimits.default);
 
@@ -199,6 +208,6 @@ runMigrations(db, join(__dirname, '..', 'migrations'))
     serve({ fetch: app.fetch, port: PORT });
   })
   .catch(err => {
-    console.error('Failed to apply catalogue migrations:', err);
+    createLogger({ service: 'catalogue' }).error({ err }, 'Failed to apply catalogue migrations');
     process.exit(1);
   });
