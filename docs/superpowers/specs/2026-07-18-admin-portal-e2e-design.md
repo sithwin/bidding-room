@@ -99,6 +99,9 @@ step — rebuild `admin-portal` with real service URLs (same pattern as the exis
 @carat-room/e2e test:e2e:admin`, then `PORTAL=admin-portal pnpm --filter
 @carat-room/e2e coverage:report`. Both lcov reports (`coverage/user-portal/lcov.info`,
 `coverage/admin-portal/lcov.info`) registered in `sonar.javascript.lcov.reportPaths`.
+A separate, later CI step runs the `@visual` spec only (`--grep @visual`, see
+Section 5) — isolated so a pixel-diff flake can't fail the functional-coverage
+signal the two steps above produce.
 
 **Required error-state assertions** (not just happy paths):
 - Invalid login credentials → form error shown, no navigation.
@@ -119,3 +122,52 @@ task/plan report, not silently worked around.
 **Explicitly out of scope**: remaining user-portal page gaps (dashboard, profile,
 watchlist, won, bids, calendar, sell, auctions list page) — separate follow-up
 design, per the two-part scoping decision made during brainstorming.
+
+## Section 5 — QA depth: locators, accessibility, visual regression
+
+Beyond "the action succeeded," each admin spec applies three additional layers so
+the suite catches UX regressions, not just functional ones:
+
+**1. User-facing locators + explicit outcome assertions.** Every spec locates
+elements the way a user perceives them — `getByRole`, `getByLabel`,
+`getByPlaceholder`, `getByText` — never CSS classes or DOM structure. Every
+mutating action (create/edit/update-status/logout) asserts the actual user-visible
+outcome text (e.g. `getByRole('status').getByText('Lot created')`), not just a URL
+change or absence of a thrown error. This is a lint-by-convention rule applied
+across all nine specs in Section 3, not a separate spec file.
+
+**2. Accessibility scan per page (`@axe-core/playwright`).** New dev dependency
+`@axe-core/playwright` in `tests/e2e/package.json`. A shared `support/a11y.ts`
+exports one `runA11yScan(page)` fixture wrapping `AxeBuilder(...).analyze()`,
+scoped with `.include()` to the main content region so nav chrome shared across
+every page isn't scanned redundantly. Each of the nine specs calls it once per
+distinct page reached (after navigation, and again after opening any dialog/form
+overlay that changes the DOM materially) and asserts zero `serious`/`critical`
+violations — `moderate`/`minor` are logged (console.warn from the fixture) but not
+failed on, so the suite doesn't drown in pre-existing minor issues on day one.
+This is the closest thing to automatic "what did we forget" discovery: it flags
+un-labelled inputs, missing accessible names on icon-only buttons (e.g. a bare "←"
+back control with no `aria-label`), and unreachable focus — the structural pattern
+behind "form with no way back."
+
+**3. Visual regression (`toHaveScreenshot`).** Tagged `@visual` and run as a
+**separate** CI step/job from the functional specs (`playwright test -c
+playwright.admin.config.ts --grep @visual`), so a pixel-diff flake never blocks
+the functional-coverage signal Section 4's CI step depends on. Scope to
+element-level captures of the main content region per page (not full-page), not
+per-action — one visual spec `admin-visual.spec.ts` that navigates to each of the
+14 admin routes and takes one stable screenshot each, rather than adding
+screenshot assertions inside the nine CRUD specs. Required config:
+`animations: 'disabled'`, `maxDiffPixelRatio: 0.01`, dynamic content (timestamps,
+seeded IDs) masked via `mask: [...]`. Baselines are generated once in CI (the same
+environment/OS/browser that will later compare against them, per the "generate
+baselines in the same environment CI uses" rule) and committed under
+`tests/e2e/specs-admin/admin-visual.spec.ts-snapshots/`; updating a baseline is a
+deliberate, reviewed diff in its own commit, never an incidental part of a feature
+change.
+
+**Scope note:** layers 1–2 apply to all nine specs from day one. Layer 3
+(`admin-visual.spec.ts`) is a tenth, additive spec — it does not block the
+Section 3 specs and can land in the same plan as a separate task so a flaky
+baseline never holds up the functional-coverage work that's this design's primary
+goal.
