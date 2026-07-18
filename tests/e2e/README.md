@@ -51,7 +51,7 @@ that phrase is specifically the boot + `test:e2e` pair above.
 ## Boot the backend stack
 
 The backend stack (`user-auth`, `catalogue`, `auction-engine`, `payment`,
-`notification`, `shipping`, plus `postgres`, `redis`, `rabbitmq`) is defined
+`notification`, `shipping`, `admin`, plus `postgres`, `redis`, `rabbitmq`) is defined
 in `docker-compose.test.yml` at the repo root. These are the exact commands
 verified to build and boot the stack to a fully healthy state (Task 2):
 
@@ -70,7 +70,7 @@ docker compose --env-file .env.test -f docker-compose.test.yml up -d --build
 a bare `-f docker-compose.test.yml` still silently inherits the repo-root `.env`.
 
 **Known intermittent flake:** on first boot, one or more services (commonly
-`auction-engine`, `user-auth`, `notification`, `payment`, `shipping`) can
+`auction-engine`, `user-auth`, `notification`, `payment`, `shipping`, `admin`) can
 exit(1) or report `unhealthy` because they raced Postgres/RabbitMQ's own
 startup. A retry recovers it every time observed so far:
 
@@ -126,12 +126,12 @@ timeout 180 bash -c '
 ### Smoke-check every service's `/health` endpoint
 
 ```bash
-for p in 3001 3002 3003 3004 3005 3006; do
+for p in 3001 3002 3003 3004 3005 3006 3007; do
   echo -n "port $p: "; curl -fsS "http://localhost:$p/health" && echo; done
 ```
 
-Expected (host ports 3001-3006 map to user-auth, catalogue, auction-engine,
-payment, notification, shipping respectively):
+Expected (host ports 3001-3007 map to user-auth, catalogue, auction-engine,
+payment, notification, shipping, admin respectively):
 
 ```
 port 3001: {"status":"ok","service":"user-auth"}
@@ -140,6 +140,7 @@ port 3003: {"status":"ok","service":"auction-engine"}
 port 3004: {"status":"ok","service":"payment"}
 port 3005: {"status":"ok"}
 port 3006: {"status":"ok","service":"shipping"}
+port 3007: {"status":"ok","service":"admin"}
 ```
 
 ### Tear down
