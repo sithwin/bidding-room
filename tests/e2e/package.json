@@ -9,6 +9,7 @@
     "coverage:report": "node ./scripts/build-lcov.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
     "@playwright/test": "^1.48.0",
     "@types/node": "^20.0.0",
     "jose": "^5.3.0",
