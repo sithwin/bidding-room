@@ -4,7 +4,15 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": [
+        "USER_SERVICE_URL",
+        "CATALOGUE_SERVICE_URL",
+        "AUCTION_ENGINE_URL",
+        "PAYMENT_SERVICE_URL",
+        "SHIPPING_SERVICE_URL",
+        "ADMIN_SERVICE_URL"
+      ]
     },
     "test": {
       "dependsOn": ["^build"],

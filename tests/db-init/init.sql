@@ -16,12 +16,14 @@ CREATE DATABASE admin_test;
 CREATE TABLE users (
   id                     UUID PRIMARY KEY,
   email                  TEXT UNIQUE NOT NULL,
-  password_hash          TEXT NOT NULL,
+  password_hash          TEXT,
   phone                  TEXT,
   status                 TEXT NOT NULL DEFAULT 'REGISTERED',
   role                   TEXT NOT NULL DEFAULT 'BUYER',
   country                TEXT,
   identity_document_key  TEXT,
+  google_id              TEXT,
+  auth_provider           TEXT NOT NULL DEFAULT 'PASSWORD',
   created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at             TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -44,6 +46,7 @@ CREATE TABLE refresh_tokens (
 );
 
 CREATE INDEX idx_users_email               ON users(email);
+CREATE UNIQUE INDEX idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;
 CREATE INDEX idx_verification_tokens_user  ON verification_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_user       ON refresh_tokens(user_id);
 

@@ -8,6 +8,7 @@ export interface UserListFilter {
 export interface UserRepository {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
+  findByGoogleId(googleId: string): Promise<User | null>;
   findAll(filter: UserListFilter): Promise<User[]>;
   save(user: User): Promise<void>;
 }

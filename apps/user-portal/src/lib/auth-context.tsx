@@ -10,7 +10,7 @@ interface AuthState {
   login: (token: string, user: JwtPayload) => void;
   logout: () => void;
   setAccessToken: (token: string) => void;
-  refreshAccessToken: () => Promise<void>;
+  refreshAccessToken: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);
@@ -36,13 +36,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshAccessToken = useCallback(async () => {
     const res = await fetch('/api/auth/refresh', { method: 'GET' });
-    if (!res.ok) return;
+    if (!res.ok) return false;
     const accessToken = parseAccessToken(await res.json());
-    if (!accessToken) return;
+    if (!accessToken) return false;
     const payload = decodeJwtPayload(accessToken);
-    if (!payload) return;
+    if (!payload) return false;
     setAccessTokenState(accessToken);
     setUser(payload);
+    return true;
   }, []);
 
   return (

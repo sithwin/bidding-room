@@ -16,9 +16,20 @@ suite — portal start, five flows, client + server V8 coverage capture — is
 exactly two commands:
 
 ```bash
-docker compose -f docker-compose.test.yml up -d --build   # + wait for health (see below)
+docker compose --env-file .env.test -f docker-compose.test.yml up -d --build   # + wait for health (see below)
 pnpm --filter @carat-room/e2e test:e2e
 ```
+
+**Always pass `--env-file .env.test`** for the test stack, not a bare `docker compose -f
+docker-compose.test.yml up`. Docker Compose auto-loads the repo-root `.env` (used by the
+dev/production `docker-compose.yml` stack) for *any* compose invocation run from the repo root,
+regardless of which `-f` file you pass — so without `--env-file .env.test` overriding that, the
+test stack silently picks up dev/production secrets (e.g. `.env`'s
+`STRIPE_WEBHOOK_SECRET=whsec_placeholder`), which mismatches the test-safe defaults
+`docker-compose.test.yml` and `support/seed.ts` otherwise agree on, and breaks `fulfilment.spec.ts`'s
+webhook-signature step. `.env.test` (repo root, committed — it holds no secrets, only rate-limit
+overrides) also raises the rate-limit ceilings so a full E2E run doesn't trip the strict-tier
+limiter (see `apps/user-auth/src/presentation/rate-limits.ts`'s comment) partway through.
 
 `test:e2e` runs Playwright's `globalSetup` (Task 5), which **starts** the
 already-built `user-portal` on the host (port 3000, production build via
@@ -52,8 +63,11 @@ pnpm install --frozen-lockfile
 pnpm turbo build
 
 # 2. Build and start the backend stack
-docker compose -f docker-compose.test.yml up -d --build
+docker compose --env-file .env.test -f docker-compose.test.yml up -d --build
 ```
+
+**Always pass `--env-file .env.test`** — see the note under "Two-command local run" above for why
+a bare `-f docker-compose.test.yml` still silently inherits the repo-root `.env`.
 
 **Known intermittent flake:** on first boot, one or more services (commonly
 `auction-engine`, `user-auth`, `notification`, `payment`, `shipping`) can
@@ -61,8 +75,8 @@ exit(1) or report `unhealthy` because they raced Postgres/RabbitMQ's own
 startup. A retry recovers it every time observed so far:
 
 ```bash
-docker compose -f docker-compose.test.yml restart auction-engine  # or whichever service is unhealthy
-docker compose -f docker-compose.test.yml up -d                   # no --build needed, just restarts exited containers
+docker compose --env-file .env.test -f docker-compose.test.yml restart auction-engine  # or whichever service is unhealthy
+docker compose --env-file .env.test -f docker-compose.test.yml up -d                   # no --build needed, just restarts exited containers
 ```
 
 **Important — building the portal with the right service URLs:** the user-portal's

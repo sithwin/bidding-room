@@ -20,6 +20,9 @@ import { UpdateMeUseCase } from './application/update-me.use-case';
 import { UploadIdentityDocumentUseCase } from './application/upload-identity-document.use-case';
 import { R2UploadClient } from './infrastructure/r2/r2-upload-client';
 import { TurnstileVerifier } from './infrastructure/turnstile/turnstile-verifier';
+import { GoogleOAuthIdentityProvider, createGoogleIdTokenVerifier } from './infrastructure/google/google-identity-provider';
+import { GoogleAuthUseCase } from './application/google-auth.use-case';
+import { SetPasswordUseCase } from './application/set-password.use-case';
 import { ListUsersUseCase } from './application/list-users.use-case';
 import { SuspendUserUseCase } from './application/suspend-user.use-case';
 import { ReinstateUserUseCase } from './application/reinstate-user.use-case';
@@ -41,6 +44,15 @@ async function main(): Promise<void> {
   const jwtPrivateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI;
+  // Both undefined in production, falling through to the real Google URLs (see
+  // createGoogleIdTokenVerifier/GoogleOAuthIdentityProvider's defaults) — only the E2E test stack
+  // sets these, pointing user-auth's server-to-server token exchange and JWKS fetch at the mock
+  // Google server started by tests/e2e/global-setup.ts (docker-compose.test.yml's user-auth block).
+  const googleTokenEndpointOverride = process.env.GOOGLE_TOKEN_ENDPOINT_OVERRIDE;
+  const googleJwksUrlOverride = process.env.GOOGLE_JWKS_URL_OVERRIDE;
   const port = Number(process.env.PORT ?? 3001);
   const redisHost = process.env.REDIS_HOST ?? 'localhost';
   const redisPort = Number(process.env.REDIS_PORT ?? 6379);
@@ -50,9 +62,18 @@ async function main(): Promise<void> {
   const R2_SECRET_ACCESS_KEY = process.env['R2_SECRET_ACCESS_KEY']!;
   const R2_BUCKET_NAME       = process.env['R2_BUCKET_NAME']!;
 
-  if (!databaseUrl || !amqpUrl || !jwtPrivateKey || !jwtPublicKey || !turnstileSecretKey) {
+  if (
+    !databaseUrl ||
+    !amqpUrl ||
+    !jwtPrivateKey ||
+    !jwtPublicKey ||
+    !turnstileSecretKey ||
+    !googleClientId ||
+    !googleClientSecret ||
+    !googleRedirectUri
+  ) {
     throw new Error(
-      'Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TURNSTILE_SECRET_KEY',
+      'Missing required environment variables: DATABASE_URL, RABBITMQ_URL, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY, TURNSTILE_SECRET_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI',
     );
   }
 
@@ -82,9 +103,11 @@ async function main(): Promise<void> {
   app.use('/api/users/phone/request', rateLimits.strict);
   app.use('/api/users/phone/verify', rateLimits.strict);
   app.use('/api/users/refresh', rateLimits.refresh);
+  app.use('/api/users/auth/google', rateLimits.strict);
 
   app.use('/api/users/phone/*', authMiddleware(jwtPublicKey));
   app.use('/api/users/me', authMiddleware(jwtPublicKey));
+  app.use('/api/users/me/password', authMiddleware(jwtPublicKey));
   app.use('/api/users/identity-document', authMiddleware(jwtPublicKey));
 
   const r2 = new R2UploadClient({
@@ -95,6 +118,14 @@ async function main(): Promise<void> {
   });
 
   const humanVerifier = new TurnstileVerifier(turnstileSecretKey);
+
+  const googleIdentityProvider = new GoogleOAuthIdentityProvider(
+    googleClientId,
+    googleClientSecret,
+    googleRedirectUri,
+    createGoogleIdTokenVerifier(googleClientId, googleJwksUrlOverride),
+    googleTokenEndpointOverride,
+  );
 
   app.route('/api/users', buildUserRouter({
     register:                new RegisterUseCase(userRepo, tokenRepo, passwordService, publisher),
@@ -107,6 +138,8 @@ async function main(): Promise<void> {
     getMe:                   new GetMeUseCase(userRepo),
     updateMe:                new UpdateMeUseCase(userRepo),
     uploadIdentityDocument:  new UploadIdentityDocumentUseCase(userRepo, r2),
+    googleAuth:              new GoogleAuthUseCase(userRepo, tokenRepo, tokenService, googleIdentityProvider),
+    setPassword:             new SetPasswordUseCase(userRepo, passwordService),
   }, humanVerifier));
 
   // Admin routes mounted after the public router so specific paths like /me match first

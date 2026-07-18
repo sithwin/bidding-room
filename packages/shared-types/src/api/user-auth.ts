@@ -26,6 +26,7 @@ export const meSchema = z.object({
   status: userStatusSchema,
   role: userRoleSchema,
   country: z.string().nullable(),
+  hasPassword: z.boolean(),
 });
 export const meResponseSchema = envelope(meSchema);
 

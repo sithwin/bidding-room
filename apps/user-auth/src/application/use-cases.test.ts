@@ -15,6 +15,7 @@ import { EventPublisher } from '@carat-room/shared-events';
 const makeUserRepo = (): UserRepository => ({
   findById: vi.fn(),
   findByEmail: vi.fn(),
+  findByGoogleId: vi.fn(),
   findAll: vi.fn(),
   save: vi.fn(),
 });
@@ -146,6 +147,22 @@ describe('LoginUseCase', () => {
     await expect(
       sut.execute({ email: 'jane@example.com', password: 'wrong' }),
     ).rejects.toThrow('Invalid credentials');
+  });
+
+  it('should_throwError_when_accountHasNoPasswordSet', async () => {
+    const userRepo = makeUserRepo();
+    const tokenRepo = makeTokenRepo();
+    const passwordService = makePasswordService();
+    const tokenService = makeTokenService();
+    const googleUser = User.createFromGoogle({ id: 'u-1', email: 'jane@example.com', googleId: 'google-sub-123', role: UserRole.BUYER });
+    (userRepo.findByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(googleUser);
+
+    const sut = new LoginUseCase(userRepo, tokenRepo, passwordService, tokenService);
+
+    await expect(sut.execute({ email: 'jane@example.com', password: 'anything' })).rejects.toThrow(
+      'Password not set',
+    );
+    expect(passwordService.verify).not.toHaveBeenCalled();
   });
 });
 

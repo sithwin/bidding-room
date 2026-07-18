@@ -15,6 +15,7 @@ export default defineConfig({
     baseURL: USER_PORTAL_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    headless: !!process.env.CI,
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
 });

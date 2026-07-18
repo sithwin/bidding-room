@@ -18,15 +18,20 @@ describe('PostgresUserRepository', () => {
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
+        password_hash TEXT,
         phone TEXT,
         status TEXT NOT NULL DEFAULT 'REGISTERED',
         role TEXT NOT NULL DEFAULT 'BUYER',
         country TEXT,
         identity_document_key TEXT,
+        google_id TEXT,
+        auth_provider TEXT NOT NULL DEFAULT 'PASSWORD',
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `;
+    await db`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL
     `;
   });
 
@@ -72,5 +77,42 @@ describe('PostgresUserRepository', () => {
   it('should_returnNull_when_userNotFound', async () => {
     const found = await repo.findById(uuidv4());
     expect(found).toBeNull();
+  });
+
+  it('should_findUser_when_googleIdMatches', async () => {
+    const userId = uuidv4();
+    const user = User.createFromGoogle({
+      id: userId,
+      email: 'google.user@example.com',
+      googleId: 'google-sub-abc',
+      role: UserRole.BUYER,
+    });
+    await repo.save(user);
+
+    const found = await repo.findByGoogleId('google-sub-abc');
+
+    expect(found?.id).toBe(userId);
+    expect(found?.authProvider).toBe('GOOGLE');
+    expect(found?.passwordHash).toBeNull();
+  });
+
+  it('should_returnNull_when_noUserHasThatGoogleId', async () => {
+    const found = await repo.findByGoogleId('nonexistent-sub');
+
+    expect(found).toBeNull();
+  });
+
+  it('should_persistLinkedGoogleAccount_when_saved', async () => {
+    const userId = uuidv4();
+    const user = User.create({ id: userId, email: 'pw.user@example.com', passwordHash: 'h', role: UserRole.BUYER });
+    await repo.save(user);
+
+    user.linkGoogleAccount('google-sub-def');
+    await repo.save(user);
+
+    const found = await repo.findByGoogleId('google-sub-def');
+    expect(found?.id).toBe(userId);
+    expect(found?.authProvider).toBe('BOTH');
+    expect(found?.passwordHash).toBe('h');
   });
 });

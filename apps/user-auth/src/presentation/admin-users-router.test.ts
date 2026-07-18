@@ -55,6 +55,8 @@ function buildUser(overrides: Partial<{ id: string; email: string; status: UserS
     id: overrides.id ?? 'u-1',
     email: overrides.email ?? 'jane@example.com',
     passwordHash: 'h',
+    googleId: null,
+    authProvider: 'PASSWORD',
     phone: null,
     status: overrides.status ?? UserStatus.APPROVED_BIDDER,
     role: UserRole.BUYER,

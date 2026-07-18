@@ -1,10 +1,12 @@
 node_modules/
+.pnpm-store/
 dist/
 coverage/
 test-results/
 .env
 .env.*
 !.env.example
+!.env.test
 *.log
 .turbo/
 .DS_Store
