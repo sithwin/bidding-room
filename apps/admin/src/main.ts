@@ -18,6 +18,8 @@ import { buildFulfilmentsRouter } from './presentation/fulfilments-router';
 import { buildReportsRouter } from './presentation/reports-router';
 import { buildEnquiriesRouter } from './presentation/enquiries-router';
 import { buildAdminRateLimits } from './presentation/rate-limits';
+import { createLogger, requestContextMiddleware } from '@carat-room/shared-logger';
+import { createMetrics, httpMetricsMiddleware, metricsRoute } from '@carat-room/shared-metrics';
 
 const PORT = Number(process.env['PORT'] ?? 3007);
 
@@ -52,8 +54,14 @@ async function main(): Promise<void> {
   });
   const rateLimits = buildAdminRateLimits(redis);
 
+  const logger = createLogger({ service: 'admin', pretty: process.env.NODE_ENV !== 'production' });
+  const metrics = createMetrics({ service: 'admin' });
+
   const app = new Hono();
+  app.use('*', requestContextMiddleware(logger));
+  app.use('*', httpMetricsMiddleware(metrics));
   app.get('/health', (c) => c.json({ status: 'ok', service: 'admin' }));
+  app.get('/metrics', metricsRoute(metrics));
   app.use('*', rateLimits.default);
   app.route('/', buildLotsRouter({ catalogue, auction }));
   app.route('/', buildCategoriesRouter(catalogue));
@@ -70,11 +78,11 @@ async function main(): Promise<void> {
   }));
 
   serve({ fetch: app.fetch, port: PORT }, () => {
-    console.log(`Admin service running on port ${PORT}`);
+    logger.info({ logEvent: 'SERVER_STARTED', payload: { port: PORT } }, `Admin service running on port ${PORT}`);
   });
 }
 
 main().catch((err) => {
-  console.error('Failed to start admin service:', err);
+  createLogger({ service: 'admin' }).fatal({ err }, 'Failed to start admin service');
   process.exit(1);
 });
