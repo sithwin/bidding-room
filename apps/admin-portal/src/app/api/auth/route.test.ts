@@ -53,12 +53,60 @@ describe('POST /api/auth', () => {
     expect(mockCookiesSet).toHaveBeenCalledWith(
       'admin_token',
       adminToken,
-      expect.objectContaining({ httpOnly: true }),
+      expect.objectContaining({ httpOnly: true, secure: false }),
     );
     // Cookie lifetime must be derived from the token's exp claim
     const { maxAge } = mockCookiesSet.mock.calls[0][2] as { maxAge: number };
     expect(maxAge).toBeGreaterThan(0);
     expect(maxAge).toBeLessThanOrEqual(TOKEN_TTL_SECONDS);
+  });
+
+  it('should_setSecureCookie_when_requestUrlIsHttps', async () => {
+    const adminToken = buildToken('ADMIN');
+    process.env.ADMIN_LOGIN_INTERNAL_SECRET = 'test-admin-login-secret';
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { accessToken: adminToken } }),
+    });
+
+    const req = new Request('https://admin.example.com/api/auth', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'admin@test.com', password: 'pass123' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    await POST(req);
+    delete process.env.ADMIN_LOGIN_INTERNAL_SECRET;
+
+    expect(mockCookiesSet).toHaveBeenCalledWith(
+      'admin_token',
+      adminToken,
+      expect.objectContaining({ secure: true }),
+    );
+  });
+
+  it('should_setSecureCookie_when_forwardedProtoHeaderIsHttps', async () => {
+    const adminToken = buildToken('ADMIN');
+    process.env.ADMIN_LOGIN_INTERNAL_SECRET = 'test-admin-login-secret';
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: { accessToken: adminToken } }),
+    });
+
+    const req = new Request('http://localhost/api/auth', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'admin@test.com', password: 'pass123' }),
+      headers: { 'Content-Type': 'application/json', 'x-forwarded-proto': 'https' },
+    });
+
+    await POST(req);
+    delete process.env.ADMIN_LOGIN_INTERNAL_SECRET;
+
+    expect(mockCookiesSet).toHaveBeenCalledWith(
+      'admin_token',
+      adminToken,
+      expect.objectContaining({ secure: true }),
+    );
   });
 
   it('should_return401_when_roleIsNotAdmin', async () => {

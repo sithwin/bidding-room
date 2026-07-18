@@ -34,9 +34,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: { code: 'INVALID_TOKEN', message: 'Received an expired or non-expiring token' } }, { status: 401 });
   }
 
+  const isHttps = new URL(req.url).protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
+
   (await cookies()).set(ADMIN_TOKEN_COOKIE, body.data.accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     sameSite: 'lax',
     maxAge,
     path: '/',
