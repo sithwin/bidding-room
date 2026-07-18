@@ -5,6 +5,11 @@ COPY apps/admin-portal/package.json ./apps/admin-portal/
 COPY packages/ ./packages/
 RUN corepack enable && corepack prepare pnpm@11.8.0 --activate && pnpm install --frozen-lockfile --ignore-scripts && pnpm --filter @carat-room/admin-portal rebuild
 COPY apps/admin-portal/ ./apps/admin-portal/
+# See apps/user-portal/Dockerfile's identical comment: these must match the
+# hostnames docker-compose.yml supplies at runtime, since Next.js/Turbopack
+# inlines process.env.* reads from route handlers at build time.
+ENV USER_SERVICE_URL=http://user-service:3001 \
+    ADMIN_SERVICE_URL=http://admin-service:3007
 RUN pnpm exec turbo run build --filter=@carat-room/admin-portal
 
 FROM node:22-alpine
