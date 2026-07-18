@@ -8,9 +8,13 @@ export async function POST(req: Request): Promise<NextResponse> {
   const { email, password } = await req.json() as { email: string; password: string };
 
   const userServiceUrl = process.env.USER_SERVICE_URL ?? 'http://localhost:3001';
-  const res = await fetch(`${userServiceUrl}/api/users/login`, {
+  const res = await fetch(`${userServiceUrl}/api/users/admin-login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...forwardedForHeader(req.headers) },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-service-secret': process.env.ADMIN_LOGIN_INTERNAL_SECRET ?? '',
+      ...forwardedForHeader(req.headers),
+    },
     body: JSON.stringify({ email, password }),
   });
 

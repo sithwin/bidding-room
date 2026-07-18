@@ -14,6 +14,7 @@ export default async function globalSetup(_config: FullConfig): Promise<() => Pr
     PAYMENT_SERVICE_URL: SERVICE_URLS.payment,
     SHIPPING_SERVICE_URL: SERVICE_URLS.shipping,
     ADMIN_SERVICE_URL: SERVICE_URLS.adminService,
+    ADMIN_LOGIN_INTERNAL_SECRET: process.env.ADMIN_LOGIN_INTERNAL_SECRET ?? 'test-admin-login-secret',
   };
 
   const handle: PortalHandle = await startPortal({

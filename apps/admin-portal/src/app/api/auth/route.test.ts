@@ -24,6 +24,7 @@ beforeEach(() => { vi.clearAllMocks(); });
 describe('POST /api/auth', () => {
   it('should_setCookieAndReturn200_when_adminCredentialsAreValid', async () => {
     const adminToken = buildToken('ADMIN');
+    process.env.ADMIN_LOGIN_INTERNAL_SECRET = 'test-admin-login-secret';
     mockFetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data: { accessToken: adminToken } }),
@@ -40,6 +41,15 @@ describe('POST /api/auth', () => {
 
     expect(res.status).toBe(200);
     expect(body).toEqual({ ok: true });
+    // Must call the internal-secret-gated route (not /login, which requires Turnstile that
+    // admin-portal has no widget for) and forward the shared secret.
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/users/admin-login'),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'x-internal-service-secret': 'test-admin-login-secret' }),
+      }),
+    );
+    delete process.env.ADMIN_LOGIN_INTERNAL_SECRET;
     expect(mockCookiesSet).toHaveBeenCalledWith(
       'admin_token',
       adminToken,

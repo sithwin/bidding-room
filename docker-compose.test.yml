@@ -144,6 +144,10 @@ services:
       # at its production value (raising it here unconditionally silently
       # broke that test - it never saw a 429 because the ceiling was 1000).
       USER_AUTH_STRICT_RATE_LIMIT_MAX: ${USER_AUTH_STRICT_RATE_LIMIT_MAX:-10}
+      # Gates POST /api/users/admin-login (see internal-service-auth-middleware.ts). Test-only
+      # fixture value, not a real secret — must match global-setup.admin.ts's portalEnv so the
+      # host-run admin-portal agrees with this Dockerized user-auth.
+      ADMIN_LOGIN_INTERNAL_SECRET: ${ADMIN_LOGIN_INTERNAL_SECRET:-test-admin-login-secret}
     ports:
       - '3001:3001'
     depends_on:

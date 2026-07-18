@@ -158,6 +158,83 @@ describe('POST /api/users/login', () => {
   });
 });
 
+describe('POST /api/users/admin-login', () => {
+  const INTERNAL_SECRET = 'test-internal-secret';
+
+  it('should_return200WithAccessToken_when_secretAndCredentialsValid', async () => {
+    const useCases = makeUseCases();
+    (useCases.login.execute as ReturnType<typeof vi.fn>).mockResolvedValue({
+      accessToken: 'at',
+      refreshToken: 'rt',
+    });
+
+    const app = new Hono();
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier(), INTERNAL_SECRET));
+
+    const res = await app.request('/api/users/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-service-secret': INTERNAL_SECRET },
+      body: JSON.stringify({ email: 'admin@example.com', password: 'secret' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = accessTokenResponseSchema.parse(await res.json());
+    expect(body.data.accessToken).toBe('at');
+  });
+
+  it('should_return401_when_secretHeaderMissing', async () => {
+    const useCases = makeUseCases();
+
+    const app = new Hono();
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier(), INTERNAL_SECRET));
+
+    const res = await app.request('/api/users/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@example.com', password: 'secret' }),
+    });
+
+    expect(res.status).toBe(401);
+    expect(useCases.login.execute).not.toHaveBeenCalled();
+  });
+
+  it('should_return401_when_secretHeaderWrong', async () => {
+    const useCases = makeUseCases();
+
+    const app = new Hono();
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier(), INTERNAL_SECRET));
+
+    const res = await app.request('/api/users/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-service-secret': 'wrong-secret' },
+      body: JSON.stringify({ email: 'admin@example.com', password: 'secret' }),
+    });
+
+    expect(res.status).toBe(401);
+    expect(useCases.login.execute).not.toHaveBeenCalled();
+  });
+
+  it('should_return401Unauthorized_when_secretValidButPasswordWrong', async () => {
+    const useCases = makeUseCases();
+    (useCases.login.execute as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('Invalid credentials'),
+    );
+
+    const app = new Hono();
+    app.route('/api/users', buildUserRouter(useCases, alwaysHumanVerifier(), INTERNAL_SECRET));
+
+    const res = await app.request('/api/users/admin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-service-secret': INTERNAL_SECRET },
+      body: JSON.stringify({ email: 'admin@example.com', password: 'wrong' }),
+    });
+
+    expect(res.status).toBe(401);
+    expect(apiErrorSchema.parse(await res.json()).error.code).toBe('UNAUTHORIZED');
+    expect(useCases.login.execute).toHaveBeenCalled();
+  });
+});
+
 describe('POST /api/users/refresh', () => {
   it('should_return200WithAccessToken_when_refreshTokenValid', async () => {
     const useCases = makeUseCases();

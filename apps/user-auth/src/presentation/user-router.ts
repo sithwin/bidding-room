@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Context, Hono } from 'hono';
 import { setCookie, getCookie } from 'hono/cookie';
 import { RegisterUseCase } from '../application/register.use-case';
 import { VerifyEmailUseCase } from '../application/verify-email.use-case';
@@ -12,6 +12,7 @@ import { UpdateMeUseCase } from '../application/update-me.use-case';
 import { UploadIdentityDocumentUseCase } from '../application/upload-identity-document.use-case';
 import { HumanVerifier } from '../application/human-verifier';
 import { requireHumanVerification } from './human-verification-middleware';
+import { requireInternalServiceSecret } from './internal-service-auth-middleware';
 import { GoogleAuthUseCase } from '../application/google-auth.use-case';
 import { SetPasswordUseCase } from '../application/set-password.use-case';
 import { JwtPayload } from '@carat-room/shared-auth';
@@ -35,7 +36,45 @@ type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 const REFRESH_COOKIE = 'carat_refresh';
 
-export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier): Hono<AppEnv> {
+async function handleLogin(c: Context<AppEnv>, useCases: UseCases): Promise<Response> {
+  const body = await c.req.json();
+  const { email, password } = body;
+  if (!email || !password) {
+    return c.json(
+      { error: { code: 'VALIDATION_ERROR', message: 'email and password are required' } },
+      400,
+    );
+  }
+  try {
+    const { accessToken, refreshToken } = await useCases.login.execute({ email, password });
+    setCookie(c, REFRESH_COOKIE, refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Strict',
+      maxAge: 30 * 24 * 60 * 60,
+      path: '/',
+    });
+    return c.json({ data: { accessToken } });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    if (message === 'Invalid credentials') {
+      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' } }, 401);
+    }
+    if (message === 'Password not set') {
+      return c.json(
+        { error: { code: 'PASSWORD_NOT_SET', message: 'This account uses Google sign-in — no password is set.' } },
+        400,
+      );
+    }
+    return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500);
+  }
+}
+
+export function buildUserRouter(
+  useCases: UseCases,
+  humanVerifier: HumanVerifier,
+  internalAdminLoginSecret: string = '',
+): Hono<AppEnv> {
   const router = new Hono<AppEnv>();
   const humanCheck = requireHumanVerification(humanVerifier);
 
@@ -93,39 +132,14 @@ export function buildUserRouter(useCases: UseCases, humanVerifier: HumanVerifier
     }
   });
 
-  router.post('/login', humanCheck, async (c) => {
-    const body = await c.req.json();
-    const { email, password } = body;
-    if (!email || !password) {
-      return c.json(
-        { error: { code: 'VALIDATION_ERROR', message: 'email and password are required' } },
-        400,
-      );
-    }
-    try {
-      const { accessToken, refreshToken } = await useCases.login.execute({ email, password });
-      setCookie(c, REFRESH_COOKIE, refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'Strict',
-        maxAge: 30 * 24 * 60 * 60,
-        path: '/',
-      });
-      return c.json({ data: { accessToken } });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      if (message === 'Invalid credentials') {
-        return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' } }, 401);
-      }
-      if (message === 'Password not set') {
-        return c.json(
-          { error: { code: 'PASSWORD_NOT_SET', message: 'This account uses Google sign-in — no password is set.' } },
-          400,
-        );
-      }
-      return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error' } }, 500);
-    }
-  });
+  router.post('/login', humanCheck, (c) => handleLogin(c, useCases));
+
+  // Admin-portal has no Turnstile widget, so it cannot pass humanCheck — this route substitutes
+  // a pre-shared secret (see internal-service-auth-middleware.ts) for CAPTCHA, while still running
+  // the full LoginUseCase (credential checking is never bypassed, only the human-verification step).
+  router.post('/admin-login', requireInternalServiceSecret(internalAdminLoginSecret), (c) =>
+    handleLogin(c, useCases),
+  );
 
   router.post('/refresh', async (c) => {
     const refreshToken = getCookie(c, REFRESH_COOKIE);

@@ -44,6 +44,11 @@ async function main(): Promise<void> {
   const jwtPrivateKey = process.env.JWT_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const jwtPublicKey = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n');
   const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+  // Gates POST /api/users/admin-login (see internal-service-auth-middleware.ts) instead of
+  // Turnstile — deliberately NOT part of the fail-fast check below: an unset/empty value simply
+  // means /admin-login always 401s (fail-closed), so it must not block deployments (e.g. local dev)
+  // that never run admin-portal.
+  const adminLoginInternalSecret = process.env.ADMIN_LOGIN_INTERNAL_SECRET ?? '';
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const googleRedirectUri = process.env.GOOGLE_REDIRECT_URI;
@@ -98,6 +103,7 @@ async function main(): Promise<void> {
 
   app.use('*', rateLimits.default);
   app.use('/api/users/login', rateLimits.strict);
+  app.use('/api/users/admin-login', rateLimits.strict);
   app.use('/api/users/register', rateLimits.strict);
   app.use('/api/users/verify-email', rateLimits.strict);
   app.use('/api/users/phone/request', rateLimits.strict);
@@ -140,7 +146,7 @@ async function main(): Promise<void> {
     uploadIdentityDocument:  new UploadIdentityDocumentUseCase(userRepo, r2),
     googleAuth:              new GoogleAuthUseCase(userRepo, tokenRepo, tokenService, googleIdentityProvider),
     setPassword:             new SetPasswordUseCase(userRepo, passwordService),
-  }, humanVerifier));
+  }, humanVerifier, adminLoginInternalSecret));
 
   // Admin routes mounted after the public router so specific paths like /me match first
   app.route('/api/users', buildAdminUsersRouter({
