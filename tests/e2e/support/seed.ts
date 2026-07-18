@@ -590,6 +590,32 @@ async function retrieveVerificationCode(userId: string, type: 'EMAIL' | 'PHONE')
   }
 }
 
+/**
+ * Polls auction-engine's real `GET /api/auctions/:lotId` (no auth required —
+ * confirmed by reading auction-router.ts:56, it's a public read) until the
+ * lot's status is one of `statuses`. Needed for the unsold-lot case, where —
+ * unlike every winning-bid flow the rest of this file drives — no invoice is
+ * ever created to poll for instead.
+ */
+export async function awaitAuctionStatus(
+  lotId: string,
+  statuses: string[],
+  timeoutMs = 30_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await fetch(`${SERVICE_URLS.auction}/api/auctions/${lotId}`);
+    if (res.ok) {
+      const body = (await res.json()) as { data: { status: string } };
+      if (statuses.includes(body.data.status)) {
+        return;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`Seed: lot ${lotId} did not reach status [${statuses.join(', ')}] within ${timeoutMs}ms`);
+}
+
 /** Decodes the `userId` claim out of a JWT without verifying its signature — safe here because this is a test-seeding helper reading a token this same process just issued via /login. */
 function decodeUserIdFromJwt(accessToken: string): string {
   const [, payloadSegment] = accessToken.split('.');
