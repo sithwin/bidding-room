@@ -232,6 +232,12 @@ importers:
       '@carat-room/shared-events':
         specifier: workspace:*
         version: link:../../packages/shared-events
+      '@carat-room/shared-logger':
+        specifier: workspace:*
+        version: link:../../packages/shared-logger
+      '@carat-room/shared-metrics':
+        specifier: workspace:*
+        version: link:../../packages/shared-metrics
       '@carat-room/shared-rate-limit':
         specifier: workspace:*
         version: link:../../packages/shared-rate-limit
@@ -250,6 +256,9 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.11.1
+      pino:
+        specifier: ^9.0.0
+        version: 9.14.0
       postgres:
         specifier: ^3.4.4
         version: 3.4.9

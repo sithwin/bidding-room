@@ -27,6 +27,8 @@ import { GetAuctionResultsHandler } from './application/get-auction-results-hand
 import { GetUnsoldLotsHandler } from './application/get-unsold-lots-handler';
 import { createAuctionRouter } from './presentation/auction-router';
 import { buildAuctionEngineRateLimits } from './presentation/rate-limits';
+import { createLogger } from '@carat-room/shared-logger';
+import { createMetrics } from '@carat-room/shared-metrics';
 
 const PORT = Number(process.env['PORT'] ?? 3003);
 
@@ -92,9 +94,13 @@ async function main(): Promise<void> {
 
   const redisClient = new Redis(redis);
   const rateLimits = buildAuctionEngineRateLimits(redisClient);
+  const logger = createLogger({ service: 'auction-engine', pretty: process.env.NODE_ENV !== 'production' });
+  const metrics = createMetrics({ service: 'auction-engine' });
 
   // HTTP server
   const app = createAuctionRouter({
+    logger,
+    metrics,
     getActiveLots: getActiveLotsHandler,
     getLotStatus: getLotStatusHandler,
     getBidHistory: getBidHistoryHandler,
@@ -112,8 +118,11 @@ async function main(): Promise<void> {
   });
 
   serve({ fetch: app.fetch, port: PORT }, () => {
-    console.log(`Auction Engine running on :${PORT}`);
+    logger.info({ logEvent: 'SERVER_STARTED', payload: { port: PORT } }, `Auction Engine running on :${PORT}`);
   });
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  createLogger({ service: 'auction-engine' }).fatal({ err }, 'Fatal error during startup');
+  process.exit(1);
+});

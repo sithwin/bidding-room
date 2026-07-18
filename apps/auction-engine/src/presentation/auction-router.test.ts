@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
+import { createLogger } from '@carat-room/shared-logger';
+import { createMetrics } from '@carat-room/shared-metrics';
 import {
   accountBidsQuery, accountBidsResponseSchema, accountStatsResponseSchema,
   apiErrorSchema, auctionResultsResponseSchema, auctionsListQuery, bidHistoryQuery,
@@ -48,6 +50,8 @@ const mockScheduleAuction = { execute: vi.fn() } as unknown as ScheduleAuctionCo
 const mockBroadcaster: SseBroadcaster = { subscribe: vi.fn(), broadcast: vi.fn() };
 
 const router = createAuctionRouter({
+  logger: createLogger({ service: 'auction-engine' }),
+  metrics: createMetrics({ service: 'auction-engine' }),
   getActiveLots: mockGetActiveLots,
   getLotStatus: mockGetLotStatus,
   getBidHistory: mockGetBidHistory,
@@ -383,6 +387,8 @@ describe('bid rate limiter route scope', () => {
   const alwaysOverLimit = (c: any) => c.json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } }, 429);
 
   const routerWithBidLimiterAlwaysOverLimit = createAuctionRouter({
+    logger: createLogger({ service: 'auction-engine' }),
+    metrics: createMetrics({ service: 'auction-engine' }),
     getActiveLots: mockGetActiveLots,
     getLotStatus: mockGetLotStatus,
     getBidHistory: mockGetBidHistory,

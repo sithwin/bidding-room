@@ -4,6 +4,9 @@ import { streamSSE } from 'hono/streaming';
 import { v4 as uuidv4 } from 'uuid';
 import { authMiddleware, verifyJwt } from '@carat-room/shared-auth';
 import type { JwtPayload } from '@carat-room/shared-auth';
+import { type Logger } from 'pino';
+import { requestContextMiddleware } from '@carat-room/shared-logger';
+import { type Metrics, httpMetricsMiddleware, metricsRoute } from '@carat-room/shared-metrics';
 import { GetActiveLotsHandler } from '../application/get-active-lots-handler';
 import { GetLotStatusHandler } from '../application/get-lot-status-handler';
 import { GetBidHistoryHandler } from '../application/get-bid-history-handler';
@@ -20,6 +23,8 @@ import { LotStatusRow } from '../application/lot-query-repository';
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
 export interface AuctionRouterDeps {
+  logger: Logger;
+  metrics: Metrics;
   getActiveLots: GetActiveLotsHandler;
   getLotStatus: GetLotStatusHandler;
   getBidHistory: GetBidHistoryHandler;
@@ -39,9 +44,12 @@ export interface AuctionRouterDeps {
 export function createAuctionRouter(deps: AuctionRouterDeps): Hono<AppEnv> {
   const app = new Hono<AppEnv>();
 
+  app.use('*', requestContextMiddleware(deps.logger));
+  app.use('*', httpMetricsMiddleware(deps.metrics));
   app.use('*', deps.defaultRateLimit);
 
   app.get('/health', (c) => c.json({ status: 'ok', service: 'auction-engine' }));
+  app.get('/metrics', metricsRoute(deps.metrics));
 
   app.get('/api/auctions', async (c) => {
     const page = Math.max(1, Number(c.req.query('page') ?? '1'));
