@@ -1,0 +1,57 @@
+{
+  "title": "Infra",
+  "uid": "infra",
+  "schemaVersion": 39,
+  "tags": ["carat-room"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Host CPU usage (%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        {
+          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Host memory used (%)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Per-container CPU usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        {
+          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]))"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Per-container memory usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        {
+          "expr": "sum by (name) (container_memory_usage_bytes{name!=\"\"})"
+        }
+      ]
+    }
+  ]
+}
