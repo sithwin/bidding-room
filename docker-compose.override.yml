@@ -12,56 +12,56 @@ services:
       RABBITMQ_DEFAULT_PASS: devpassword123
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: " "
 
+  nginx:
+    volumes:
+      - ./infra/nginx/local/nginx.local.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/local/certs:/etc/nginx/certs:ro
+
+  # Every service below builds its production image locally instead of
+  # pulling the private ghcr.io image (pull_policy: never). No bind mounts or
+  # dev commands: each container runs its own already-built output (`node
+  # dist/main.js` / `next start`), the same pattern docker-compose.test.yml
+  # uses. An earlier version of this file bind-mounted live source and ran
+  # `pnpm dev` for hot-reload, but that doesn't work from a Windows host —
+  # mounting the whole repo root exposes pnpm to the workspace but also
+  # overlays the container's Linux-built node_modules with the host's
+  # Windows-built one (wrong-platform native deps), and mounting only a
+  # single app dir hides pnpm-workspace.yaml so workspace:* deps can't
+  # resolve at all. For live-reload dev, run `pnpm --filter <app> dev`
+  # directly on the host instead — this override is for exercising the full
+  # stack (e.g. nginx routing) as it actually runs in production.
   user-portal:
     build: { context: ., dockerfile: apps/user-portal/Dockerfile }
     pull_policy: never
-    volumes: [./apps/user-portal:/app/apps/user-portal]
-    command: corepack pnpm dev
 
   admin-portal:
     build: { context: ., dockerfile: apps/admin-portal/Dockerfile }
     pull_policy: never
-    volumes: [./apps/admin-portal:/app/apps/admin-portal]
-    command: corepack pnpm dev
 
   user-service:
     build: { context: ., dockerfile: apps/user-auth/Dockerfile }
     pull_policy: never
-    volumes: [./apps/user-auth:/app/apps/user-auth]
-    command: corepack pnpm dev
 
   catalogue-service:
     build: { context: ., dockerfile: apps/catalogue/Dockerfile }
     pull_policy: never
-    volumes: [./apps/catalogue:/app/apps/catalogue]
-    command: corepack pnpm dev
 
   auction-engine:
     build: { context: ., dockerfile: apps/auction-engine/Dockerfile }
     pull_policy: never
-    volumes: [./apps/auction-engine:/app/apps/auction-engine]
-    command: corepack pnpm dev
 
   payment-service:
     build: { context: ., dockerfile: apps/payment/Dockerfile }
     pull_policy: never
-    volumes: [./apps/payment:/app/apps/payment]
-    command: corepack pnpm dev
 
   notification-service:
     build: { context: ., dockerfile: apps/notification-service/Dockerfile }
     pull_policy: never
-    volumes: [./apps/notification-service:/app/apps/notification-service]
-    command: corepack pnpm dev
 
   shipping-service:
     build: { context: ., dockerfile: apps/shipping/Dockerfile }
     pull_policy: never
-    volumes: [./apps/shipping:/app/apps/shipping]
-    command: corepack pnpm dev
 
   admin-service:
     build: { context: ., dockerfile: apps/admin/Dockerfile }
     pull_policy: never
-    volumes: [./apps/admin:/app/apps/admin]
-    command: corepack pnpm dev

@@ -12,6 +12,7 @@ WORKDIR /app
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/packages ./packages
 COPY --from=builder --chown=node:node /app/apps/admin/dist ./apps/admin/dist
+COPY --from=builder --chown=node:node /app/apps/admin/migrations ./apps/admin/migrations
 COPY --from=builder --chown=node:node /app/apps/admin/node_modules ./apps/admin/node_modules
 COPY --from=builder --chown=node:node /app/apps/admin/package.json ./apps/admin/package.json
 WORKDIR /app/apps/admin
