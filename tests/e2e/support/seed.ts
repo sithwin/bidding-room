@@ -157,6 +157,24 @@ export async function approveBidder(adminToken: string, userId: string): Promise
   }
 }
 
+/**
+ * Creates a category through the real `POST /api/categories` endpoint
+ * (apps/catalogue/src/main.ts:143, requires `{name, slug}`, returns
+ * `{data: category}` with `201`) — reused by the lots, categories and
+ * auctions specs, which all need a real category or lot to work with.
+ */
+export async function seedCategory(
+  adminToken: string,
+  overrides: Partial<{ name: string; slug: string; parentId: string }> = {},
+): Promise<{ categoryId: string; name: string; slug: string }> {
+  const suffix = uniqueSuffix();
+  const name = overrides.name ?? `E2E Category ${suffix}`;
+  const slug = overrides.slug ?? `e2e-category-${suffix}`;
+  const res = await postJson(`${SERVICE_URLS.catalogue}/api/categories`, { name, slug, parentId: overrides.parentId }, adminToken);
+  const body = (await res.json()) as { data: { id: string } };
+  return { categoryId: body.data.id, name, slug };
+}
+
 export async function seedLot(
   adminToken: string,
   overrides: Partial<LotSeed> = {},
