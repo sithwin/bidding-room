@@ -56,6 +56,14 @@ jobs:
           # hardcode. Must be inlined at build time or the widget on auth.spec.ts's real
           # register/login forms never issues a token and the submit button stays disabled.
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+      - name: Rebuild admin-portal with real service URLs
+        # Same reasoning as the user-portal rebuild step above — admin-portal's
+        # ADMIN_SERVICE_URL fallback (apps/admin-portal/src/app/api/admin/[...path]/route.ts)
+        # must be inlined at build time, not left to `next start`.
+        run: pnpm --filter admin-portal build
+        env:
+          USER_SERVICE_URL: http://localhost:3001
+          ADMIN_SERVICE_URL: http://localhost:3007
       - run: pnpm lint
       - run: pnpm turbo test
       - name: Start test stack
@@ -113,6 +121,28 @@ jobs:
           SEED_USER_DB_URL: postgresql://carat:carat_test@localhost:5433/user_test
       - name: Build E2E lcov
         run: PORTAL=user-portal pnpm --filter @carat-room/e2e coverage:report
+      - name: Run Admin E2E suite with coverage
+        # --grep-invert @visual: admin-visual.spec.ts runs in the separate
+        # `admin-visual` job below (its own docker compose up/down cycle) so
+        # it never shares this job's accumulating seed data — the admin
+        # portal's list pages (lots, users, invoices, categories) have no
+        # pagination or filtering-by-recency, so shared seed data would make
+        # every list-page snapshot diverge regardless of masking. Without the
+        # invert, this step would also re-run every @visual case redundantly
+        # and, having no continue-on-error, would fail this required job on
+        # any pixel diff — defeating the isolation the admin-visual job
+        # exists for.
+        run: pnpm --filter @carat-room/e2e exec playwright test -c playwright.admin.config.ts --grep-invert @visual
+        env:
+          USER_SERVICE_URL: http://localhost:3001
+          CATALOGUE_SERVICE_URL: http://localhost:3002
+          AUCTION_ENGINE_URL: http://localhost:3003
+          PAYMENT_SERVICE_URL: http://localhost:3004
+          SHIPPING_SERVICE_URL: http://localhost:3006
+          ADMIN_SERVICE_URL: http://localhost:3007
+          SEED_USER_DB_URL: postgresql://carat:carat_test@localhost:5433/user_test
+      - name: Build Admin E2E lcov
+        run: PORTAL=admin-portal pnpm --filter @carat-room/e2e coverage:report
       - name: Upload E2E artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -120,6 +150,7 @@ jobs:
           name: e2e-report
           path: |
             tests/e2e/playwright-report
+            tests/e2e/playwright-report-admin
             tests/e2e/test-results
           retention-days: 3
       - name: Tear down test stack
@@ -133,3 +164,96 @@ jobs:
         with:
           args: >
             "-Dsonar.qualitygate.wait=true"
+
+  # Isolated from the `ci` job above on purpose: admin-visual.spec.ts (17
+  # baseline PNGs, tagged @visual) does element-level screenshot comparisons
+  # of admin list pages that have no pagination or filtering-by-recency. If
+  # this ran inside the `ci` job against the same long-lived docker compose
+  # stack, its seed data would sit alongside every other spec's (user-portal
+  # E2E + the nine admin functional specs) and every list-page snapshot would
+  # diverge regardless of masking. This job gets its own docker compose
+  # up/down cycle so the stack — and its database — is exclusive to this one
+  # spec. It never gates merge: neither this job nor its one step is required
+  # to succeed (continue-on-error below, and nothing else depends on this
+  # job), because baselines were captured on Windows
+  # (*-chromium-win32.png) but this runner is ubuntu-latest, so Playwright
+  # will look for *-chromium-linux.png baselines that don't exist yet and the
+  # comparison will fail on every run until someone generates and commits
+  # Linux baselines (--update-snapshots on a Linux box or in this job) as a
+  # follow-up. Flagged here rather than worked around silently — see
+  # tests/e2e/README.md.
+  admin-visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo build
+      - name: Rebuild admin-portal with real service URLs
+        run: pnpm --filter admin-portal build
+        env:
+          USER_SERVICE_URL: http://localhost:3001
+          ADMIN_SERVICE_URL: http://localhost:3007
+      - name: Start test stack
+        run: docker compose -f docker-compose.test.yml up -d --build
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          USER_AUTH_STRICT_RATE_LIMIT_MAX: '1000'
+          CATALOGUE_DEFAULT_RATE_LIMIT_MAX: '1000'
+          AUCTION_ENGINE_BID_RATE_LIMIT_MAX: '1000'
+          AUCTION_ENGINE_DEFAULT_RATE_LIMIT_MAX: '1000'
+          PAYMENT_DEFAULT_RATE_LIMIT_MAX: '1000'
+          SHIPPING_DEFAULT_RATE_LIMIT_MAX: '1000'
+          NOTIFICATION_DEFAULT_RATE_LIMIT_MAX: '1000'
+      - name: Wait for services to be healthy
+        run: |
+          timeout 180 bash -c '
+            while docker compose -f docker-compose.test.yml ps --format json |
+              jq -r "select(.Health != \"healthy\" and .Health != \"\") | .Service" | grep -q .; do
+              sleep 5
+            done'
+          sleep 10
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install Playwright Chromium
+        run: pnpm --filter @carat-room/e2e exec playwright install --with-deps chromium
+      - name: Run admin visual regression suite
+        # continue-on-error: see job-level comment above — Linux baselines
+        # don't exist yet, so this step is expected to fail until they're
+        # generated and committed. Never blocks merge.
+        continue-on-error: true
+        run: pnpm --filter @carat-room/e2e exec playwright test -c playwright.admin.config.ts --grep @visual
+        env:
+          USER_SERVICE_URL: http://localhost:3001
+          CATALOGUE_SERVICE_URL: http://localhost:3002
+          AUCTION_ENGINE_URL: http://localhost:3003
+          PAYMENT_SERVICE_URL: http://localhost:3004
+          SHIPPING_SERVICE_URL: http://localhost:3006
+          ADMIN_SERVICE_URL: http://localhost:3007
+          SEED_USER_DB_URL: postgresql://carat:carat_test@localhost:5433/user_test
+      - name: Upload admin visual report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-visual-report
+          path: |
+            tests/e2e/playwright-report-admin
+            tests/e2e/test-results
+          retention-days: 3
+      - name: Tear down test stack
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
