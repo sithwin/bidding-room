@@ -48,6 +48,99 @@ listed in `sonar.javascript.lcov.reportPaths` and CI's own pipeline (Task 12),
 but is not part of the "two-command" run the plan and CLAUDE.md refer to —
 that phrase is specifically the boot + `test:e2e` pair above.
 
+## Admin-portal E2E suite
+
+Admin-portal has its own, fully separate Playwright config/globalSetup/script
+(`playwright.admin.config.ts`, `global-setup.admin.ts`, `test:e2e:admin`) —
+it boots only `admin-portal` (port 3008), not `user-portal`, and drives the
+`admin` backend service (port 3007) added to `docker-compose.test.yml`. It
+shares `support/seed.ts`, `support/env.ts`, and `support/coverage.ts` with the
+user-portal suite unchanged.
+
+Once the backend stack is booted and healthy (same "Boot the backend stack"
+steps below, `admin` is now one of the services waited on) and `admin-portal`
+has been built with the real service URLs (same env vars as user-portal's
+build step, plus `ADMIN_SERVICE_URL`):
+
+```bash
+export USER_SERVICE_URL=http://localhost:3001 \
+       CATALOGUE_SERVICE_URL=http://localhost:3002 \
+       AUCTION_ENGINE_URL=http://localhost:3003 \
+       PAYMENT_SERVICE_URL=http://localhost:3004 \
+       SHIPPING_SERVICE_URL=http://localhost:3006 \
+       ADMIN_SERVICE_URL=http://localhost:3007
+pnpm --filter admin-portal build   # NOT `pnpm turbo build --filter=admin-portal` — same
+                                     # Turborepo strict-env-mode pitfall as user-portal
+
+SEED_USER_DB_URL=postgresql://carat:carat_test@localhost:5433/user_test \
+  pnpm --filter @carat-room/e2e test:e2e:admin
+
+PORTAL=admin-portal pnpm --filter @carat-room/e2e coverage:report
+```
+
+This writes `tests/e2e/coverage/admin-portal/lcov.info` (already registered
+in `sonar-project.properties`).
+
+**`ADMIN_LOGIN_INTERNAL_SECRET`** gates the internal-only `/api/users/admin-login`
+route that admin-portal's login form calls (added to work around Turnstile
+gating the public `/login` endpoint — see `.superpowers/sdd/progress.md`'s
+Task 6 entry). Both `global-setup.admin.ts` and `docker-compose.test.yml`
+default it to the same value (`test-admin-login-secret`), so — unlike the
+Stripe/R2/Turnstile vars documented above — **nothing needs to be exported by
+hand for a local run**; only export `ADMIN_LOGIN_INTERNAL_SECRET` yourself if
+you want to override that shared default (e.g. to prove the route fails
+closed on a mismatch).
+
+Nine functional specs live in `tests/e2e/specs-admin/`, one per `apps/admin`
+router (auth, lots, categories, auctions, users, invoices, fulfilments,
+enquiries, reports), plus a tenth, `admin-visual.spec.ts`, tagged `@visual`:
+
+```bash
+pnpm --filter @carat-room/e2e exec playwright test -c playwright.admin.config.ts --grep @visual
+```
+
+Running `test:e2e:admin` locally with no grep filter runs all ten specs,
+including `@visual`. **CI does not** — `.github/workflows/ci.yml`'s `ci` job
+runs the admin suite with `--grep-invert @visual`, and `admin-visual.spec.ts`
+instead runs in its own isolated `admin-visual` job with a fresh
+`docker compose up`/`down` cycle. This is not optional plumbing:
+`admin-visual.spec.ts` takes element-level screenshots of admin list pages
+(lots, users, invoices, categories) that have no pagination or
+filtering-by-recency, so if it shared a stack/database with the nine
+functional specs (or a second CI run's leftover seed data), every snapshot
+would diverge from its baseline regardless of masking. The `admin-visual` job
+also never gates merge (`continue-on-error: true`) — its 17 committed
+baseline PNGs are Windows-only (`*-chromium-win32.png`), so on the
+`ubuntu-latest` runner every comparison currently fails looking for
+non-existent `*-chromium-linux.png` baselines. Generating and committing
+Linux baselines (`--update-snapshots` run on a Linux box, or as a job step)
+is a known, explicitly-flagged follow-up, not silently swallowed.
+
+A first-time run against a fresh checkout needs baselines regenerated with
+`--update-snapshots` if `tests/e2e/specs-admin/admin-visual.spec.ts-snapshots/`
+is missing or the environment's rendering differs from CI's (fonts, OS) —
+committed baselines are the source of truth otherwise; never widen
+`maxDiffPixelRatio` to work around a real instability. `admin-visual.spec.ts`
+also requires a freshly-provisioned stack not shared with any other spec run,
+for the same no-pagination reason above.
+
+**Known, deliberately undocumented-away gaps** these specs surface rather
+than fix (see `docs/superpowers/plans/2026-07-18-admin-portal-e2e.md` for
+full detail): several admin forms (category creation, invoice due-date
+extension, fulfilment dispatch) show no visible validation/success feedback
+because their Server Actions discard their own return value; the
+category-tree's icon-only action buttons (chevron, edit, add, delete) have no
+accessible name (a real axe-detected a11y gap, not a test bug) —
+`admin-categories.spec.ts` asserts this failure directly rather than skipping
+it; the shared shadcn `destructive` Button variant fails WCAG AA
+color-contrast (~3.6:1 against a 4.5:1 minimum), asserted the same way in
+`admin-users.spec.ts` and `admin-invoices.spec.ts`; the reports page's Tabs
+component (4.39:1) and its unlabeled date-filter inputs fail the same scan in
+`admin-reports.spec.ts`; there is no UI control for admin logout even though
+the underlying `DELETE /api/auth` endpoint works; and the `LOT_INACTIVE`
+schedule-auction guard is unreachable through the real UI because the lot
+picker already filters inactive lots out.
+
 ## Boot the backend stack
 
 The backend stack (`user-auth`, `catalogue`, `auction-engine`, `payment`,
