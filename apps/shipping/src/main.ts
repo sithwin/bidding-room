@@ -18,6 +18,8 @@ import { buildShippingRateLimits } from './presentation/rate-limits';
 import { createAmqpConnection, EventSubscriber } from '@carat-room/shared-events';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
 import { PaymentReceivedPayload } from '@carat-room/shared-types';
+import { createLogger, requestContextMiddleware } from '@carat-room/shared-logger';
+import { createMetrics, httpMetricsMiddleware, metricsRoute } from '@carat-room/shared-metrics';
 
 type AppEnv = { Variables: { jwtPayload: JwtPayload } };
 
@@ -62,9 +64,16 @@ async function main(): Promise<void> {
   });
   const rateLimits = buildShippingRateLimits(redis);
 
+  const logger = createLogger({ service: 'shipping', pretty: process.env.NODE_ENV !== 'production' });
+  const metrics = createMetrics({ service: 'shipping' });
+
   const app = new Hono<AppEnv>();
 
+  app.use('*', requestContextMiddleware(logger));
+  app.use('*', httpMetricsMiddleware(metrics));
+
   app.get('/health', (c) => c.json({ status: 'ok', service: 'shipping' }));
+  app.get('/metrics', metricsRoute(metrics));
 
   app.use('*', rateLimits.default);
 
@@ -80,11 +89,11 @@ async function main(): Promise<void> {
   }));
 
   serve({ fetch: app.fetch, port }, () => {
-    console.log(`Shipping service listening on port ${port}`);
+    logger.info({ logEvent: 'SERVER_STARTED', payload: { port } }, `Shipping service listening on port ${port}`);
   });
 }
 
 main().catch((err) => {
-  console.error('Fatal error:', err);
+  createLogger({ service: 'shipping' }).fatal({ err }, 'Fatal error during startup');
   process.exit(1);
 });
