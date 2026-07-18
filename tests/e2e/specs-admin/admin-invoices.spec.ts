@@ -10,14 +10,7 @@ import {
 } from '../support/seed';
 import { SERVICE_URLS } from '../support/env';
 import { runA11yScan } from '../support/a11y';
-
-async function loginAsAdmin(page: import('@playwright/test').Page, email: string, password: string): Promise<void> {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/admin\/dashboard$/);
-}
+import { loginAsAdmin } from '../support/admin-auth';
 
 /** Mirrors specs/invoice-checkout.spec.ts's real seeding chain — see that file's header comment for the full rationale. */
 async function seedAwaitingPaymentInvoice(): Promise<{ adminEmail: string; adminPassword: string; invoiceId: string; lotTitle: string }> {

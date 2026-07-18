@@ -1,14 +1,7 @@
 import { test, expect } from '../support/fixtures.admin';
 import { registerAndVerifyUser, seedCategory } from '../support/seed';
 import { runA11yScan } from '../support/a11y';
-
-async function loginAsAdmin(page: import('@playwright/test').Page, email: string, password: string): Promise<void> {
-  await page.goto('/admin/login');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page).toHaveURL(/\/admin\/dashboard$/);
-}
+import { loginAsAdmin } from '../support/admin-auth';
 
 test.describe('admin categories', () => {
   test('creates a root category through the inline form', async ({ page }) => {
