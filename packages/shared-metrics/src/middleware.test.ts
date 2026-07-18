@@ -15,7 +15,7 @@ describe('httpMetricsMiddleware', () => {
     const metricsResponse = await app.request('/metrics');
     const body = await metricsResponse.text();
 
-    expect(body).toContain('http_requests_total{service="test-service",method="GET",route="/health",status="200"} 1');
+    expect(body).toContain('http_requests_total{method="GET",route="/health",status="200",service="test-service"} 1');
   });
 
   it('should_labelRouteAsUnmatched_when_noRouteMatches', async () => {

@@ -15,32 +15,19 @@ export function createMetrics(config: MetricsConfig): Metrics {
   registry.setDefaultLabels({ service: config.service });
   collectDefaultMetrics({ register: registry });
 
-  const rawHistogram = new Histogram({
+  const httpRequestDuration = new Histogram({
     name: 'http_request_duration_seconds',
     help: 'HTTP request duration in seconds',
-    labelNames: ['service', 'method', 'route', 'status'],
+    labelNames: ['method', 'route', 'status'],
     registers: [registry],
   });
 
-  const rawCounter = new Counter({
+  const httpRequestsTotal = new Counter({
     name: 'http_requests_total',
     help: 'Total number of HTTP requests',
-    labelNames: ['service', 'method', 'route', 'status'],
+    labelNames: ['method', 'route', 'status'],
     registers: [registry],
   });
-
-  // Wrap to auto-inject service label while keeping the external interface simple
-  const httpRequestDuration = {
-    observe(labels: { method: string; route: string; status: string }, value: number) {
-      return rawHistogram.observe({ service: config.service, ...labels }, value);
-    },
-  } as unknown as Histogram<'method' | 'route' | 'status'>;
-
-  const httpRequestsTotal = {
-    inc(labels: { method: string; route: string; status: string }, value?: number) {
-      return rawCounter.inc({ service: config.service, ...labels }, value);
-    },
-  } as unknown as Counter<'method' | 'route' | 'status'>;
 
   return { registry, httpRequestDuration, httpRequestsTotal };
 }
