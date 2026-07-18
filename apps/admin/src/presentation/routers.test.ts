@@ -107,20 +107,45 @@ describe('Lots router', () => {
     expect(body.data[0].auctionStatus).toBe('LIVE');
   });
 
-  it('should_setAuctionStatusUnscheduled_when_lotHasNoAuctionId', async () => {
+  it('should_setAuctionStatusNull_when_lotHasNoAuctionIdAndNoLiveAuctionExists', async () => {
+    // catalogue's lots.auction_id column is never updated after the initial INSERT (the real
+    // "Schedule Auction" flow proxies straight to auction-engine and never writes it back), so
+    // it must never gate the live lookup — always call auction-engine and trust its answer.
     const catalogue = new ServiceClient('http://mock');
     const auction = new ServiceClient('http://mock');
     vi.mocked(catalogue.get).mockImplementation(async (url: string) => {
       if (url === '/api/categories') return { data: [] };
       return { data: [{ id: 'lot-1', categoryId: null, auctionId: null }], meta: { total: 1 } };
     });
+    vi.mocked(auction.get).mockResolvedValue({ data: {} });
     const app = new Hono().route('/', buildLotsRouter({ catalogue, auction }));
 
     const res = await app.request('/admin/api/lots', { headers: authHeader() });
     const body = await res.json();
 
-    expect(body.data[0].auctionStatus).toBe('UNSCHEDULED');
-    expect(auction.get).not.toHaveBeenCalled();
+    expect(body.data[0].auctionStatus).toBeNull();
+    expect(auction.get).toHaveBeenCalledWith('/api/auctions/lot-1', 'admin-token');
+  });
+
+  it('should_reportLiveAuctionStatus_when_lotHasNoAuctionIdButAuctionEngineReportsLive', async () => {
+    // Regression test for the safety bug: catalogue's auctionId is stale/null for every lot
+    // scheduled through the real UI, but a LIVE auction genuinely exists in auction-engine. The
+    // enrichment must surface that real status so the admin edit page's "auction is live, save
+    // anyway?" confirmation dialog actually fires.
+    const catalogue = new ServiceClient('http://mock');
+    const auction = new ServiceClient('http://mock');
+    vi.mocked(catalogue.get).mockImplementation(async (url: string) => {
+      if (url === '/api/categories') return { data: [] };
+      return { data: [{ id: 'lot-1', categoryId: null, auctionId: null }], meta: { total: 1 } };
+    });
+    vi.mocked(auction.get).mockResolvedValue({ data: { status: 'LIVE' } });
+    const app = new Hono().route('/', buildLotsRouter({ catalogue, auction }));
+
+    const res = await app.request('/admin/api/lots', { headers: authHeader() });
+    const body = await res.json();
+
+    expect(body.data[0].auctionStatus).toBe('LIVE');
+    expect(auction.get).toHaveBeenCalledWith('/api/auctions/lot-1', 'admin-token');
   });
 
   it('should_setAuctionStatusNull_when_auctionEngineLookupFails', async () => {
