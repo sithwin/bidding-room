@@ -6,6 +6,7 @@ test-results/
 .env
 .env.*
 !.env.example
+!.env.test
 *.log
 .turbo/
 .DS_Store
