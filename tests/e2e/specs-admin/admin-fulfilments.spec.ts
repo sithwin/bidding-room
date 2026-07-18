@@ -28,7 +28,9 @@ test.describe('admin fulfilments', () => {
     await loginAsAdmin(page, admin.email, admin.password);
 
     await page.goto('/admin/fulfilments');
-    await expect(page.getByText('PENDING_DISPATCH')).toBeVisible();
+    await expect(
+      page.getByRole('row').filter({ hasText: buyer.email }).getByText('PENDING_DISPATCH'),
+    ).toBeVisible();
 
     await page.goto(`/admin/fulfilments/${fulfilmentId}`);
     await runA11yScan(page);
