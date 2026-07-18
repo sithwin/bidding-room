@@ -4,6 +4,8 @@ import { Hono } from 'hono';
 import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { createAmqpConnection, EventPublisher, EventSubscriber } from '@carat-room/shared-events';
+import { createLogger, requestContextMiddleware } from '@carat-room/shared-logger';
+import { createMetrics, httpMetricsMiddleware, metricsRoute } from '@carat-room/shared-metrics';
 import { runMigrations } from '@carat-room/db-migrate';
 import { createDb } from './infrastructure/db';
 import { PostgresInvoiceRepository } from './infrastructure/postgres-invoice-repository';
@@ -93,8 +95,14 @@ async function main(): Promise<void> {
     { connection: redis },
   );
 
+  const logger = createLogger({ service: 'payment', pretty: process.env.NODE_ENV !== 'production' });
+  const metrics = createMetrics({ service: 'payment' });
+
   const app = new Hono();
+  app.use('*', requestContextMiddleware(logger));
+  app.use('*', httpMetricsMiddleware(metrics));
   app.get('/health', (c) => c.json({ status: 'ok', service: 'payment' }));
+  app.get('/metrics', metricsRoute(metrics));
   // Default tier only — Stripe webhook (POST /api/payments/webhooks/stripe)
   // is deliberately excluded from every mount below (C19).
   app.use('/api/payments/invoices', rateLimits.default);
@@ -122,8 +130,11 @@ async function main(): Promise<void> {
   }));
 
   serve({ fetch: app.fetch, port: PORT }, () => {
-    console.log(`Payment service running on port ${PORT}`);
+    logger.info({ logEvent: 'SERVER_STARTED', payload: { port: PORT } }, `Payment service running on port ${PORT}`);
   });
 }
 
-main();
+main().catch((err) => {
+  createLogger({ service: 'payment' }).fatal({ err }, 'Fatal error during startup');
+  process.exit(1);
+});

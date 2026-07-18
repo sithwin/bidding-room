@@ -7,10 +7,13 @@ services:
   rabbitmq:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      - ./infra/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
     environment:
       RABBITMQ_DEFAULT_USER: carat
       RABBITMQ_DEFAULT_PASS: devpassword123
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: " "
+    ports:
+      - "15692:15692"
 
   nginx:
     volumes:

@@ -80,14 +80,14 @@ pnpm turbo dev
 pnpm lint
 
 # Start local infrastructure (PostgreSQL, Redis, RabbitMQ)
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.observability.yml up -d
 
 # Run integration tests (all services must be built first)
-docker compose --env-file .env.test -f docker-compose.test.yml up -d --build
+docker compose --env-file .env.test -f docker-compose.test.yml -f docker-compose.observability.yml up -d --build
 pnpm run test:integration
 
 # Tear down test environment
-docker compose -f docker-compose.test.yml down -v
+docker compose -f docker-compose.test.yml -f docker-compose.observability.yml down -v
 ```
 
 ### E2E (Playwright, coverage)
@@ -100,7 +100,7 @@ Two-command local run (full detail, env vars and required secrets in
 # --env-file .env.test overrides the repo-root .env (dev/prod secrets) so the
 # test stack gets test-safe rate limits and a matching STRIPE_WEBHOOK_SECRET —
 # see tests/e2e/README.md's "Two-command local run" note for why this matters.
-docker compose --env-file .env.test -f docker-compose.test.yml up -d --build
+docker compose --env-file .env.test -f docker-compose.test.yml -f docker-compose.observability.yml up -d --build
 
 # 2. Build/start user-portal on the host, run all Playwright specs, collect
 #    server + client V8 coverage

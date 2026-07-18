@@ -1,0 +1,22 @@
+global:
+  smtp_from: '${ALERT_EMAIL_FROM}'
+  smtp_smarthost: '${SMTP_HOST}:587'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+
+route:
+  receiver: slack-and-email
+  group_by: ['alertname', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: slack-and-email
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#alerts'
+        send_resolved: true
+    email_configs:
+      - to: '${ALERT_EMAIL_TO}'
+        send_resolved: true

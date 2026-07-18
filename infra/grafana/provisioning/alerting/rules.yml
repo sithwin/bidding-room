@@ -1,0 +1,163 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: service-health
+    folder: Alerts
+    interval: 1m
+    rules:
+      - uid: high-error-rate
+        title: High error rate
+        condition: B
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels: { severity: critical }
+        annotations:
+          summary: '5xx rate for {{ $labels.service }} exceeds 5% over 5 minutes'
+        data:
+          - refId: A
+            datasourceUid: prometheus_uid
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: A
+              expr: 'sum by (service) (rate(http_requests_total{status=~"5.."}[5m])) / sum by (service) (rate(http_requests_total[5m])) * 100'
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+
+      - uid: error-log-spike
+        title: Error log spike
+        condition: B
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: '{{ $labels.service }} is logging more than 10 error-level lines/min'
+        data:
+          - refId: A
+            datasourceUid: loki_uid
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: A
+              expr: 'sum by (service) (count_over_time({level="error"}[1m]))'
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [10] }
+
+      - uid: high-latency
+        title: High latency
+        condition: B
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: '{{ $labels.service }} p99 latency exceeds 2s over 5 minutes'
+        data:
+          - refId: A
+            datasourceUid: prometheus_uid
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: A
+              expr: 'histogram_quantile(0.99, sum by (le, service) (rate(http_request_duration_seconds_bucket[5m])))'
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [2] }
+
+      - uid: service-down
+        title: Service down
+        condition: B
+        for: 2m
+        noDataState: Alerting
+        execErrState: Error
+        labels: { severity: critical }
+        annotations:
+          summary: '{{ $labels.job }} scrape target has been unreachable for 2 minutes'
+        data:
+          - refId: A
+            datasourceUid: prometheus_uid
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: A
+              expr: 'up{job=~"user-auth|catalogue|auction-engine|payment|notification|shipping|admin"}'
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+
+      - uid: queue-backlog
+        title: Queue backlog
+        condition: B
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 'RabbitMQ queue {{ $labels.queue }} has messages ready but no consumers'
+        data:
+          - refId: A
+            datasourceUid: prometheus_uid
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: A
+              expr: '(rabbitmq_queue_messages_ready > 100) and (rabbitmq_queue_consumers == 0)'
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+
+      - uid: db-connection-saturation
+        title: DB connection saturation
+        condition: B
+        for: 5m
+        noDataState: NoData
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 'Postgres connections exceed 80% of max_connections'
+        data:
+          - refId: A
+            datasourceUid: prometheus_uid
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: A
+              expr: 'pg_stat_activity_count / pg_settings_max_connections * 100'
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [80] }

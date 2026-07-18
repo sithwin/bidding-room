@@ -14,6 +14,8 @@
     "@carat-room/db-migrate": "workspace:*",
     "@carat-room/shared-auth": "workspace:*",
     "@carat-room/shared-events": "workspace:*",
+    "@carat-room/shared-logger": "workspace:*",
+    "@carat-room/shared-metrics": "workspace:*",
     "@carat-room/shared-rate-limit": "workspace:*",
     "@hono/node-server": "^1.12.0",
     "hono": "^4.4.0",

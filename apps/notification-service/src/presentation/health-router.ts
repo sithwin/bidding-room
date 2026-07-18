@@ -2,4 +2,4 @@ import { Hono } from 'hono';
 
 export const healthRouter = new Hono();
 
-healthRouter.get('/health', (c) => c.json({ status: 'ok' }));
+healthRouter.get('/health', (c) => c.json({ status: 'ok', service: 'notification' }));

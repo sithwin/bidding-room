@@ -1,0 +1,43 @@
+{
+  "title": "Logs explorer",
+  "uid": "logs-explorer",
+  "schemaVersion": 39,
+  "tags": ["carat-room"],
+  "timezone": "browser",
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki_uid" },
+        "query": "label_values(service)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true
+      },
+      {
+        "name": "level",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki_uid" },
+        "query": "label_values(level)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Logs",
+      "type": "logs",
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki_uid" },
+      "targets": [
+        {
+          "expr": "{service=~\"$service\", level=~\"$level\"}"
+        }
+      ]
+    }
+  ]
+}

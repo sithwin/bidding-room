@@ -1,5 +1,5 @@
 {
-  "name": "@carat-room/shared-logger",
+  "name": "@carat-room/shared-metrics",
   "version": "0.0.1",
   "private": true,
   "main": "./dist/index.js",
@@ -14,18 +14,16 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "hono": "^4.4.0",
-    "pino": "^9.0.0",
-    "pino-pretty": "^11.0.0",
-    "uuid": "^10.0.0"
+    "prom-client": "^15.1.3"
   },
   "devDependencies": {
     "@carat-room/tsconfig": "workspace:*",
     "@types/node": "^20.0.0",
-    "@types/uuid": "^10.0.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "typescript": "^5.4.0",
     "vitest": "^3.2.4"
   }

@@ -1,0 +1,49 @@
+{
+  "title": "Data layer",
+  "uid": "data-layer",
+  "schemaVersion": 39,
+  "tags": ["carat-room"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Postgres active connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        { "expr": "pg_stat_activity_count" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Redis memory used (bytes)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        { "expr": "redis_memory_used_bytes" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "RabbitMQ queue depth (ready messages)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        { "expr": "sum by (queue) (rabbitmq_queue_messages_ready)" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "RabbitMQ consumers per queue",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus_uid" },
+      "targets": [
+        { "expr": "sum by (queue) (rabbitmq_queue_consumers)" }
+      ]
+    }
+  ]
+}

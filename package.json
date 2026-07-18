@@ -8,7 +8,7 @@
     "dev:admin": "concurrently --names \"user-auth,catalogue,auction,payment,shipping,admin,admin-portal\" \"cd apps/user-auth && npx tsx watch --env-file .env src/main.ts\" \"cd apps/catalogue && npx tsx watch --env-file .env src/main.ts\" \"cd apps/auction-engine && npx tsx watch --env-file .env src/main.ts\" \"cd apps/payment && npx tsx watch --env-file .env src/main.ts\" \"cd apps/shipping && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin && npx tsx watch --env-file .env src/main.ts\" \"cd apps/admin-portal && npx next dev -p 3008\"",
     "lint": "eslint \"apps/*/src/**/*.ts\"",
     "test:integration": "vitest run --config tests/vitest.integration.config.ts",
-    "start": "docker compose up --build"
+    "start": "docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.observability.yml up --build"
   },
   "devDependencies": {
     "@types/pg": "^8.11.0",
