@@ -33,6 +33,8 @@ import { buildUserRouter } from './presentation/user-router';
 import { buildAdminUsersRouter } from './presentation/admin-users-router';
 import { createAmqpConnection, EventPublisher } from '@carat-room/shared-events';
 import { authMiddleware, JwtPayload } from '@carat-room/shared-auth';
+import { createLogger, requestContextMiddleware } from '@carat-room/shared-logger';
+import { createMetrics, httpMetricsMiddleware, metricsRoute } from '@carat-room/shared-metrics';
 import Redis from 'ioredis';
 import { buildUserAuthRateLimits } from './presentation/rate-limits';
 
@@ -89,9 +91,16 @@ async function main(): Promise<void> {
   const amqp = await createAmqpConnection(amqpUrl);
   const publisher = new EventPublisher(amqp);
 
+  const logger = createLogger({ service: 'user-auth', pretty: process.env.NODE_ENV !== 'production' });
+  const metrics = createMetrics({ service: 'user-auth' });
+
   const app = new Hono<AppEnv>();
 
+  app.use('*', requestContextMiddleware(logger));
+  app.use('*', httpMetricsMiddleware(metrics));
+
   app.get('/health', (c) => c.json({ status: 'ok', service: 'user-auth' }));
+  app.get('/metrics', metricsRoute(metrics));
 
   const redis = new Redis({ host: redisHost, port: redisPort });
   const rateLimits = buildUserAuthRateLimits(redis);
@@ -157,6 +166,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error('Fatal error:', err);
+  createLogger({ service: 'user-auth' }).fatal({ err }, 'Fatal error during startup');
   process.exit(1);
 });
