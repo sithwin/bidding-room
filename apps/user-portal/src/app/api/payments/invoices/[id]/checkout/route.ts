@@ -13,5 +13,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     },
     body: JSON.stringify(await request.json()),
   });
-  return NextResponse.json(await res.json(), { status: res.status });
+  try {
+    const body = await res.json();
+    return NextResponse.json(body, { status: res.status });
+  } catch {
+    // payment-service returned a non-JSON body (e.g. a framework-level error page) - surface a
+    // structured error instead of letting the SyntaxError propagate into Next's own default
+    // (plain-text) 500 handler.
+    return NextResponse.json({ error: { code: 'CHECKOUT_FAILED', message: 'Unable to start checkout' } }, { status: 502 });
+  }
 }

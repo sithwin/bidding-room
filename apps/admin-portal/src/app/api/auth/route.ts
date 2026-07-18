@@ -8,9 +8,13 @@ export async function POST(req: Request): Promise<NextResponse> {
   const { email, password } = await req.json() as { email: string; password: string };
 
   const userServiceUrl = process.env.USER_SERVICE_URL ?? 'http://localhost:3001';
-  const res = await fetch(`${userServiceUrl}/api/users/login`, {
+  const res = await fetch(`${userServiceUrl}/api/users/admin-login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...forwardedForHeader(req.headers) },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-service-secret': process.env.ADMIN_LOGIN_INTERNAL_SECRET ?? '',
+      ...forwardedForHeader(req.headers),
+    },
     body: JSON.stringify({ email, password }),
   });
 
@@ -30,9 +34,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: { code: 'INVALID_TOKEN', message: 'Received an expired or non-expiring token' } }, { status: 401 });
   }
 
+  const isHttps = new URL(req.url).protocol === 'https:' || req.headers.get('x-forwarded-proto') === 'https';
+
   (await cookies()).set(ADMIN_TOKEN_COOKIE, body.data.accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHttps,
     sameSite: 'lax',
     maxAge,
     path: '/',

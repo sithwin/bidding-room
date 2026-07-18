@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,7 +17,6 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
@@ -33,7 +31,15 @@ export default function LoginPage() {
       body: JSON.stringify(data),
     });
     if (res.ok) {
-      router.push('/admin/dashboard');
+      // A soft navigation here (router.push) can serve a stale prefetch: the
+      // sidebar rendered by AdminShell (see app/admin/layout.tsx) prefetches
+      // every nav link — including /admin/dashboard — while still on this
+      // unauthenticated login page, and the middleware's redirect-to-login
+      // response for that prefetch gets cached by the Next.js router cache.
+      // router.push() then serves that stale cached redirect instead of
+      // re-running the middleware with the just-set cookie. A full navigation
+      // bypasses the router cache entirely and re-evaluates middleware fresh.
+      window.location.assign('/admin/dashboard');
     } else {
       const body = await res.json() as { error: { message: string } };
       setServerError(body.error.message);

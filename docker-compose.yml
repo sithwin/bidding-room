@@ -88,6 +88,10 @@ services:
 
   admin-portal:
     image: ghcr.io/the-carat-room/admin-portal:latest
+    environment:
+      USER_SERVICE_URL: http://user-service:3001
+      ADMIN_SERVICE_URL: http://admin-service:3007
+      ADMIN_LOGIN_INTERNAL_SECRET: ${ADMIN_LOGIN_INTERNAL_SECRET}
     ports:
       - "3008:3008"
 
@@ -112,6 +116,9 @@ services:
       # GOOGLE_REDIRECT_URI; one operator-facing value keeps both in sync with what was registered
       # as the callback URL in Google Cloud Console.
       GOOGLE_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI}
+      # Gates POST /api/users/admin-login (see internal-service-auth-middleware.ts) — must be a
+      # real secret set by the deploying operator, shared with admin-portal's block below.
+      ADMIN_LOGIN_INTERNAL_SECRET: ${ADMIN_LOGIN_INTERNAL_SECRET}
     depends_on:
       postgres:
         condition: service_healthy

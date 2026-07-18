@@ -157,6 +157,24 @@ export async function approveBidder(adminToken: string, userId: string): Promise
   }
 }
 
+/**
+ * Creates a category through the real `POST /api/categories` endpoint
+ * (apps/catalogue/src/main.ts:143, requires `{name, slug}`, returns
+ * `{data: category}` with `201`) — reused by the lots, categories and
+ * auctions specs, which all need a real category or lot to work with.
+ */
+export async function seedCategory(
+  adminToken: string,
+  overrides: Partial<{ name: string; slug: string; parentId: string }> = {},
+): Promise<{ categoryId: string; name: string; slug: string }> {
+  const suffix = uniqueSuffix();
+  const name = overrides.name ?? `E2E Category ${suffix}`;
+  const slug = overrides.slug ?? `e2e-category-${suffix}`;
+  const res = await postJson(`${SERVICE_URLS.catalogue}/api/categories`, { name, slug, parentId: overrides.parentId }, adminToken);
+  const body = (await res.json()) as { data: { id: string } };
+  return { categoryId: body.data.id, name, slug };
+}
+
 export async function seedLot(
   adminToken: string,
   overrides: Partial<LotSeed> = {},
@@ -442,6 +460,38 @@ export async function seedFulfilmentForUser(
   return awaitFulfilmentForLotAndUser(admin.accessToken, lotId, user.userId);
 }
 
+/**
+ * Drives the buyer's real fulfilment-method choice via `shipping`'s
+ * `POST /api/shipping/fulfilments/:id/choose-ship` (verified directly against
+ * apps/shipping/src/presentation/shipping-router.ts:115) — the step
+ * `seedFulfilmentForUser` stops short of, since the admin "Mark Dispatched"
+ * control only appears once a fulfilment has left `PENDING_CHOICE`. The
+ * endpoint only checks `userId` ownership (`ChooseShipUseCase`), not
+ * `verificationStatus`, so the buyer's original `accessToken` from
+ * `registerAndVerifyUser`/`seedFulfilmentForUser`'s `user` argument remains
+ * valid here — no fresh login needed, unlike the bid-placement step.
+ */
+export async function chooseShipMethod(
+  bidderToken: string,
+  fulfilmentId: string,
+  address: { fullName: string; line1: string; city: string; postcode: string; country: string },
+): Promise<void> {
+  await postJson(`${SERVICE_URLS.shipping}/api/shipping/fulfilments/${fulfilmentId}/choose-ship`, address, bidderToken);
+}
+
+/**
+ * Same as `chooseShipMethod` above but for the collection path
+ * (`.../choose-collect`, shipping-router.ts:150) — also reused by the
+ * visual-regression spec (Task 15).
+ */
+export async function chooseCollectMethod(
+  bidderToken: string,
+  fulfilmentId: string,
+  slot: { location: string; date: string; timeSlot: string },
+): Promise<void> {
+  await postJson(`${SERVICE_URLS.shipping}/api/shipping/fulfilments/${fulfilmentId}/choose-collect`, slot, bidderToken);
+}
+
 async function promoteToAdmin(userId: string): Promise<void> {
   const client = new Client({ connectionString: SEED_DB_URL });
   await client.connect();
@@ -450,6 +500,51 @@ async function promoteToAdmin(userId: string): Promise<void> {
   } finally {
     await client.end();
   }
+}
+
+/**
+ * Sets a user's status directly via SQL — same precedent as `promoteToAdmin`
+ * above: there is no admin API to force a user into PENDING_REVIEW/SUSPENDED
+ * without a real R2-backed identity-document upload (unavailable in a
+ * no-secrets local run), so this seeds the state directly rather than
+ * fabricating a fake upload.
+ */
+export async function setUserStatus(
+  userId: string,
+  status: 'PENDING_REVIEW' | 'APPROVED_BIDDER' | 'SUSPENDED',
+): Promise<void> {
+  const client = new Client({ connectionString: SEED_DB_URL });
+  await client.connect();
+  try {
+    await client.query('UPDATE users SET status = $1 WHERE id = $2', [status, userId]);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * Submits a valuation enquiry through the real, public (unauthenticated)
+ * `POST /api/admin/enquiries/valuation` endpoint (verified directly against
+ * apps/admin/src/presentation/enquiries-router.ts:38 — this route lives on
+ * the admin service itself, not proxied through admin-portal). `photoKeys: []`
+ * is valid; the router only rejects a missing `file` on the separate
+ * `/upload` endpoint, which this helper doesn't need. Also reused by Task
+ * 15's visual-regression spec.
+ */
+export async function seedValuationEnquiry(
+  overrides: Partial<{ category: string; description: string; name: string; email: string }> = {},
+): Promise<{ name: string; email: string }> {
+  const suffix = uniqueSuffix();
+  const name = overrides.name ?? `E2E Enquirer ${suffix}`;
+  const email = overrides.email ?? `e2e-enquirer-${suffix}@carat-test.internal`;
+  await postJson(`${SERVICE_URLS.adminService}/api/admin/enquiries/valuation`, {
+    category: overrides.category ?? 'Jewellery',
+    description: overrides.description ?? 'A family heirloom ring for valuation.',
+    photoKeys: [],
+    name,
+    email,
+  });
+  return { name, email };
 }
 
 async function findUserIdByEmail(email: string): Promise<string> {
@@ -493,6 +588,32 @@ async function retrieveVerificationCode(userId: string, type: 'EMAIL' | 'PHONE')
   } finally {
     await client.end();
   }
+}
+
+/**
+ * Polls auction-engine's real `GET /api/auctions/:lotId` (no auth required —
+ * confirmed by reading auction-router.ts:56, it's a public read) until the
+ * lot's status is one of `statuses`. Needed for the unsold-lot case, where —
+ * unlike every winning-bid flow the rest of this file drives — no invoice is
+ * ever created to poll for instead.
+ */
+export async function awaitAuctionStatus(
+  lotId: string,
+  statuses: string[],
+  timeoutMs = 30_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await fetch(`${SERVICE_URLS.auction}/api/auctions/${lotId}`);
+    if (res.ok) {
+      const body = (await res.json()) as { data: { status: string } };
+      if (statuses.includes(body.data.status)) {
+        return;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  throw new Error(`Seed: lot ${lotId} did not reach status [${statuses.join(', ')}] within ${timeoutMs}ms`);
 }
 
 /** Decodes the `userId` claim out of a JWT without verifying its signature — safe here because this is a test-seeding helper reading a token this same process just issued via /login. */
