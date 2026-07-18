@@ -460,6 +460,38 @@ export async function seedFulfilmentForUser(
   return awaitFulfilmentForLotAndUser(admin.accessToken, lotId, user.userId);
 }
 
+/**
+ * Drives the buyer's real fulfilment-method choice via `shipping`'s
+ * `POST /api/shipping/fulfilments/:id/choose-ship` (verified directly against
+ * apps/shipping/src/presentation/shipping-router.ts:115) — the step
+ * `seedFulfilmentForUser` stops short of, since the admin "Mark Dispatched"
+ * control only appears once a fulfilment has left `PENDING_CHOICE`. The
+ * endpoint only checks `userId` ownership (`ChooseShipUseCase`), not
+ * `verificationStatus`, so the buyer's original `accessToken` from
+ * `registerAndVerifyUser`/`seedFulfilmentForUser`'s `user` argument remains
+ * valid here — no fresh login needed, unlike the bid-placement step.
+ */
+export async function chooseShipMethod(
+  bidderToken: string,
+  fulfilmentId: string,
+  address: { fullName: string; line1: string; city: string; postcode: string; country: string },
+): Promise<void> {
+  await postJson(`${SERVICE_URLS.shipping}/api/shipping/fulfilments/${fulfilmentId}/choose-ship`, address, bidderToken);
+}
+
+/**
+ * Same as `chooseShipMethod` above but for the collection path
+ * (`.../choose-collect`, shipping-router.ts:150) — also reused by the
+ * visual-regression spec (Task 15).
+ */
+export async function chooseCollectMethod(
+  bidderToken: string,
+  fulfilmentId: string,
+  slot: { location: string; date: string; timeSlot: string },
+): Promise<void> {
+  await postJson(`${SERVICE_URLS.shipping}/api/shipping/fulfilments/${fulfilmentId}/choose-collect`, slot, bidderToken);
+}
+
 async function promoteToAdmin(userId: string): Promise<void> {
   const client = new Client({ connectionString: SEED_DB_URL });
   await client.connect();
