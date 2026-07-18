@@ -38,9 +38,10 @@ async function enrichLot(
   token: string,
   categoryNames: Map<string, string>,
 ): Promise<CatalogueLot & { categoryName: string | null; auctionStatus: string | null }> {
-  const auctionStatus = lot.auctionId
-    ? await fetchLotAuctionStatus(clients.auction, lot.id, token)
-    : 'UNSCHEDULED';
+  // catalogue's lots.auction_id is set only on initial INSERT and never updated by the real
+  // "Schedule Auction" flow, so it must never gate this lookup — always ask auction-engine,
+  // which is the sole owner of live auction status.
+  const auctionStatus = await fetchLotAuctionStatus(clients.auction, lot.id, token);
   return {
     ...lot,
     categoryName: lot.categoryId ? categoryNames.get(lot.categoryId) ?? null : null,

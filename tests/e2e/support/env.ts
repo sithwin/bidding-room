@@ -4,6 +4,7 @@ export const SERVICE_URLS = {
   auction: process.env.AUCTION_ENGINE_URL ?? 'http://localhost:3003',
   payment: process.env.PAYMENT_SERVICE_URL ?? 'http://localhost:3004',
   shipping: process.env.SHIPPING_SERVICE_URL ?? 'http://localhost:3006',
+  adminService: process.env.ADMIN_SERVICE_URL ?? 'http://localhost:3007',
 } as const;
 
 export const USER_PORTAL_PORT = Number(process.env.USER_PORTAL_PORT ?? 3000);
