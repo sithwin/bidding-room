@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:e2e": "playwright test",
+    "test:e2e:admin": "playwright test -c playwright.admin.config.ts",
     "coverage:report": "node ./scripts/build-lcov.mjs"
   },
   "devDependencies": {
