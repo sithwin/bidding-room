@@ -522,6 +522,31 @@ export async function setUserStatus(
   }
 }
 
+/**
+ * Submits a valuation enquiry through the real, public (unauthenticated)
+ * `POST /api/admin/enquiries/valuation` endpoint (verified directly against
+ * apps/admin/src/presentation/enquiries-router.ts:38 — this route lives on
+ * the admin service itself, not proxied through admin-portal). `photoKeys: []`
+ * is valid; the router only rejects a missing `file` on the separate
+ * `/upload` endpoint, which this helper doesn't need. Also reused by Task
+ * 15's visual-regression spec.
+ */
+export async function seedValuationEnquiry(
+  overrides: Partial<{ category: string; description: string; name: string; email: string }> = {},
+): Promise<{ name: string; email: string }> {
+  const suffix = uniqueSuffix();
+  const name = overrides.name ?? `E2E Enquirer ${suffix}`;
+  const email = overrides.email ?? `e2e-enquirer-${suffix}@carat-test.internal`;
+  await postJson(`${SERVICE_URLS.adminService}/api/admin/enquiries/valuation`, {
+    category: overrides.category ?? 'Jewellery',
+    description: overrides.description ?? 'A family heirloom ring for valuation.',
+    photoKeys: [],
+    name,
+    email,
+  });
+  return { name, email };
+}
+
 async function findUserIdByEmail(email: string): Promise<string> {
   const client = new Client({ connectionString: SEED_DB_URL });
   await client.connect();
