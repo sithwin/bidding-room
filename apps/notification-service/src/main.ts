@@ -9,6 +9,8 @@ import { TwilioSmsSender } from './infrastructure/sms/twilio-sms-sender.js';
 import { startNotificationSubscribers } from './infrastructure/subscribers/notification-subscribers.js';
 import { healthRouter } from './presentation/health-router.js';
 import { buildNotificationRateLimits } from './presentation/rate-limits.js';
+import { createLogger, requestContextMiddleware } from '@carat-room/shared-logger';
+import { createMetrics, httpMetricsMiddleware, metricsRoute } from '@carat-room/shared-metrics';
 
 const PORT = Number(process.env['PORT'] ?? 3005);
 const DATABASE_URL = process.env['DATABASE_URL'] ?? '';
@@ -63,16 +65,22 @@ async function main(): Promise<void> {
   });
   const rateLimits = buildNotificationRateLimits(redis);
 
+  const logger = createLogger({ service: 'notification', pretty: process.env.NODE_ENV !== 'production' });
+  const metrics = createMetrics({ service: 'notification' });
+
   const app = new Hono();
+  app.use('*', requestContextMiddleware(logger));
+  app.use('*', httpMetricsMiddleware(metrics));
   app.use('*', rateLimits.default);
   app.route('/', healthRouter);
+  app.get('/metrics', metricsRoute(metrics));
 
   serve({ fetch: app.fetch, port: PORT }, () => {
-    console.log(`[NotificationService] Listening on port ${PORT}`);
+    logger.info({ logEvent: 'SERVER_STARTED', payload: { port: PORT } }, `Notification service listening on port ${PORT}`);
   });
 }
 
 main().catch((err) => {
-  console.error('[NotificationService] Fatal error:', err);
+  createLogger({ service: 'notification' }).fatal({ err }, 'Fatal error during startup');
   process.exit(1);
 });
